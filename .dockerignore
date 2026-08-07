@@ -1,0 +1,22 @@
+# ไม่ต้องส่งเข้า build context (เร็วขึ้น + กันของไม่จำเป็น/ความลับ)
+**/node_modules
+node_modules
+**/dist
+dist
+.git
+.github
+.claude
+_backup
+*.log
+
+# ผลลัพธ์/แคชเครื่องมือ
+coverage
+.vite
+
+# ⚠️ กันเฉพาะไฟล์ลับ (.env.local มีรหัสผ่านของสคริปต์ token) — **คง packages/web/.env ไว้** เพราะ Vite ต้องใช้ตอน build
+**/.env.local
+.env.local
+
+# เอกสาร/สคริปต์ที่ build ไม่ได้ใช้
+docs
+scripts

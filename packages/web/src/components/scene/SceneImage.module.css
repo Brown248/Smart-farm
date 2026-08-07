@@ -1,0 +1,46 @@
+.void {
+  position: absolute;
+  inset: 0;
+  background: var(--scene-void);
+}
+
+.plate {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  transition: opacity 2.2s ease;
+}
+
+/* ตอนโหลดครั้งแรก (ก่อนพยากรณ์มาถึง) — ปิด crossfade ให้ภาพที่ถูกต้อง "สแนป" ทันที
+   ไม่ให้เห็น "เช้าไม่มีฝน → เช้าฝนตก" ค่อยๆ จางตอนรีเฟรช */
+.instant {
+  transition: none;
+}
+
+.day {
+  filter: saturate(1.04);
+}
+
+/* กลางคืนซ้อนบนกลางวันด้วย plus-lighter — ไฟที่ติดจะ "สว่างเพิ่ม" ไม่ใช่ทับทึบ */
+.night {
+  mix-blend-mode: plus-lighter;
+  pointer-events: none;
+}
+
+/* ชั้นเบลอรอบขอบ ให้สายตาโฟกัสกลางภาพ */
+.dof {
+  filter: blur(5px);
+  pointer-events: none;
+  -webkit-mask-image: radial-gradient(78% 72% at 50% 46%, transparent 60%, #000 94%);
+  mask-image: radial-gradient(78% 72% at 50% 46%, transparent 60%, #000 94%);
+}
+
+.tint {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  transition: opacity 2.5s ease;
+}

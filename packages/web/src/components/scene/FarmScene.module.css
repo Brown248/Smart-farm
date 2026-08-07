@@ -1,0 +1,45 @@
+.root {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  font-family: var(--font);
+  color: #1d2b24;
+  background: var(--scene-backdrop);
+  user-select: none;
+}
+
+/* แถบเตือน "ค่าค้าง" — ลอยบนสุดกลางฉาก · ไม่บังการกด (แค่ข้อมูล) */
+.staleOverlay {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 60;
+  width: min(92%, 620px);
+  pointer-events: none;
+}
+
+/* สำเนาภาพเดียวกันแบบเบลอ เติมส่วนของจอที่ฉากหลักครอบไม่ถึง */
+.backdrop {
+  position: absolute;
+  inset: -3%;
+  width: 106%;
+  height: 106%;
+  object-fit: cover;
+  filter: blur(18px) brightness(0.8) saturate(1.12);
+  display: block;
+}
+
+.sceneOuter {
+  position: absolute;
+  will-change: transform;
+}
+
+/* ฉากลอยช้าๆ ให้ภาพนิ่งดูมีชีวิต */
+.drift {
+  position: absolute;
+  inset: 0;
+  isolation: isolate;
+  will-change: transform;
+  animation: fsDrift 55s ease-in-out infinite alternate;
+}

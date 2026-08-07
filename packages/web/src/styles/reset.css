@@ -1,0 +1,48 @@
+/**
+ * เอกสารเลื่อนได้ตามปกติ — หน้าข้อมูล (แดชบอร์ด) ยาวเกินจอ ต้องเลื่อนอ่านได้
+ *
+ * เดิมล็อก `height: 100%` + `overflow: hidden` ไว้เพื่อฉากเกม
+ * แต่ฉากเกมใช้ `position: fixed; inset: 0; overflow: hidden` ที่ `.root` ของตัวเองอยู่แล้ว
+ * จึงไม่ต้องล็อกทั้งเอกสาร — ล็อกไว้กลายเป็นทำให้หน้าอื่นเลื่อนไม่ได้
+ */
+html,
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100%;
+  background: var(--scene-backdrop);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+#root {
+  min-height: 100%;
+}
+
+a {
+  color: var(--brand-green);
+  text-decoration: none;
+}
+
+a:hover {
+  color: #1c5a3e;
+}
+
+button {
+  font-family: inherit;
+}
+
+/* ห้ามฟอนต์เล็กกว่า --fs-min (สเปกข้อ 11) */
+body {
+  font-family: var(--font);
+  font-size: var(--fs-min);
+  color: var(--ink);
+  -webkit-tap-highlight-color: transparent;
+}
+
+/**
+ * `user-select: none` อยู่ที่ `.root` ของฉากเกมเท่านั้น ไม่ได้ตั้งทั้ง body
+ * หน้าข้อมูลต้องลากคลุมตัวเลขไป copy ได้
+ */

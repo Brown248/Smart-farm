@@ -1,0 +1,39 @@
+.toast {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  z-index: 90;
+  max-width: 88vw;
+  background: linear-gradient(180deg, var(--cream-panel-top), var(--cream-panel-bottom));
+  border: 3px solid var(--wood);
+  color: var(--ink-wood);
+  font-weight: 600;
+  font-size: 14px;
+  line-height: 1.45;
+  padding: 13px 18px;
+  border-radius: var(--r-lg);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  animation: fsFade 0.16s ease-out;
+  pointer-events: none;
+  text-align: center;
+}
+
+/* จางออก (เล่นก่อนถอดออกจาก DOM) — เฉพาะ transform/opacity ตามกฎ */
+.leaving {
+  animation: toastOut 0.18s ease-in forwards;
+}
+
+@keyframes toastOut {
+  to {
+    opacity: 0;
+    transform: translate(-50%, calc(-50% + 6px));
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .leaving {
+    animation-duration: 0.001s;
+  }
+}

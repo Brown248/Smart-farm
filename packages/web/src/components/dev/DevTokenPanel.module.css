@@ -1,0 +1,193 @@
+/*
+ * แผงเครื่องมือของนักพัฒนา — โผล่เฉพาะโหมด dev
+ * ตั้งใจให้หน้าตาต่างจาก UI จริงชัดเจน (โทนเทาเข้ม) เพื่อไม่ให้เผลอคิดว่าเป็นส่วนของแอป
+ */
+/* ปุ่มเล็กๆ discreet มุมล่างขวา (dev เท่านั้น) — เดิมเป็นป้าย "token: … · live: …" ที่ดูรก
+   ย่อเหลือไอคอนกลมจางๆ กดแล้วค่อยกางแผงดีบักเต็ม */
+.fab {
+  composes: tap from '@/styles/dashboard.module.css';
+  position: fixed;
+  right: 12px;
+  bottom: 12px;
+  z-index: 90;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border: 1px dashed #7a8a86;
+  border-radius: 50%;
+  background: rgba(24, 32, 28, 0.5);
+  color: #cfe0cf;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  opacity: 0.45;
+}
+
+.fab:hover,
+.fab:focus-visible {
+  opacity: 1;
+}
+
+.panel {
+  position: fixed;
+  right: 14px;
+  bottom: 14px;
+  z-index: 90;
+  width: min(360px, calc(100vw - 28px));
+  padding: 13px;
+  border: 1px dashed #7a8a86;
+  border-radius: 13px;
+  background: rgba(24, 32, 28, 0.96);
+  color: #dcead9;
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.7);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.title {
+  flex: 1;
+  font-size: 13.5px;
+}
+
+.close {
+  composes: tap from '@/styles/dashboard.module.css';
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: none;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.12);
+  color: #dcead9;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+}
+
+.hint {
+  margin: 7px 0 9px;
+  font-size: var(--fs-min);
+  line-height: 1.5;
+  color: #9fb3a9;
+}
+
+.input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border: 1px solid #46534d;
+  border-radius: 9px;
+  background: #101713;
+  color: #dcead9;
+  font-family: var(--font-num);
+  font-size: 13px;
+  resize: vertical;
+}
+
+.input:focus-visible {
+  outline: 2px solid var(--brand-green);
+  outline-offset: 1px;
+}
+
+.actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 9px;
+}
+
+.clear {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  padding: 9px 13px;
+  border: 1px solid #46534d;
+  border-radius: 9px;
+  background: transparent;
+  color: #9fb3a9;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  min-height: 38px;
+}
+
+.apply {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: 1;
+  padding: 9px 13px;
+  border: none;
+  border-radius: 9px;
+  background: var(--brand-green);
+  color: #fff;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  min-height: 38px;
+}
+
+.source {
+  margin-top: 9px;
+  font-size: var(--fs-min);
+  color: #9fb3a9;
+}
+
+/* ── รายงานผลค้นหาชื่อ key ── */
+.report {
+  margin-top: 10px;
+  padding-top: 9px;
+  border-top: 1px dashed #46534d;
+}
+
+.reportHead {
+  margin-bottom: 6px;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: #dcead9;
+}
+
+.row {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 0;
+  font-size: var(--fs-min);
+}
+
+.rowKey {
+  flex: none;
+  width: 52px;
+  color: #9fb3a9;
+}
+
+.rowOk {
+  font-family: var(--font-num);
+  color: #8fd3a8;
+}
+
+/* ยังไม่พบไม่ใช่ error — device อาจไม่มีเซนเซอร์ตัวนั้นจริงๆ จึงใช้โทนเทา ไม่ใช่แดง */
+.rowMiss {
+  color: #7f8f89;
+}
+
+.unmatched {
+  margin-top: 8px;
+  padding: 7px 8px;
+  border: 1px solid #6d5a2a;
+  border-radius: 8px;
+  background: rgba(120, 92, 24, 0.22);
+  font-size: var(--fs-min);
+  line-height: 1.5;
+  color: #e6d6a8;
+}
+
+.unmatchedList {
+  margin-top: 4px;
+  font-family: var(--font-num);
+  color: #dcead9;
+  word-break: break-all;
+}

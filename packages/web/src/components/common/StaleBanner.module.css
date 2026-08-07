@@ -1,0 +1,31 @@
+/* แถบเตือนค่าค้าง — สีอำพัน (เตือน ไม่ใช่วิกฤตแดง) · โผล่แบบไล่ลงมา (transform/opacity ตามกฎ) */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--d-warn-bg);
+  border: 1px solid rgba(185, 114, 15, 0.4);
+  border-radius: 13px;
+  padding: 11px 14px;
+  animation: staleIn 0.28s var(--ease-out) both;
+}
+
+@keyframes staleIn {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .banner {
+    animation-duration: 0.001s;
+  }
+}
+
+.text {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--d-warn-deep);
+  line-height: 1.45;
+}

@@ -1,0 +1,20 @@
+/* วงแหวนค่าเซนเซอร์ — arc ล้วน ไม่มีตัวเลขข้างใน
+   (หน่วย 13px ใส่ไม่ลงในวงใน ต้นแบบจึงวางไว้ข้างนอก) */
+.ring {
+  position: relative;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  background: conic-gradient(var(--fs-rc) 0 var(--fs-deg), var(--gauge-track) var(--fs-deg) 360deg);
+  box-shadow: inset 0 0 0 1px rgba(122, 80, 38, 0.28);
+  transition:
+    --fs-deg 0.9s ease,
+    --fs-rc 0.9s ease;
+}
+
+.face {
+  position: absolute;
+  inset: 6px;
+  border-radius: 50%;
+  background: var(--gauge-face);
+  box-shadow: inset 0 1px 3px rgba(122, 80, 38, 0.3);
+}

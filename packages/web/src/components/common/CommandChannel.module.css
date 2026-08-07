@@ -1,0 +1,37 @@
+/*
+ * ป้ายผลตอบกลับคำสั่งอุปกรณ์ — คู่กับหัวข้อ "อุปกรณ์" บนหน้าโรงเรือน
+ * โทนเดียวกับชิปสถานะอื่น: เขียว = สำเร็จ · แดง = ล้มเหลว
+ */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 9px;
+  border: 1px solid transparent;
+  font-size: var(--fs-min);
+  line-height: 1.2;
+}
+
+.ok {
+  background: var(--d-ok-bg);
+  border-color: rgba(47, 158, 110, 0.32);
+  color: var(--d-ok-ink);
+}
+
+.fail {
+  background: #fceeec;
+  border-color: rgba(192, 50, 45, 0.35);
+  color: #a8302b;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.detail {
+  font-size: var(--fs-min);
+  opacity: 0.85;
+}

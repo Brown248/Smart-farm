@@ -1,0 +1,1526 @@
+/* ═══ โครงหน้า ═══ */
+.shell {
+  display: flex;
+  min-height: 100vh;
+  background: var(--d-page-bg);
+  background-attachment: fixed;
+  color: var(--d-ink);
+  font-family: var(--font);
+}
+
+.main {
+  flex: 1;
+  min-width: 0;
+}
+
+.column {
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 14px 16px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+@media (max-width: 860px) {
+  .shell {
+    flex-direction: column-reverse;
+  }
+  .main {
+    padding-bottom: 84px;
+  }
+}
+
+/* ═══ หัวหน้า ═══ */
+.header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 4px 0 2px;
+}
+
+.title {
+  margin: 0;
+  font-size: clamp(19px, 4vw, 24px);
+  font-weight: 700;
+  letter-spacing: -0.3px;
+  color: var(--d-ink);
+  line-height: 1.1;
+}
+
+.farmName {
+  font-size: 13.5px;
+  color: var(--d-ink-4);
+  margin-top: 3px;
+}
+
+.grow {
+  flex: 1;
+}
+
+.langGroup {
+  display: flex;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  border-radius: 11px;
+  padding: 3px;
+}
+
+.langBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  padding: 7px 13px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--d-ink-4);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 34px;
+}
+
+.langBtnOn {
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.iconBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  color: var(--d-ink-2);
+}
+
+.iconBtn:hover {
+  background: var(--d-surface-2);
+}
+
+.badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
+  border-radius: 9px;
+  background: var(--d-crit);
+  color: #fff;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  display: grid;
+  place-items: center;
+  border: 2px solid #eef3ee;
+}
+
+/* ═══ แบนเนอร์วิกฤต ═══ */
+.banner {
+  display: flex;
+  align-items: center;
+  gap: 13px;
+  background: linear-gradient(100deg, #fbeedb, #f9e7c9);
+  border: 1px solid rgba(185, 114, 15, 0.4);
+  border-left: 5px solid var(--d-warn);
+  border-radius: 15px;
+  padding: 13px 15px;
+  box-shadow: 0 10px 26px -18px rgba(185, 114, 15, 0.7);
+  animation: sy-bannerin 0.3s ease both;
+}
+
+.bannerIcon {
+  width: 40px;
+  height: 40px;
+  flex: none;
+  border-radius: 12px;
+  background: rgba(185, 114, 15, 0.15);
+  display: grid;
+  place-items: center;
+}
+
+.bannerBody {
+  flex: 1;
+  min-width: 0;
+}
+
+.bannerTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-warn-deep);
+  line-height: 1.35;
+}
+
+.bannerSub {
+  font-size: 13.5px;
+  color: var(--d-warn-ink-2);
+  margin-top: 2px;
+}
+
+.bannerCta {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  padding: 9px 14px;
+  border-radius: 11px;
+  border: none;
+  background: var(--d-warn);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 14px -6px rgba(185, 114, 15, 0.8);
+  white-space: nowrap;
+  min-height: 38px;
+}
+
+.bannerCta:hover {
+  background: var(--d-warn-hover);
+}
+
+.bannerClose {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: rgba(185, 114, 15, 0.12);
+  color: var(--d-warn-deep);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+/* ═══ สิ่งที่ควรทำตอนนี้ ═══ */
+.actHead {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.actBadge {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  background: linear-gradient(150deg, #2f8a5f, var(--d-green-dark));
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px -8px rgba(30, 91, 62, 0.8);
+}
+
+.actCount {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: #fff;
+  background: var(--d-warn);
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+}
+
+.actList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* เป็น <button> ไม่ใช่ <a> (ปลายทางยังไม่ได้ทำ) จึงต้อง reset ค่า default ของปุ่ม
+   ให้หน้าตาเหมือนการ์ดในต้นแบบเป๊ะ */
+.actCard {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 13px;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  box-shadow: var(--d-card-shadow);
+}
+
+/* ลูกศรใน CTA ขยับตามตอนชี้ — บอกใบ้ว่ากดแล้วไปต่อ */
+.actCard .actCta svg {
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.actCard:hover .actCta svg {
+  transform: translateX(3px);
+}
+
+.actRank {
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: #fff;
+}
+
+.actIcon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.actText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.actTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+  line-height: 1.35;
+}
+
+.actWhy {
+  font-size: var(--fs-min);
+  color: var(--d-ink-4);
+  line-height: 1.4;
+}
+
+.actCta {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 7px 11px;
+  border-radius: 10px;
+  white-space: nowrap;
+}
+
+/* ═══ ภาพรวมฟาร์ม ═══ */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: 18px;
+  background: linear-gradient(150deg, var(--brand-green), #173f2c);
+  color: #eaf3ee;
+  padding: 20px;
+  box-shadow: 0 22px 48px -26px rgba(30, 91, 62, 0.9);
+}
+
+.heroBlob {
+  position: absolute;
+  top: -60px;
+  right: -40px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 70%);
+}
+
+.heroRow {
+  position: relative;
+  display: flex;
+  justify-content: space-between;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.heroLeft {
+  min-width: 200px;
+}
+
+.heroBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 5px 11px;
+  border-radius: var(--r-pill);
+  font-size: var(--fs-min);
+  font-weight: 600;
+}
+
+.heroScore {
+  display: flex;
+  align-items: flex-end;
+  gap: 9px;
+  margin-top: 14px;
+}
+
+.heroScoreNum {
+  font-size: 44px;
+  font-weight: 700;
+  line-height: 0.9;
+}
+
+.heroScoreUnit {
+  font-size: 20px;
+}
+
+.heroScoreLabel {
+  margin-bottom: 7px;
+  font-size: var(--fs-min);
+  color: #b8d4c4;
+}
+
+.heroZonesLabel {
+  font-size: 13.5px;
+  color: #b8d4c4;
+  margin-top: 12px;
+}
+
+.heroDots {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+/* ป้ายตัวอักษรโซน A–H — ขยายกล่องเล็กน้อยเพื่อให้ฟอนต์ถึง 13px ตามสเปกข้อ 11
+   (ของเดิม 10.5px เล็กกว่าเกณฑ์ขั้นต่ำ) */
+.heroDot {
+  position: relative;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  display: grid;
+  place-items: center;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: #eaf3ee;
+  font-family: var(--font-num);
+}
+
+.heroDotMark {
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+}
+
+.heroRight {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  flex-wrap: wrap;
+}
+
+.heroStats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px 24px;
+  align-content: flex-start;
+}
+
+.heroStatNum {
+  font-size: 26px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.heroStatLabel {
+  font-size: var(--fs-min);
+  color: #b8d4c4;
+  margin-top: 3px;
+}
+
+/* ═══ แถบสถานะโซน ═══ */
+.legendRow {
+  margin-left: auto;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: var(--fs-min);
+  color: var(--d-ink-4);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendSwatch {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--zone-color);
+  box-shadow: 0 0 0 3px var(--zone-bg);
+}
+
+.zoneGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(148px, 1fr));
+  gap: 10px;
+}
+
+/**
+ * การ์ดโซน — สีทั้งใบมาจาก --zone-color / --zone-bg ที่ component ส่งมาให้
+ * แถบสีซ้ายเป็นตัวบอกระดับหลัก (ภาษาเดียวกับการ์ดใน "สิ่งที่ควรทำตอนนี้")
+ * ส่วนขอบเป็นเส้นบางเท่ากันทุกใบ ไม่หนาบ้างบางบ้างแบบเดิม
+ */
+.zoneCard {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 12px 13px 13px 16px;
+  border: 1px solid var(--d-line);
+  border-radius: 15px;
+  overflow: hidden;
+  text-align: left;
+  text-decoration: none;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  background: var(--d-surface);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    var(--d-card-shadow);
+  transition:
+    transform 0.18s cubic-bezier(0.2, 0.9, 0.3, 1),
+    box-shadow 0.18s ease,
+    border-color 0.18s ease;
+}
+
+/* แถบสีซ้าย — ขยายด้วย scaleX ไม่ใช่ width (width trigger layout ทุกเฟรม) */
+.zoneCard::before {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 5px;
+  transform: scaleX(0.55);
+  transform-origin: left center;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--zone-color) 80%, white),
+    var(--zone-color)
+  );
+  transition: transform 0.18s ease;
+}
+
+/* โซนที่ต้องดู (เตือน/วิกฤต) ย้อมพื้นอ่อนๆ ให้สะดุดตาโดยไม่ต้องตีกรอบหนา */
+.zoneCardAlert {
+  background: linear-gradient(180deg, var(--zone-bg), var(--d-surface) 62%);
+}
+
+.zoneCard:hover {
+  transform: translateY(-3px);
+  border-color: color-mix(in srgb, var(--zone-color) 45%, var(--d-line));
+  box-shadow:
+    0 2px 4px rgba(28, 38, 33, 0.06),
+    0 16px 26px -18px rgba(28, 38, 33, 0.45);
+}
+
+.zoneCard:hover::before {
+  transform: scaleX(1);
+}
+
+.zoneCard:focus-visible {
+  outline: none;
+  border-color: var(--zone-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zone-color) 30%, transparent);
+}
+
+.zoneCard:active {
+  transform: translateY(-1px);
+}
+
+.zoneTop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.zoneCropWrap {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  background: var(--zone-bg);
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--zone-color) 24%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+/* ชื่อโซนกับชนิดพืชซ้อนกันเป็นคอลัมน์ ทำให้ตัวเลข % มีที่หายใจ */
+.zoneHead {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 1px;
+}
+
+.zoneName {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+  line-height: 1.2;
+}
+
+.zoneCrop {
+  font-size: var(--fs-min);
+  color: var(--d-ink-4);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.zoneMoist {
+  margin-left: auto;
+  align-self: flex-start;
+  font-size: 21px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.4px;
+  color: var(--zone-color);
+}
+
+.zoneMoistUnit {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  margin-left: 1px;
+  opacity: 0.72;
+}
+
+/* ── แถบความชื้น ── */
+.zoneBar {
+  display: block;
+  height: 7px;
+  border-radius: var(--r-pill);
+  background: var(--d-surface-3);
+  box-shadow: inset 0 1px 2px rgba(28, 38, 33, 0.08);
+  overflow: hidden;
+}
+
+.zoneBarFill {
+  display: block;
+  height: 100%;
+  width: var(--zone-fill, 0%);
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--zone-color) 62%, white),
+    var(--zone-color)
+  );
+  transform-origin: left center;
+  /* กางออกตอนเข้าหน้า — reduced-motion ปิดให้เองที่ keyframes.css แล้วแถบจะเต็มค่าจริงทันที */
+  animation: sy-zonefill 0.85s cubic-bezier(0.2, 0.9, 0.3, 1) both;
+}
+
+.zoneTag {
+  align-self: flex-start;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: var(--r-pill);
+  color: var(--zone-color);
+  background: var(--zone-bg);
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--zone-color) 18%, transparent);
+}
+
+/* ═══ การ์ดเซนเซอร์ ═══ */
+.sectionHead {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 2px 0 10px;
+}
+
+.bento {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+}
+
+@media (min-width: 700px) {
+  .bento {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1000px) {
+  .bento {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.senCard {
+  border-radius: 17px;
+  padding: 15px 15px 16px;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  /* ไฮไลต์บางๆ ที่ขอบบน + เงานุ่ม ทำให้การ์ดดูมีมิติ ไม่แบน */
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.75),
+    var(--d-card-shadow);
+}
+
+.senTop {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.senIconWrap {
+  width: 34px;
+  height: 34px;
+  border-radius: 11px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+.senLabel {
+  font-size: 14px;
+  color: var(--d-ink-2);
+  font-weight: 600;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.senThBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  color: var(--d-muted);
+  flex: none;
+}
+
+.senThBtn:hover {
+  background: var(--d-surface-2);
+  color: var(--brand-green);
+}
+
+.senStatusDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.stalePill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  align-self: flex-start;
+  background: var(--d-warn-bg);
+  border: 1px solid rgba(185, 114, 15, 0.35);
+  color: var(--d-warn-ink);
+  padding: 3px 8px;
+  border-radius: 7px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+/*
+ * ป้ายบอกที่มาของเลขบนการ์ด — โผล่เฉพาะตอนบางใบเป็นค่าจริงบางใบยังจำลอง
+ * โครงเดียวกับ `.stalePill` แต่ไม่ใช้สีเตือน เพราะนี่เป็นข้อมูล ไม่ใช่ปัญหา
+ */
+.senSrc {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  padding: 2px 7px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  margin-top: 4px;
+}
+
+.senSrcLive {
+  background: var(--d-ok-bg);
+  border-color: rgba(47, 158, 110, 0.32);
+  color: var(--d-ok-ink);
+}
+
+/* เส้นประ = "ยังไม่ได้ต่อของจริง" ภาษาเดียวกับป้ายข้อมูลจำลองบน header */
+.senSrcSim {
+  background: var(--d-surface-3);
+  border-style: dashed;
+  border-color: var(--d-line-dash);
+  color: var(--d-ink-3);
+}
+
+.senBody {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.senValues {
+  flex: 1;
+  min-width: 0;
+}
+
+.senValueRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.senValue {
+  font-size: 32px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.6px;
+  color: var(--d-ink);
+}
+
+.senUnit {
+  margin-bottom: 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--d-muted);
+}
+
+.senSecond {
+  margin-bottom: 3px;
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.senChip {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 3px 11px;
+  border-radius: 999px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.04);
+}
+
+/* บรรทัด "ต้องทำอะไร" — ทุกการ์ดต้องมี */
+.senAdvice {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 7px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  line-height: 1.35;
+}
+
+.senAdviceDot {
+  width: 6px;
+  height: 6px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.senRetryRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(185, 114, 15, 0.35);
+}
+
+.senRetryText {
+  font-size: var(--fs-min);
+  color: var(--d-warn-ink);
+  flex: 1;
+}
+
+.senRetryBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 6px 11px;
+  border-radius: 9px;
+  border: none;
+  background: var(--d-warn);
+  color: #fff;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  flex: none;
+  min-height: 32px;
+}
+
+.senRetryBtn:hover {
+  background: var(--d-warn-hover);
+}
+
+.skelRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.skelStack {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 11px;
+}
+
+/* ═══ กราฟประวัติ ═══ */
+.chartHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chartActions {
+  display: flex;
+  gap: 7px;
+}
+
+.chartBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-ink-2);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 36px;
+}
+
+.chartBtn:hover {
+  background: var(--d-surface-2);
+}
+
+.chartBtnOn {
+  border-color: var(--brand-green);
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.tabRow {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+}
+
+.tab {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-ink-3);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  min-height: 36px;
+}
+
+.tabOn {
+  border-color: var(--brand-green);
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.tabDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.axisRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+}
+
+.segGroup {
+  display: flex;
+  gap: 3px;
+  background: var(--d-surface-3);
+  border-radius: 10px;
+  padding: 3px;
+  flex: none;
+}
+
+.segBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  padding: 6px 12px;
+  border-radius: 7px;
+  border: none;
+  background: transparent;
+  color: var(--d-muted);
+  font-size: var(--fs-min);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  min-height: 32px;
+}
+
+.segBtnOn {
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.rangeBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  padding: 6px 13px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--d-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 32px;
+}
+
+.rangeBtnOn {
+  background: var(--d-surface);
+  color: var(--d-ink);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.bandKey {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  flex: none;
+  margin-left: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.bandSwatch {
+  width: 16px;
+  height: 10px;
+  border-radius: 3px;
+  background: rgba(47, 158, 110, 0.16);
+  border: 1px solid rgba(47, 158, 110, 0.35);
+}
+
+.chartValueRow {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.chartValue {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.chartCanvas {
+  position: relative;
+  background: linear-gradient(180deg, #f6f9f5, #fff);
+  border-radius: 14px;
+  padding: 6px 4px;
+}
+
+.chartLegend {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 2px 6px;
+}
+
+.legendLine {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.legendStroke {
+  width: 14px;
+  height: 3px;
+  border-radius: 2px;
+}
+
+.chartFoot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.compareKey {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.comparePanel {
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-line);
+  border-radius: 13px;
+  padding: 12px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  animation: sy-fade 0.2s ease;
+}
+
+.compareInsight {
+  display: flex;
+  gap: 7px;
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+  line-height: 1.5;
+}
+
+/* ═══ ทางลัด ═══ */
+.quickGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.quickCard {
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  color: #eaf3ee;
+  transition: transform 0.16s ease;
+}
+
+.quickCard:hover {
+  transform: translateY(-2px);
+}
+
+.quickIrrigation {
+  background: linear-gradient(150deg, var(--brand-green), #1a4f37);
+  box-shadow: 0 16px 38px -22px rgba(30, 91, 62, 0.8);
+}
+
+.quickGreenhouse {
+  background: linear-gradient(150deg, #2f8f8a, #1f5f5b);
+  box-shadow: 0 16px 38px -22px rgba(31, 95, 91, 0.8);
+}
+
+.quickBlob {
+  position: absolute;
+  top: -40px;
+  right: -30px;
+  width: 150px;
+  height: 150px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.1), transparent 70%);
+}
+
+.quickHead {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.quickIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.quickTitle {
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.quickSub {
+  font-size: 13.5px;
+  color: #b8d4c4;
+}
+
+.quickStats {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-top: 2px;
+}
+
+.quickStat {
+  display: flex;
+  flex-direction: column;
+  line-height: 1;
+}
+
+.quickStatNum {
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.quickStatLabel {
+  font-size: var(--fs-min);
+  color: #b8d4c4;
+  margin-top: 4px;
+}
+
+.quickDivider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.quickOpen {
+  margin-left: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.14);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  padding: 8px 13px;
+  border-radius: 11px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.soonCard {
+  border-style: dashed;
+  border-color: var(--d-line-dash);
+  border-radius: 16px;
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  opacity: 0.9;
+}
+
+.soonIcon {
+  width: 44px;
+  height: 44px;
+  border-radius: 13px;
+  background: var(--d-surface-3);
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.soonTag {
+  align-self: flex-start;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-muted);
+  background: var(--d-surface-3);
+  padding: 5px 11px;
+  border-radius: 8px;
+}
+
+/* ═══ สรุปประจำวัน ═══ */
+.daily {
+  background: linear-gradient(135deg, #e3ede5, #dce9de);
+  border: 1px solid #d3ded6;
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.dailyIcon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  background: var(--brand-green);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 8px 18px -8px rgba(39, 113, 80, 0.7);
+}
+
+.dailyHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.dailyDate {
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.dailySeg {
+  margin-left: auto;
+  display: flex;
+  gap: 3px;
+  background: var(--d-line-2);
+  border-radius: 9px;
+  padding: 3px;
+}
+
+.dailyBody {
+  margin: 10px 0 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: #2f4038;
+}
+
+.dailyChips {
+  display: flex;
+  gap: 8px;
+  margin-top: 11px;
+  flex-wrap: wrap;
+}
+
+.dailyChip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 10px;
+  border-radius: 9px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+}
+
+.dailyChipDot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+}
+
+/* ═══ สมุดบันทึก ═══ */
+.logHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logAddBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 11px;
+  border: none;
+  background: var(--brand-green);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 6px 14px -8px rgba(39, 113, 80, 0.8);
+  min-height: 38px;
+}
+
+.logAddBtn:hover {
+  background: var(--d-green-dark);
+}
+
+.logList {
+  display: flex;
+  flex-direction: column;
+}
+
+.logRow {
+  display: flex;
+  gap: 12px;
+}
+
+.logRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.logIconWrap {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+}
+
+.logLine {
+  flex: 1;
+  width: 2px;
+  background: var(--d-line-2);
+  margin: 3px 0;
+}
+
+.logBody {
+  flex: 1;
+  padding-bottom: 16px;
+  min-width: 0;
+}
+
+.logMetaRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.logCatTag {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 7px;
+}
+
+.logMeta {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.logTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  margin-top: 4px;
+  line-height: 1.4;
+}
+
+.logPhoto {
+  margin-top: 7px;
+  width: 56px;
+  height: 56px;
+  border-radius: 10px;
+  background: repeating-linear-gradient(45deg, #edf1ed, #edf1ed 6px, #e3e9e3 6px, #e3e9e3 12px);
+  border: 1px solid var(--d-line);
+  display: grid;
+  place-items: center;
+}
+
+/* หน้าจอว่างของสมุดบันทึก — เห็นได้เมื่อกรองหมวดที่ยังไม่มีรายการ */
+.logEmpty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 11px;
+  padding: 30px 16px;
+  text-align: center;
+}
+
+.logEmptyIcon {
+  width: 64px;
+  height: 64px;
+  border-radius: 20px;
+  background: linear-gradient(150deg, #edf2ec, #e1eae0);
+  display: grid;
+  place-items: center;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+.logEmptyTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.logEmptyBody {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  line-height: 1.6;
+  max-width: 34ch;
+}
+
+.logEmptyCta {
+  composes: tap from '@/styles/dashboard.module.css';
+  margin-top: 2px;
+  padding: 9px 15px;
+  border-radius: 11px;
+  border: 1px solid var(--brand-green);
+  background: var(--d-surface);
+  color: var(--brand-green);
+  font-size: var(--fs-min);
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 40px;
+}
+
+.logViewAll {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 11px;
+  border-radius: 12px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--brand-green);
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 44px;
+}
+
+.logViewAll:hover {
+  background: #f1f7f3;
+}

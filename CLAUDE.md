@@ -1,0 +1,367 @@
+# CLAUDE.md
+
+คู่มือทำงานกับ repo นี้ · อ่านให้จบก่อนแก้อะไร
+
+**Syntech Smart Farm** — ระบบมอนิเตอร์และควบคุมโรงเรือนปลูกผัก โรงเรือน A1
+คนใช้คือเกษตรกร/ผู้ดูแลโรงเรือน ใช้บนแท็บเล็ตแนวนอนเป็นหลัก ภาษาไทยเป็นหลัก
+
+> 🤖 **ทีม agent:** repo นี้มีทีม subagent ใน `.claude/agents/` (architect · explorer · coder · reviewer · tester)
+> งานที่ไม่เล็กให้กระจายให้ทีมแทนทำเดี่ยว · ทุกตัวอ่านไฟล์นี้ก่อนเสมอ
+
+---
+
+## กฎเหล็ก 10 ข้อ — ห้ามละเมิด
+
+1. **อิงดีไซน์จากต้นแบบใน `docs/reference/*.dc.html` เท่านั้น ห้ามออกแบบใหม่เอง**
+   ถ้าเอกสารสเปกขัดกับไฟล์ต้นแบบ → **ยึดไฟล์ต้นแบบ**
+   ถ้าจำเป็นต้องเบี่ยง ให้บันทึกเหตุผลใน `docs/DESIGN_SOURCE.md` ทุกครั้ง
+2. **ห้ามลดขั้นตอนความปลอดภัย** — `confirm` → `pending` (+ disable ปุ่ม) → `settle`
+   บวก offline / guard / estop และต้องแยก "ส่งคำสั่งแล้ว" ออกจาก "อุปกรณ์ยืนยันแล้ว"
+3. **ห้ามมีปุ่มหลอก** ทุกปุ่มต้องมี handler ที่ทำอะไรจริง
+   ปลายทางยังไม่มี → ขึ้น toast `soonToast` ไม่ใช่พาไปหน้าเปล่า
+4. **ช่องกรอกต้องแก้ได้จริง** ห้ามทำเป็นข้อความตายแล้วบอกว่าแก้ได้
+5. **ปุ่มคนละหน้าที่ห้ามผูกคำสั่งเดียวกัน** — `save` ≠ `close` · `acknowledge` ≠ `close`
+6. **ห้ามใช้ `localStorage` / `sessionStorage`** — React state เท่านั้น (มีเทสจับ)
+   **ข้อยกเว้นเดียวที่อนุมัติแล้ว:** session ของ Supabase auth ใช้คีย์ `AUTH_STORAGE_KEY`
+   (ไม่งั้น refresh หน้าแล้วต้องล็อกอินใหม่ทุกครั้ง) `ironRules.test.tsx` ยอมเฉพาะคีย์นี้
+   **ห้ามขยายข้อยกเว้นไปให้ค่าอื่น** — ภาษา · การพับเมนู · เกณฑ์ ยังห้ามเก็บลง storage
+7. **TH/EN ต้องมีคีย์ครบเท่ากันเสมอ** และ **คีย์ฉากเกม 168 ตัวห้ามหาย**
+8. **ห้ามแตะค่าที่คาลิเบรตแล้ว** — `ZONE_GEOMETRY` `BULBS` `STEAM` `FAN_POSITIONS` `SCENE_AR`
+   (วัดเทียบ `greenhouse-scene.jpg` 1760×1097 มาแล้ว · `ZONE_GEOMETRY`/`BULBS`/`STEAM`/`SCENE_AR`
+   ล็อกด้วย `data/zones.test.ts` — **หมายเหตุ:** `FAN_POSITIONS` จริงๆ ยังไม่มีเทสยืนยัน อย่าเข้าใจผิดว่าล็อก)
+   `FAN_POSITIONS` ตอนนี้เหลือพัดลมเล็กตัวเดียว (`sml1`) หลังเจ้าของงานลด 2→1 ตัว (ดู DESIGN_SOURCE.md)
+   `MAX_CROP` เคยอยู่ในรายการนี้ ตอนนี้เป็น **1.45** (ต้นแบบ 1.24) เจ้าของงานอนุมัติให้ขยายแล้ว
+   จะแก้อีกต้องเช็กว่าหลอดไฟ (y 14.5%) กับหมุดโซนล่างสุด (y 77%) ยังอยู่ในจอ — มีเทสคุมไว้
+9. **ห้ามใช้ Three.js / WebGL / GSAP / chart library** — ฉากและกราฟเป็น CSS + SVG ล้วน
+10. **ห้าม hardcode token/credential** อ่านจาก env เท่านั้น
+
+เพิ่มเติม: ฟอนต์ **≥ 13px** (`--fs-min`) · ใช้เฉพาะ radius/shadow 3 ระดับที่มีใน `tokens.css` ·
+**ระบบปลูกผัก/โรงเรือนเท่านั้น** ไม่มีนาข้าว/AWD · **อุปกรณ์จริงมี 4 ตัว** (พัดลมใหญ่ 2 · เล็ก 1 · ปั๊ม 1) ห้ามเพิ่ม (เดิม 5 ตัว · เจ้าของงานลดพัดลมเล็กเป็น 1 · ดู DESIGN_SOURCE.md) ·
+**ไม่มีวาล์วรายโซน ไม่มีตัวควบคุมรายโซน** (ยืนยันกับเจ้าของงานแล้ว · ตัดออกหมดแล้ว อย่าเอากลับ)
+**รดน้ำเป็นคำสั่งของทั้งโรงเรือน ปุ่มเดียว** — ห้ามทำปุ่มรดน้ำ/โหมด/ตารางเวลารายแปลงอีก ·
+ปั๊มออฟไลน์ = สั่งรดน้ำไม่ได้ทั้งฟาร์ม · **ห้ามใส่ตัวเลือกให้ผู้ใช้ตั้ง "รดกี่นาที"** (แต่มี auto-cutoff 20 นาทีของระบบเป็น safety ได้ · เป็นค่าตายตัว ไม่ใช่ตัวเลือกผู้ใช้) ·
+ฝนตกข้างนอก **ไม่กระทบการรดน้ำ** (โรงเรือนปิด) ฝนโยงกับความชื้น → เปิดพัดลม
+
+---
+
+## ก่อนบอกว่าเสร็จ ต้องรันให้ผ่านทั้งหมด
+
+```bash
+npm run verify    # tsc --noEmit + eslint + vitest
+npm run build     # typecheck + production build
+```
+
+ห้ามบอกว่าเสร็จถ้ายังไม่ได้รัน ห้ามเดาว่าน่าจะผ่าน
+
+---
+
+## โครงสร้าง
+
+```
+packages/shared    type + เกณฑ์ที่ใช้ร่วมกัน (payload ของ WebSocket · guard · threshold)
+packages/web       เว็บแอป (Vite + React 18 + TypeScript strict)
+docs/reference     ไฟล์ต้นแบบ .dc.html — แหล่งอ้างอิงดีไซน์
+docs/DESIGN_SOURCE.md   บันทึกทุกจุดที่เบี่ยงจากต้นแบบ พร้อมเหตุผล
+docs/MIGRATION.md       สถานะแต่ละเฟส + เช็กลิสต์ตอนกู้หน้าจาก backup
+```
+
+**4 หน้าที่ใช้งานได้**
+
+| หน้า           | เส้นทาง       | ไฟล์หลัก                         |
+| -------------- | ------------- | -------------------------------- |
+| ฉากฟาร์มเกม    | `/`           | `components/scene/FarmScene.tsx` |
+| แดชบอร์ด       | `/dashboard`  | `pages/DashboardPage.tsx`        |
+| ระบบชลประทาน   | `/irrigation` | `pages/IrrigationPage.tsx`       |
+| ควบคุมโรงเรือน | `/greenhouse` | `pages/GreenhousePage.tsx`       |
+
+"รายงาน" กับ "ตั้งค่า" **ยังไม่มีต้นแบบ** — คงเป็น toast ไว้ อย่าเพิ่งสร้างเอง
+"ปฏิทินดูแล" (เฟส 6) **ยกเลิกแล้ว** ถอดออกจากระบบหมดแล้ว อย่าเอากลับ
+
+---
+
+## สถาปัตยกรรม state — จุดที่สำคัญที่สุด
+
+### `state/FarmStateProvider.tsx` คือแหล่งข้อมูลเดียวของทั้งระบบ
+
+เก็บ: `climate` · `zones` (8 โซน soil+status) · `devices` (4 ตัว) · `modes` · `estop` · `tank` · `log` · `thresholds`
+
+**8 โซนคือชุดเดียวกันทุกหน้า** — ฉากเกมใช้ `zoneId` (`kale`, `tomato`, …)
+หน้าชลประทานใช้ตัวอักษร A–H แต่ผูกกลับด้วย `IrrZone.zoneId`
+สั่งรดน้ำที่หน้าไหนก็ต้องเห็นตรงกันทุกหน้า — ห้ามเก็บ `wateringOverride` แยกอีก
+
+**`watering` เป็น derived state ห้ามทำให้เป็น state จริง**
+
+```ts
+const watering = pump ? deviceRunning(pump) : false; // ปั๊มเดิน = รดน้ำ
+const zones = watering ? base.map((z) => ({ ...z, status: 'watering' })) : base;
+```
+
+ปั๊มมีตัวเดียวและไม่มีวาล์วแยกแปลง เปิดทีเดียวน้ำไปครบ 8 แปลง
+จึงไม่มี `setZoneStatus()` ให้เรียกแล้ว — **สั่งงานได้ทางเดียวคือ `useDeviceCommand().waterAll()`**
+ซึ่งไล่ guard ชุดเดียวกับ `press('pump')` ถ้าเลี่ยงไปเขียน `setDevices` เองจะข้าม G1
+
+**ทุกหน้าต้องอ่านจากที่นี่ ห้ามหน้าไหนเก็บสำเนาของตัวเอง**
+
+เคยเป็นบั๊กใหญ่มาแล้ว: แต่ละหน้าเก็บ state เอง → ปั๊มเปิดที่ฉากเกมแต่ปิดที่หน้าโรงเรือน ·
+Emergency Stop มีเจ้าของ 3 ที่ กดที่หน้าหนึ่งอีกหน้าไม่รู้ · อุณหภูมิเป็นคนละค่า 3 ค่า
+ทำให้ **กฎความปลอดภัยข้อเดียวกันตัดสินต่างกันตามหน้าที่เปิดอยู่**
+
+ล็อกไว้ด้วย `state/crossPage.test.tsx` — ถ้าจะเพิ่ม state ที่เป็นของ "ฟาร์ม" ให้ใส่ใน provider
+
+```
+App
+└─ I18nProvider → FarmStateProvider → RailStateProvider → BrowserRouter → AppRoutes
+```
+
+hook ที่ห่อ provider ไว้ (หน้าเพจเรียกตัวเหล่านี้ ไม่ต้องเรียก context ตรง):
+`useFarmSim()` · `useDeviceCommand()` · `useThresholds()` · `useLiveSensors()`
+
+### เฟส 5 (ต่อข้อมูลจริง) — **WebSocket ผ่าน backend ของทีม**
+
+**เว็บไม่คุยกับ ThingsBoard ตรง** — ต่อผ่าน backend ของทีมด้วย
+**Socket.IO v4** namespace `/telemetry` · ยึดสเปกจาก `WEBSOCKET_API.md` **ห้ามเดา field/event เอง**
+
+```
+config/liveData.ts        ประตูเดียวที่อ่าน env — ห้ามอ่าน import.meta.env ที่อื่น
+config/telemetryKeys.ts   จับคู่ชื่อ key ที่ device ยิงมา → ค่าที่หน้าจอใช้
+services/tokenProvider    ที่เดียวที่รู้เรื่อง access_token — ห้ามอ่าน token กระจาย
+services/supabaseAuth     แหล่งที่ 4 ของ token (ผู้ใช้ล็อกอินเอง) → ป้อนเข้า provider
+services/telemetrySocket  ตัวเชื่อม · ดึง token จาก provider · ต่อใหม่เมื่อ token เปลี่ยน
+hooks/useTelemetry        hook ที่ subscribe · unsubscribe+disconnect ตอน unmount
+state/FarmStateProvider   **ที่เดียวที่เรียก useTelemetry** — หน้าเพจอ่านผลจาก context
+shared/telemetrySocket    type ทุก payload ตามเอกสาร
+components/auth/          หน้าล็อกอิน + บัญชีท้ายแถบเมนู
+```
+
+**ห้ามเดาชื่อ telemetry key** — เอกสารเตือนว่าขอ key ที่สะกดไม่ตรงจะ**ไม่ error แต่ไม่มี event
+ส่งมาเลย** ซึ่งหน้าตาเหมือน device ตาย แยกไม่ออก แต่เอกสารก็บอกว่า
+**"ไม่ส่ง `keys` = รับทุก key ที่ device ยิงมา"** → provider จึง subscribe แบบไม่ส่ง `keys`
+แล้วให้ `config/telemetryKeys.ts` จับคู่จากชื่อที่ไหลมาจริง
+จับคู่ไม่ได้ = `console.warn` บอกชื่อจริง (เห็นแล้วไปเติม `CLIMATE_KEY_RULES`/`SOIL_ALIASES`)
+หน่วยไม่ตรงก็เตือน **ไม่แปลงให้เอง** — แปลงเงียบๆ คือเดาแทนผู้ใช้ ให้ตั้ง `scale` ในกฎ
+
+**ห้ามให้เลขจำลองปนกับของจริงเงียบๆ** — ต่อติดไม่เท่ากับได้ค่าครบ
+`live.fields` บอกว่าค่าไหนจริง · ป้ายบน header บอกสัดส่วน (`ค่าจริง 2/5`) ·
+การ์ดติดป้าย `ค่าจริง`/`จำลอง` รายใบตอนมีของจริงบางส่วน ·
+เส้นแนวโน้มใช้ `live.trail` (8 จุดล่าสุดของจริง) ไม่ใช่ตัวเลขฝังไว้ ·
+เซนเซอร์ที่ยิงค่ามาจริงต้องเลิกถูกเรียกว่า "ค่าค้าง" (ปุ่มลองอ่านใหม่ต้องหาย)
+
+**server ตัดเอง ≠ กำลังต่อใหม่** — token ผิดจะได้ `error` แล้ว `disconnect: io server disconnect`
+socket.io ไม่ต่อกลับให้ ถ้าโชว์ "กำลังเชื่อมต่อใหม่…" ผู้ใช้จะรอเก้อตลอดกาล
+และต้องโชว์เหตุผลจาก server ด้วย ("Invalid authentication token" บอกให้ล็อกอินใหม่)
+
+**token มาได้ 4 ทาง ทุกทางจบที่ `tokenProvider` ตัวเดียว** — URL `?access_token=` (ลบออกจาก
+address bar ทันที) · `postMessage` (ตรวจ origin ทุกครั้ง · ไม่ตั้ง origin = ไม่รับ) ·
+กรอกเองโหมด dev (ไม่ติดไป production · มีเทสตรวจ) · **Supabase ที่ผู้ใช้ล็อกอินเอง ← ใช้จริงตอนนี้**
+
+**ไม่บังคับล็อกอินก่อนใช้แอป** — ไม่ล็อกอินก็ดูข้อมูลจำลองได้ ป้ายบน header บอกว่า "ข้อมูลจำลอง"
+
+**3 จุดที่พลาดง่ายในสเปก** (มีเทสคุมทั้งสามข้อ)
+
+1. subscribe ตอน `connected` **ไม่ใช่** `connect` — ยิงก่อน auth ผ่านจะถูกตัดทิ้ง
+2. `TOKEN_EXPIRED` → subscribe ใหม่เฉยๆ ระบบ refresh ให้เอง ไม่ต้องโชว์ error
+3. **unsubscribe ต้องมาก่อน disconnect** ไม่งั้น backend เปิด WS ไป TB ค้างไว้โดยไม่มีใครฟัง
+
+**token เปลี่ยน = ต่อ socket ใหม่** ไม่ใช่แค่ subscribe ใหม่ (`auth` ส่งตอน handshake เท่านั้น)
+
+**token หมดอายุ (60 นาที) → พยายามต่ออายุ · กู้ไม่ได้ก็พากลับไปหน้าล็อกอิน**
+socket เจอ `Invalid authentication token` → `useTelemetry` เรียก `requestTokenRefresh()`
+
+> 🔴 **ข้อจำกัดของ backend นี้: `refreshSession()` ไม่ต่ออายุจริง** (ยืนยันด้วยการทดสอบ —
+> คืน token เดิม exp เดิม · setup พิเศษ custom token hook · refresh_token สั้น 12 ตัว)
+> ดังนั้น token **หมดอายุ 60 นาทีแบบตายตัว ต่ออายุไม่ได้ ต้องล็อกอินใหม่**
+> `refreshSupabaseSession()` จึงเช็ก `exp` ถ้าต่ออายุแล้วยังหมดอายุ → `signOut()` + ล้าง token
+> → แอปกลับไปสถานะ "ล็อกอินเพื่อดูข้อมูลจริง" (มีปุ่ม) แทนค้างที่ "Invalid authentication token"
+>
+> **ทางแก้จริงอยู่ที่ทีม backend** — เพิ่ม JWT expiry (Supabase Auth settings) หรือทำ refresh ให้ต่ออายุได้
+
+กันเหนียว: `MAX_AUTH_RETRIES` กัน loop · visibilitychange ต่ออายุตอนกลับมาเปิดแท็บ (ถ้าต่อได้)
+
+`readLiveDataConfig()` คืน `null` เมื่อ env ไม่ครบ → ใช้ข้อมูลจำลองต่อ ป้ายบน header ขึ้น
+"ข้อมูลจำลอง" **ห้ามลบ `data/mock*.ts`** จนต่อจริงได้ครบและยืนยันแล้ว
+
+ค่าที่ได้จาก socket เป็น **string ทุกตัว** (`"25.4"` `"true"`) ใช้ `telemetryNumber()`/`telemetryBoolean()`
+
+รายละเอียด + สิ่งที่ยังรอ อยู่ใน `docs/MIGRATION.md` เฟส 5
+
+---
+
+## ตรรกะความปลอดภัย
+
+`lib/guards.ts` เป็นแหล่งเดียวของกฎกันคำสั่ง — **ทุกหน้าที่สั่งอุปกรณ์ต้องใช้ตัวนี้**
+
+- ~~**G1** ปั๊มเปิดได้เมื่อถังน้ำ > 20%~~ **ถอดออกแล้ว** — ถังเป็นค่า mock ไม่มีเซนเซอร์จริง guard เลยกันไม่ได้จริง
+  เจ้าของงานสั่งแทนด้วย: (ก) ข้อความยืนยัน "เช็คน้ำก่อนเปิดปั๊ม" (`confirmPumpBody`) (ข) **auto-cutoff ปั๊ม 20 นาที**
+  (`PUMP_CUTOFF_MS` ใน `useDeviceCommand`) ปิดเองถ้าเปิดค้าง — ดู `docs/DESIGN_SOURCE.md`
+- **G2** ห้ามปิดพัดลมใบใหญ่ตัวสุดท้ายขณะอุณหภูมิ > 33°C (`BIG_FAN_LOCK_TEMP`) — ยังบังคับใช้
+
+### ห้ามหน้าไหนเขียนห่วงโซ่คำสั่งเอง — เรียก `useDeviceCommand` เท่านั้น
+
+หน้าควบคุมโรงเรือนเคยเขียน `runCommand`/`toggleDevice` ของตัวเอง แล้วเช็คแค่ G2 ตอนปิดพัดลม
+การ **เปิด** อุปกรณ์ไม่เคยเรียก `guard()` เลย → **เปิดปั๊มได้ทั้งที่ถังน้ำต่ำกว่า 20% เฉพาะหน้านั้น**
+`safetyParity.test.ts` ผ่านตลอดเพราะทดสอบ `guards.ts` แบบแยกส่วน ฟังก์ชันมันถูก — ที่ผิดคือไม่มีใครเรียก
+
+`pages/guardEnforcement.test.tsx` จึง **กดปุ่มจริงบนหน้าจริง** โดย mock ถังให้ต่ำ
+ถ้ามีหน้าไหนแอบเขียน chain ของตัวเองอีกจะ fail ทันที — **เพิ่มหน้าที่สั่งอุปกรณ์ ต้องเพิ่มเข้าเทสนี้**
+
+หยุดฉุกเฉินอยู่ที่ `hooks/useEstop.ts` ตัวเดียว · ปุ่มอยู่ใน `AppRail` (sticky เห็นตลอด)
+ฉากเกมใช้ FAB ของตัวเองแต่เรียก hook เดียวกัน · **สั่งหยุด = กดเดียวติด · ปลดล็อก = ต้องยืนยัน**
+
+### สั่งอุปกรณ์จริง (HandySense) — เปิดเมื่อ `realControl` (ต่อจริง + login · status 'live')
+
+ทีม backend ให้ `frontend-integration-guide.md` มา · โครงสร้าง: `shared/handysense.ts` (สัญญาคำสั่ง) ·
+`lib/handysenseValidate.ts` (validation ครบตาม guide) · `services/handysenseControl.ts` (POST + reqId + tracker 15 วิ) ·
+`config/deviceAttributes.ts` (อ่าน `led`/เกณฑ์/timer จริง + derive mode) · `config/deviceChannels.ts` (**map channel**)
+
+- **map (แก้ที่ `deviceChannels.ts` ที่เดียว):** `ch0=big1(เดี่ยว) · ch1=big2(+เล็กพ่วง) · ch2=pump · ch3=solenoid(ไม่ใช้)`
+  🔴 map ผิด = สั่ง relay ผิดตัวโดยไม่มี error (จุดพลาดอันดับ 1 ของ guide) · เคยตั้งผิดเป็น `sml1=ch2 · pump=null` มาแล้ว
+- **พัดลมเล็ก (sml1) ต่อสายพ่วงกับใหญ่ #2 บน ch1 เดียวกัน** — ไม่มี relay แยก คุมแยกไม่ได้ (`BONDED_TO.sml1='big2'`)
+  UI ปิดปุ่ม sml1 + ป้าย "ทำงานตามพัดลมใหญ่ #2" · `bondedReject` กันตั้งเกณฑ์/ตารางแยก (จะทับ config ของ big2)
+  ⚠️ เดิมพ่วงผิดข้าง (`sml1=ch0 พ่วง big1`) → แอปโชว์ใบเล็ก "ปิด" ทั้งที่หมุนตามใหญ่#2 · เจ้าของงานยืนยันหน้างาน 2026-08-07 (led1=true → ใบใหญ่#2+เล็ก หมุนพร้อมกัน = 2 ตัว)
+- **ปั๊ม = ch2 (ต่อ relay จริงแล้ว)** — คุมได้จริง · คง confirm เช็คน้ำ + auto-cutoff 20 นาที · estop ปิด ch0-2 (รวมปั๊ม)
+- โหมดจริง: `useDeviceCommand.send()` → `sendReal` ยิงคำสั่งจริง · **`Device.on` มาจาก `led{channel}` จริง** (provider reconcile)
+  ไม่ใช่คำสั่งที่เพิ่งส่ง · โหมดจำลอง (ไม่ login) เหมือนเดิมทุกอย่าง · **`channel 3 = test เท่านั้น** ห้ามใน setSwitch**
+- **✅ smoke-test กับ backend จริงแล้ว** (setSwitch 6/6 · ยืนยัน mapping จริงกับพัดลม/ปั๊มในโรงเรือน · ดู `docs/MIGRATION.md`)
+
+---
+
+## i18n
+
+- `i18n/th.ts` · `en.ts` — ตอนนี้ **650 คีย์เท่ากันทั้งสองภาษา**
+- type `Dict` เป็น mapped type จาก `typeof TH` → **ลืมเติมคีย์ฝั่ง EN แล้ว compile ไม่ผ่าน**
+- 21 คีย์เป็นฟังก์ชันจัดรูปแบบ (เช่น `aCrit(zone, value)`) ไม่ใช่ string ล้วน
+  ใช้ `TextKey` เวลาต้องเก็บ "ชื่อคีย์" ไว้ในตาราง
+- `i18n/farmSceneKeys.ts` คือรายชื่อ 168 คีย์ของฉากเกม **ห้ามลบตัวใดตัวหนึ่ง**
+
+**วิธีเติมคีย์เยอะๆ:** ใช้ `tsc --noEmit` เป็นตัวชี้ว่าขาดคีย์ไหน แล้ววนเติมจนไม่มี error
+เร็วกว่าไล่หาเองมาก
+
+---
+
+## กับดักที่เคยพลาดมาแล้ว — อย่าให้ซ้ำ
+
+### 1. PowerShell ทำข้อความไทยพัง
+
+**ห้ามใช้ `Get-Content -Raw` แล้วเขียนกลับ** กับไฟล์ที่มีภาษาไทย
+Windows PowerShell 5.1 อ่าน UTF-8 เป็น ANSI แล้วเขียนกลับเป็น UTF-8 → กลายเป็น mojibake ทั้งไฟล์
+
+ใช้ Read/Edit/Write ของเครื่องมือ หรือสคริปต์ Node (`fs.readFileSync(p,'utf8')`) แทน
+การแตกไฟล์จาก zip ด้วย `ZipFileExtensions::ExtractToFile` ปลอดภัย (เขียน raw bytes)
+
+### 2. หา keyframe/CSS ที่ไม่ได้ใช้ ต้อง grep `.tsx` ด้วย
+
+`sy-draw` `sy-pulse` ถูกเรียกผ่าน **inline style** ใน `LineChart.tsx` / `Sparkline.tsx` / `SensorCard.tsx`
+เคยลบทิ้งเพราะ grep แต่ `.css` — **ไม่มี error ฟ้อง** animation แค่เงียบไปเฉยๆ
+
+### 2b. ย้าย CSS ข้ามไฟล์แล้วต้องเช็กว่าย้ายเกินไหม
+
+เคยย้ายบล็อกระบบน้ำจาก `IrrigationPage.module.css` → `GreenhousePage.module.css`
+แล้วบล็อก "แผนที่ฟาร์ม" 359 บรรทัดติดไปด้วย → **แผนที่ชลประทานแสดงแบบไม่มีสไตล์เลย**
+CSS Modules คืน `undefined` เงียบๆ เมื่อไม่มีคลาส `tsc` ไม่ฟ้อง
+
+**ตอนนี้ `styles/cssPairing.test.ts` จับให้แล้ว** — ทั้งสองทิศ:
+คลาสที่ `s.xxx` เรียกแต่ไม่มีใน css (สไตล์หาย) · คลาสที่ประกาศไว้แต่ไม่มีใครใช้ (ขยะค้าง)
+ไล่ตาม `import` จริง ไม่ใช่เดาจากชื่อไฟล์ — โมดูลหนึ่งถูกใช้จากหลายไฟล์ได้
+(`RuleNumberInput.tsx` ใช้ `AdvancedPanel.module.css`) และข้ามไฟล์ที่หยิบคลาสด้วยตัวแปร (`styles[variant]`)
+
+### 3. อย่าเชื่อผลสแกนอัตโนมัติโดยไม่ตรวจซ้ำ
+
+เคยเจอ false positive เพียบ: คำว่า `localStorage` ในคอมเมนต์ · `pinAnimation` ที่เป็นชื่อฟังก์ชัน ·
+`<button>` ที่มี `onClick` ผ่าน `{...rest}` หรืออยู่คนละบรรทัด
+**ตรวจทีละข้อก่อนรายงานว่าเป็นบั๊ก**
+
+### 4. import วน
+
+`routes.tsx` → pages → `ROUTES` ทำให้ค่าเป็น `undefined` ตอนโหลด
+เส้นทางอยู่ที่ **`routePaths.ts`** แยกไว้แล้ว อย่าย้ายกลับเข้า `routes.tsx`
+
+### 5. ชื่อ accessible ซ้ำในหน้าเดียว
+
+ทำให้ `getByRole` กำกวมและ screen reader แยกไม่ออก
+ปุ่มที่ข้อความเหมือนกันแต่คุมคนละอย่าง ต้องเติมบริบทใน `aria-label`
+(เช่น `"กราฟประวัติ — สัปดาห์"` · `"พัดลมใบใหญ่ #1 — อัตโนมัติ"`) **ข้อความที่ตาเห็นคงเดิม**
+
+### 6. input ตัวเลข
+
+ใช้ `components/common/NumberField.tsx` เท่านั้น — มี draft state ในตัว
+ถ้า clamp ทุก keystroke ผู้ใช้พิมพ์ `36` จะกลายเป็น `20` แล้ว `45` (เคยเป็นบั๊กมาแล้ว)
+
+### 7. SVG `preserveAspectRatio="none"`
+
+ยืดตัวหนังสือกับวงกลมผิดสัดส่วน กราฟใหญ่แก้แล้วโดยวัดความกว้างจริง (`hooks/useElementWidth.ts`)
+`id` ของ gradient ต้องมาจาก `useId()` ไม่ใช่จากค่าข้อมูล (ข้อมูลซ้ำ = id ซ้ำ = สีเพี้ยน)
+
+### 8. timer ต้องเคลียร์ตอน unmount
+
+เก็บ id ไว้ใน `useRef` แล้ว `clearTimeout` ใน cleanup ทุกครั้ง
+
+### 9. ห้ามใส่ side effect ใน updater ของ setState
+
+`setX((cur) => { cur.doSomething(); return null; })` **ผิด** — updater ต้องบริสุทธิ์
+`<StrictMode>` เรียกมันสองครั้งในโหมด dev → **คำสั่งถูกส่งสองรอบ**
+เคยเป็นบั๊กใน `useConfirm.accept()` มาแล้ว กดยืนยันหนเดียวแต่สั่งอุปกรณ์สองที
+ให้อ่านค่าจาก `useRef` แล้วสั่งงาน**นอก** updater — ดู `hooks/useConfirm.ts`
+
+> วิธีจับ: รันเทสแล้วมองหา `Warning: Cannot update a component ... while rendering`
+> ถ้าเจอ ให้ครอบ `console.error` เก็บ stack แล้วไล่ตาม — เร็วกว่านั่งเดา
+
+---
+
+## เทสที่คุมทั้งระบบ
+
+| ไฟล์                              | คุมอะไร                                                                  |
+| --------------------------------- | ------------------------------------------------------------------------ |
+| `state/crossPage.test.tsx`        | **4 หน้าใช้สถานะชุดเดียวกันจริง** (อุปกรณ์ · estop · อุณหภูมิ · เกณฑ์)   |
+| `lib/safetyParity.test.ts`        | กฎ G1/G2 เป็นชุดเดียวกัน (ระดับฟังก์ชัน)                                 |
+| `pages/guardEnforcement.test.tsx` | **หน้าจอจริงเรียก guard จริง** — กดปุ่มบนหน้าโดย mock ถังให้ต่ำ          |
+| `pages/navigation.test.tsx`       | ทุกหน้าเปิดตรงได้ · ไม่มีทางตัน · url มั่วเด้งกลับ · ปุ่มมีชื่อครบ       |
+| `pages/ironRules.test.tsx`        | ไม่แตะ Web Storage · reduced-motion ไม่ค้าง · input ไม่ readOnly         |
+| `pages/domAudit.test.tsx`         | id ซ้ำ · `<h1>` เกิน · ชื่อปุ่มซ้ำ · aria เพี้ยน · NaN บนหน้า · alt      |
+| `styles/motion.test.ts`           | ไม่ animate property ที่ trigger layout · ของกดได้มี focus ring ครบ      |
+| `styles/cssPairing.test.ts`       | คลาสที่ tsx เรียกมีอยู่จริง · ไม่มีคลาสค้างที่ไม่มีใครใช้ (กับดักข้อ 2b) |
+| `i18n/i18n.test.ts`               | TH/EN เท่ากัน · คีย์ฉากเกม 168 ตัวครบ                                    |
+| `data/zones.test.ts`              | ค่าคาลิเบรตไม่ถูกแก้                                                     |
+
+**แก้โค้ดแล้วเทสพัง = อ่านว่าเทสบอกอะไร** อย่าเพิ่งแก้เทสให้ผ่าน
+บางครั้งเทสพังคือหลักฐานว่าแก้ถูก (เช่น เพิ่ม guard แล้วปุ่มที่เคยกดได้ตอนนี้ถูกบล็อก) —
+กรณีนั้นค่อยอัปเดตเทสพร้อมคอมเมนต์บอกเหตุผล
+
+---
+
+## สไตล์โค้ด
+
+- TypeScript strict เต็ม + `noUncheckedIndexedAccess` + `exactOptionalPropertyTypes`
+  (prop ที่เป็น optional ต้องเขียน `| undefined` ให้ชัด)
+- CSS Modules + custom properties ใน `styles/tokens.css` — **ห้ามเขียน hex ซ้ำในโค้ด**
+- animate เฉพาะ `transform` / `opacity` (+ `box-shadow` / `background` / custom property)
+  **ห้าม animate `width`/`height`/`top`/`left`/`margin`/`padding`** เพราะ trigger layout
+  → บังคับด้วย `styles/motion.test.ts` (เคยพลาดมาแล้ว 3 ครั้ง)
+
+### ภาษาการเคลื่อนไหว — ใช้ตัวกลาง อย่าเขียน hover เองรายที่
+
+`styles/dashboard.module.css` มีคลาสกลางให้ `composes:` เข้าไป:
+
+| คลาส       | ใช้กับ                                                           |
+| ---------- | ---------------------------------------------------------------- |
+| `tap`      | ทุกอย่างที่กดได้ — hover ยก · active ยุบ · focus ring · disabled |
+| `lift`     | การ์ดที่ไม่ได้กดแต่ควรตอบสนองตอนชี้                              |
+| `ring`     | เอาแค่วงโฟกัส                                                    |
+| `morph`    | ของที่เปลี่ยนสี/สถานะแล้วควรค่อยๆ เปลี่ยน                        |
+| `riselist` | ลูกๆ ไล่ขึ้นมาทีละชิ้นตอนเข้าหน้า                                |
+
+ตัวแปรจังหวะ: `--dur` (0.22s) · `--dur-fast` (0.14s) · `--ease-out`
+**ทุกอย่างที่ `cursor: pointer` ต้องมี focus ring** — `motion.test.ts` จะ fail ถ้าลืม
+
+> ⚠️ `riselist` และ `AppRail.navItem` ใช้ `nth-child` กำหนดดีเลย์ — **เพิ่มรายการแล้วต้องเช็ก**
+> ว่ามี `nth-child(n+N)` รองรับตัวท้าย ไม่งั้นตัวใหม่จะเด้งขึ้นก่อนตัวก่อนหน้า
+
+- เลเยอร์ตกแต่งทุกตัว: `pointer-events: none` + `aria-hidden="true"` + เคารพ `prefers-reduced-motion`
+- ค่าจำลองต้อง deterministic เท่าที่ทำได้ (`lib/particles.ts` ใช้ `Math.sin` ไม่ใช่ `Math.random`)
+  ไม่งั้นตำแหน่งจะกระโดดทุก re-render
+- **คอมเมนต์เป็นภาษาไทย** และอธิบาย _ทำไม_ ไม่ใช่ _ทำอะไร_
+
+## Backup
+
+โปรเจกต์นี้ **ไม่ใช่ git repo** — สำเนาโค้ดเต็มอยู่ที่
+`D:\Farm Syntech\_backup\syntech-full-phases0-6-*.zip`
+ก่อนลบอะไรเป็นก้อนใหญ่ ให้ซิปเก็บก่อนเสมอ

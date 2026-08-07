@@ -1,0 +1,19 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+# ไฟล์ env ทุกแบบถือว่ามีความลับ — กันไว้หมด
+# ของเดิมระบุแค่ `.env` กับ `.env.local` ทำให้ `.env.production` / `.env.staging` หลุดขึ้น repo ได้
+.env*
+
+# ข้อยกเว้นให้ไฟล์ตัวอย่างเปิดไว้ แต่ตอนนี้ยังไม่มีไฟล์นี้จริง —
+# เจ้าของงานถอด `.env.example` ออกเพราะมีค่าจริง (พิกัดฟาร์ม · device/org UUID · URL backend)
+# ถ้าจะเอากลับต้องใส่แต่ค่าว่าง/ตัวอย่าง ห้ามใส่ค่าจริง (repo นี้เป็น public)
+# ชื่อตัวแปรที่ต้องตั้งดูได้จาก `packages/web/src/config/liveData.ts`
+!.env.example
+.DS_Store
+
+# เอกสารภายในไม่ขึ้น GitHub — `docs/MIGRATION.md` มีอีเมลบัญชีจริงของระบบ
+# และบันทึกช่องโหว่ของ backend ที่ยังไม่ถูกแก้ (accessToken รั่วข้าม tenant)
+# repo นี้เป็น public · README.md ที่ราก repo เป็นเอกสารเดียวที่เผยแพร่
+docs/

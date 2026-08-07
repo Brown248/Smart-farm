@@ -1,0 +1,109 @@
+.base {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 14px;
+  font-family: var(--font);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.2;
+  border-radius: var(--r-md);
+  border: 0;
+  cursor: pointer;
+  white-space: nowrap;
+  /* รวม color/border-color ด้วย — ปุ่มที่สลับสีข้อความ/ขอบตามสถานะ (แท็บ · estop · ปุ่มอุปกรณ์)
+     เดิม fade แค่พื้นหลัง แต่ตัวอักษร/ขอบดีดทันที ทำให้ดูไม่ลื่น */
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.3s ease,
+    color var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.base:disabled {
+  cursor: not-allowed;
+}
+
+.base:not(:disabled):active {
+  transform: translateY(2px);
+}
+
+/* ปุ่มไม้/เขียวแบบ HUD และ FAB */
+.wood {
+  border: 2px solid var(--brand-green-dark);
+  background: linear-gradient(180deg, var(--btn-green-top), var(--btn-green-bottom));
+  color: #fff;
+  box-shadow: var(--btn-green-shadow);
+}
+
+.wood:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 0 rgba(15, 52, 34, 0.5),
+    0 8px 16px rgba(20, 30, 20, 0.4);
+}
+
+.wood:not(:disabled):active {
+  box-shadow:
+    0 1px 0 rgba(15, 52, 34, 0.5),
+    0 3px 6px rgba(20, 30, 20, 0.3);
+}
+
+.primary {
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.ghost {
+  background: #fff;
+  border: 1px solid var(--card-border);
+  color: var(--ink-2);
+}
+
+.outline {
+  background: #fff;
+  border: 1px solid var(--brand-green);
+  color: var(--brand-green);
+  font-weight: 500;
+}
+
+.danger {
+  background: #c9463c;
+  color: #fff;
+}
+
+.pill {
+  border-radius: var(--r-pill);
+  min-height: 40px;
+  padding: 0 14px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+}
+
+.block {
+  display: flex;
+  width: 100%;
+}
+
+/* สปินเนอร์ตอนรอผลคำสั่ง — บอกว่า "ส่งแล้ว" ยังไม่ใช่ "ทำงานจริงแล้ว" */
+.spinner {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  border: 2px solid rgba(90, 77, 40, 0.3);
+  border-top-color: #5a4d28;
+  border-radius: 50%;
+  display: inline-block;
+  animation: fsSpin 0.8s linear infinite;
+}
+
+/* วงโฟกัสสำหรับคนใช้คีย์บอร์ด — ต้องมีทุกที่ที่กดได้ (styles/motion.test.ts บังคับ) */
+.base:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--card-cream-1),
+    0 0 0 4px color-mix(in srgb, var(--brand-green) 55%, transparent);
+}

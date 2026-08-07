@@ -1,0 +1,43 @@
+.wrap {
+  position: absolute;
+  /*
+   * มุมล่างขวา ยืนบนพื้น (แผงควบคุมย้ายไปล่างซ้ายแล้ว จึงไม่ต้องยกลอยหนีอีก)
+   * ชิดขวา (align flex-end) บับเบิลเปิดไปทางซ้าย ไม่ล้นขอบจอ · ขยายใหญ่ขึ้นตามที่สั่ง
+   */
+  right: 16px;
+  bottom: 14px;
+  width: clamp(150px, 20vw, 270px);
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 0;
+  pointer-events: none;
+  z-index: 9;
+}
+
+.body {
+  position: relative;
+  animation: fsBreathe 4.6s ease-in-out infinite;
+  transform-origin: 50% 100%;
+}
+
+.img {
+  height: clamp(132px, 31vh, 312px);
+  width: auto;
+  max-width: 100%;
+  object-fit: contain;
+  filter: drop-shadow(0 10px 14px rgba(20, 30, 20, 0.5));
+}
+
+.sparkle {
+  position: absolute;
+  width: 13px;
+  height: 13px;
+  pointer-events: none;
+  background: #ffd95e;
+  clip-path: polygon(50% 0, 62% 38%, 100% 50%, 62% 62%, 50% 100%, 38% 62%, 0 50%, 38% 38%);
+  opacity: 0;
+  z-index: 2;
+  filter: drop-shadow(0 0 4px rgba(255, 214, 90, 0.8));
+}

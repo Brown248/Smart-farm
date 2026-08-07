@@ -1,0 +1,65 @@
+.tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.row {
+  border: 2px solid var(--gauge-track);
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.rowText {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.title {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--ink);
+}
+
+.sub {
+  font-size: var(--fs-min);
+  color: var(--ink-3);
+}
+
+/* แท็บเงื่อนไข: ลิงก์ไปตั้งที่หน้าควบคุมโรงเรือน (single source) แทน builder ซ้ำ */
+.condLink {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px;
+  border: 2px dashed var(--gauge-track);
+  border-radius: 14px;
+  background: var(--card-cream-1);
+}
+
+.condLinkText {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
+.condLinkBtn {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 42px;
+  padding: 0 16px;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  border: 2px solid var(--brand-green);
+  border-radius: var(--r-pill);
+}

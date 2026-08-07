@@ -1,0 +1,197 @@
+/* ระบบการ์ดแก้วของหน้าจอข้อมูล — ถอดจาก Syntech Dashboard.dc.html
+   ทึบไว้ก่อนเป็นค่าเริ่มต้น แล้วค่อยเปิด backdrop-filter เฉพาะที่รองรับ */
+
+.glass {
+  position: relative;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  box-shadow: var(--d-glass-shadow);
+}
+
+.glass::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 1px;
+  border-radius: inherit;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.9) 30%,
+    rgba(255, 255, 255, 0.9) 70%,
+    transparent
+  );
+  pointer-events: none;
+}
+
+@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+  @media (min-width: 861px) {
+    .glass {
+      background: rgba(255, 255, 255, 0.72);
+      backdrop-filter: blur(18px) saturate(1.25);
+      -webkit-backdrop-filter: blur(18px) saturate(1.25);
+      border-color: rgba(255, 255, 255, 0.85);
+      box-shadow:
+        0 1px 2px rgba(28, 38, 33, 0.04),
+        0 18px 44px -26px rgba(28, 38, 33, 0.4),
+        inset 0 1px 0 rgba(255, 255, 255, 0.7);
+    }
+  }
+}
+
+/* ══════════════════════════════════════════════════════════════════
+   ภาษาการเคลื่อนไหวกลาง — ทุกหน้าต้องใช้ชุดนี้ อย่าเขียน hover เองรายที่
+   หลักการ: จังหวะเดียวกันทั้งระบบ · ตอบสนองทันทีที่แตะ · ไม่ขยับ layout
+   ══════════════════════════════════════════════════════════════════ */
+
+/** เส้นโค้งมาตรฐาน — ออกเร็วเข้าช้า ให้ความรู้สึกว่าของมีน้ำหนัก */
+:root {
+  --ease-out: cubic-bezier(0.2, 0.9, 0.3, 1);
+  --dur-fast: 0.14s;
+  --dur: 0.22s;
+}
+
+.lift {
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) ease,
+    border-color var(--dur) ease,
+    background var(--dur) ease;
+}
+
+.lift:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    0 2px 4px rgba(28, 38, 33, 0.06),
+    0 20px 34px -22px rgba(28, 38, 33, 0.5);
+}
+
+/**
+ * การ์ด/ปุ่มที่กดได้ — ยกตอนชี้ กดแล้วยุบ มีวงโฟกัสตอนใช้คีย์บอร์ด
+ * ใช้ `composes: tap from '@/styles/dashboard.module.css'`
+ */
+.tap {
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) ease,
+    border-color var(--dur) ease,
+    background var(--dur) ease,
+    color var(--dur) ease;
+}
+
+.tap:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 2px 4px rgba(28, 38, 33, 0.06),
+    0 16px 28px -20px rgba(28, 38, 33, 0.5);
+}
+
+/* กดแล้วยุบลงทันที — ตอบสนองเร็วกว่าตอนยกขึ้น ให้รู้สึกว่ากดติด */
+.tap:active {
+  transform: translateY(0) scale(0.985);
+  transition-duration: var(--dur-fast);
+}
+
+.tap:focus-visible,
+.ring:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--d-surface),
+    0 0 0 4px color-mix(in srgb, var(--brand-green) 55%, transparent);
+}
+
+.tap:disabled,
+.tap[aria-disabled='true'] {
+  transform: none;
+  box-shadow: none;
+  cursor: not-allowed;
+}
+
+/** ค่าที่เปลี่ยนแล้วควรเห็นว่ามันเปลี่ยน (สถานะอุปกรณ์ · ระดับ · สี) */
+.morph {
+  transition:
+    background var(--dur) ease,
+    border-color var(--dur) ease,
+    color var(--dur) ease,
+    box-shadow var(--dur) ease;
+}
+
+/* ตัวเลขเรียงตรงคอลัมน์ อ่านเทียบกันง่าย */
+.num {
+  font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
+}
+
+/* รายการที่ไล่ขึ้นมาทีละชิ้นตอนเข้าหน้า */
+.riselist > * {
+  animation: sy-rise 0.5s both;
+}
+.riselist > *:nth-child(1) {
+  animation-delay: 0.02s;
+}
+.riselist > *:nth-child(2) {
+  animation-delay: 0.07s;
+}
+.riselist > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.riselist > *:nth-child(4) {
+  animation-delay: 0.17s;
+}
+.riselist > *:nth-child(5) {
+  animation-delay: 0.22s;
+}
+.riselist > *:nth-child(6) {
+  animation-delay: 0.27s;
+}
+.riselist > *:nth-child(7) {
+  animation-delay: 0.32s;
+}
+.riselist > *:nth-child(8) {
+  animation-delay: 0.37s;
+}
+.riselist > *:nth-child(9) {
+  animation-delay: 0.42s;
+}
+/* ตัวที่ 10 ขึ้นไปใช้ดีเลย์เดียวกันหมด ไม่งั้นคนต้องรอนานเกินไปกว่าหน้าจะนิ่ง
+   (ก่อนหน้านี้หยุดที่ 9 ตัว ตัวที่ 10 เลยเด้งขึ้นก่อนตัวที่ 9 ดูสะดุด) */
+.riselist > *:nth-child(n + 10) {
+  animation-delay: 0.46s;
+}
+
+/* โครงกระดูกตอนกำลังโหลด */
+.skel {
+  background: linear-gradient(100deg, #e4eae4 18%, #f2f6f1 42%, #e4eae4 66%);
+  background-size: 220% 100%;
+  animation: sy-shim 1.25s linear infinite;
+  border-radius: 8px;
+}
+
+.hscroll {
+  overflow-x: auto;
+}
+
+.hscroll::-webkit-scrollbar {
+  height: 0;
+  width: 0;
+}
+
+.section {
+  border-radius: 16px;
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.h2 {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.sub {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}

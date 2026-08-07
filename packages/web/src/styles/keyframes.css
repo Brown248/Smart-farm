@@ -1,0 +1,842 @@
+/* ──────────────────────────────────────────────────────────────────────────
+   ตัวที่ 1–44 ถอดตรงจาก Farm Scene.dc.html (บรรทัด 20–66)
+   ชื่อและค่าทุกตัวคงเดิม — ห้ามเปลี่ยน ห้ามสุ่มค่าใหม่ (สเปกข้อ 0.2 / ข้อ 11)
+   ตัวที่ 45–47 เพิ่มทีหลังตามที่สั่งให้ทำฝนสวยขึ้น (fsGust / fsImpact / fsRainNear)
+   ยกเว้น fsDrip (38) ที่ปรับให้หยดน้ำเร่งลงและส่ายได้ — พฤติกรรมเดิมยังอยู่ครบ
+   ทุกตัว animate เฉพาะ transform / opacity / box-shadow / custom property
+   ────────────────────────────────────────────────────────────────────────── */
+
+@property --fs-deg {
+  syntax: '<angle>';
+  inherits: false;
+  initial-value: 0deg;
+}
+@property --fs-rc {
+  syntax: '<color>';
+  inherits: false;
+  initial-value: #2f9e5f;
+}
+
+/*  1 */
+@keyframes fsSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/*  2 */
+@keyframes fsGlow {
+  0%,
+  100% {
+    opacity: 0.55;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.09);
+  }
+}
+/*  3 */
+@keyframes fsPulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow:
+      0 2px 7px rgba(0, 0, 0, 0.5),
+      0 0 0 0 currentColor;
+  }
+  50% {
+    transform: scale(1.2);
+    box-shadow:
+      0 2px 7px rgba(0, 0, 0, 0.5),
+      0 0 0 9px rgba(255, 255, 255, 0);
+  }
+}
+/*  4 */
+@keyframes fsShimmer {
+  0%,
+  100% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1.04);
+  }
+}
+/*  5 */
+@keyframes fsRainA {
+  from {
+    transform: translate3d(-60px, -480px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+/*  6 */
+@keyframes fsRainB {
+  from {
+    transform: translate3d(-48px, -360px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+/*  7 */
+@keyframes fsRainC {
+  from {
+    transform: translate3d(-40px, -300px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+/*  8 */
+/* หลอดไฟ "ติด" ตอนกลางคืน — วาบสว่างพร้อมบานโต (bloom) แล้วกระพริบแบบหลอดจริงก่อนนิ่ง
+   เคลื่อนแค่ transform (scale) + opacity เท่านั้น (motion-safe · คง translate สำหรับจัดกึ่งกลาง) */
+@keyframes fsIgnite {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.5);
+  }
+  16% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.14);
+  }
+  28% {
+    opacity: 0.28;
+    transform: translate(-50%, -50%) scale(0.96);
+  }
+  44% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.06);
+  }
+  58% {
+    opacity: 0.6;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  74% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.02);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+/*  9 */
+@keyframes fsLamp {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.94;
+  }
+}
+/* วาบแสงอุ่นทั้งฉากตอนไฟติด — พรึบขึ้นตอนไฟเข้า แล้วลดค้างเป็นแสงนวลบางๆ (opacity เท่านั้น)
+   ค้างไว้น้อย (0.14) กันฟุ้งทั้งฉาก · ตัววาบตอนติดยังเห็น (0.8) */
+@keyframes fsLightsOn {
+  0% {
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.14;
+  }
+}
+/* แอ่งแสงบนพื้นค่อยๆ ขยายรับตอนไฟติด — transform + opacity เท่านั้น */
+@keyframes fsPoolGrow {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.72);
+  }
+  100% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+}
+/* 10 */
+@keyframes fsCloud {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(320%);
+  }
+}
+/* 11 */
+@keyframes fsBird {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  1% {
+    opacity: 0.6;
+  }
+  5% {
+    transform: translate(30vw, -10px);
+    opacity: 0.6;
+  }
+  9% {
+    transform: translate(58vw, 6px);
+    opacity: 0.6;
+  }
+  10% {
+    transform: translate(64vw, 2px);
+    opacity: 0;
+  }
+  100% {
+    transform: translate(64vw, 2px);
+    opacity: 0;
+  }
+}
+/* 12 */
+@keyframes fsSteam {
+  0% {
+    transform: translateY(0) scale(0.9);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.45;
+  }
+  100% {
+    transform: translateY(-130%) scale(1.3);
+    opacity: 0;
+  }
+}
+/* 13 */
+@keyframes fsHeat {
+  from {
+    transform: skewX(-0.35deg) scaleY(1.001);
+  }
+  to {
+    transform: skewX(0.35deg) scaleY(1.006);
+  }
+}
+/* 14 */
+@keyframes fsDrift {
+  from {
+    transform: scale(1) translate(0, 0);
+  }
+  to {
+    transform: scale(1.03) translate(0.4%, -0.35%);
+  }
+}
+/* 15 */
+@keyframes fsRays {
+  0%,
+  100% {
+    opacity: 0.3;
+  }
+  50% {
+    opacity: 0.66;
+  }
+}
+/* 16 */
+@keyframes fsShaft {
+  0%,
+  100% {
+    opacity: 0.22;
+    transform: translateX(-1.5%) skewX(-14deg);
+  }
+  50% {
+    opacity: 0.5;
+    transform: translateX(1.5%) skewX(-14deg);
+  }
+}
+/* 17 */
+@keyframes fsFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+}
+/* 18 */
+@keyframes fsZzz {
+  0% {
+    opacity: 0;
+    transform: translate(0, 4px) scale(0.8);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(10px, -18px) scale(1.1);
+  }
+}
+/* 19 */
+@keyframes fsSlide {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* 20 */
+@keyframes fsSlideL {
+  from {
+    transform: translateX(-24px);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+/* 21 */
+@keyframes fsFade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* 22 */
+@keyframes fsBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+/* 23 */
+@keyframes fsPop {
+  0% {
+    transform: scale(0);
+  }
+  70% {
+    transform: scale(1.18);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+/* 24 */
+@keyframes fsBob {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-2.5px);
+  }
+}
+/* 25 */
+@keyframes fsPinRip {
+  0% {
+    transform: scale(0.7);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.3);
+    opacity: 0;
+  }
+}
+/* 26 */
+@keyframes fsZoneRip {
+  0% {
+    transform: translate(-50%, -50%) scale(0.35);
+    opacity: 0.7;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0;
+  }
+}
+/* 27 */
+@keyframes fsBreathe {
+  0%,
+  100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(1.015);
+  }
+}
+/* 28 */
+@keyframes fsPoseIn {
+  from {
+    opacity: 0.2;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* 29 */
+@keyframes fsShake {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-5px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-3px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+/* 30 */
+@keyframes fsHop {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  30% {
+    transform: translateY(-13px);
+  }
+  55% {
+    transform: translateY(0);
+  }
+  75% {
+    transform: translateY(-6px);
+  }
+}
+/* 31 */
+@keyframes fsSparkle {
+  0% {
+    opacity: 0;
+    transform: scale(0.3) rotate(0deg);
+  }
+  40% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(1.2) rotate(40deg);
+  }
+}
+/* 32 */
+@keyframes fsBubblePop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+/* 33 */
+@keyframes fsMote {
+  0% {
+    transform: translate(0, 0);
+    opacity: 0;
+  }
+  14% {
+    opacity: 0.55;
+  }
+  86% {
+    opacity: 0.4;
+  }
+  100% {
+    transform: translate(9px, -46px);
+    opacity: 0;
+  }
+}
+/* 34 */
+@keyframes fsFly {
+  0%,
+  100% {
+    transform: translate(0, 0);
+    opacity: 0.15;
+  }
+  25% {
+    opacity: 0.9;
+  }
+  50% {
+    transform: translate(9px, -12px);
+    opacity: 0.3;
+  }
+  75% {
+    opacity: 0.85;
+  }
+}
+/* 35 */
+@keyframes fsWind {
+  0% {
+    transform: translateX(0) scaleX(0.5);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.5;
+  }
+  100% {
+    transform: translateX(-40px) scaleX(1.15);
+    opacity: 0;
+  }
+}
+/* 36 */
+@keyframes fsSheen {
+  0%,
+  93% {
+    transform: translateX(-140%) skewX(-18deg);
+  }
+  100% {
+    transform: translateX(320%) skewX(-18deg);
+  }
+}
+/* 37 */
+@keyframes fsPipe {
+  0% {
+    transform: translateY(0);
+    opacity: 0;
+  }
+  25% {
+    opacity: 0.8;
+  }
+  100% {
+    transform: translateY(-22px);
+    opacity: 0;
+  }
+}
+/* 38 — ระยะทางแต่ละช่วงไม่เท่ากัน ทำให้หยดน้ำ "เร่ง" ลงเองโดยไม่ต้องใช้ easing
+       และส่ายซ้าย-ขวาตาม --drip-drift เหมือนน้ำไหลบนกระจกจริง */
+@keyframes fsDrip {
+  0% {
+    transform: translate3d(0, 0, 0);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  25% {
+    transform: translate3d(var(--drip-drift, 0px), calc(var(--drip-fall, 38vh) * 0.13), 0);
+  }
+  50% {
+    transform: translate3d(
+      calc(var(--drip-drift, 0px) * -0.55),
+      calc(var(--drip-fall, 38vh) * 0.34),
+      0
+    );
+  }
+  75% {
+    transform: translate3d(
+      calc(var(--drip-drift, 0px) * 0.35),
+      calc(var(--drip-fall, 38vh) * 0.63),
+      0
+    );
+  }
+  92% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate3d(0, var(--drip-fall, 38vh), 0);
+    opacity: 0;
+  }
+}
+/* 39 */
+@keyframes fsMist {
+  from {
+    transform: translateX(-9%);
+  }
+  to {
+    transform: translateX(9%);
+  }
+}
+/* 40 */
+@keyframes fsRowIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+/* 41 */
+@keyframes fsDrawer {
+  0% {
+    transform: translateX(103%);
+  }
+  70% {
+    transform: translateX(-1.4%);
+  }
+  100% {
+    transform: translateX(0);
+  }
+}
+/* 42 */
+@keyframes fsSheetUp {
+  0% {
+    transform: translateY(105%);
+  }
+  70% {
+    transform: translateY(-1.2%);
+  }
+  100% {
+    transform: translateY(0);
+  }
+}
+/* 43 */
+@keyframes fsEPulse {
+  0%,
+  100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.025);
+  }
+}
+/* 44 */
+@keyframes fsDotGlow {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 95, 0.55);
+  }
+  60% {
+    box-shadow: 0 0 0 6px rgba(47, 158, 95, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(47, 158, 95, 0);
+  }
+}
+
+/* ── 45–47: เพิ่มทีหลังเพื่อทำฝนให้ดูมีมิติขึ้น (ไม่ได้อยู่ในต้นแบบ) ── */
+
+/* 45 — ลมกระโชก เอียงม่านฝนไปมาช้าๆ จะได้ไม่ตกเป็นเส้นตรงเป๊ะตลอดเวลา */
+@keyframes fsGust {
+  0%,
+  100% {
+    transform: skewX(-1.6deg) translate3d(-0.6%, 0, 0);
+  }
+  38% {
+    transform: skewX(1.4deg) translate3d(0.7%, 0, 0);
+  }
+  67% {
+    transform: skewX(-0.5deg) translate3d(0.2%, 0, 0);
+  }
+}
+
+/* 46 — เม็ดฝนกระทบกระจก วงกระเพื่อมแบนๆ ตามมุมมองหลังคา */
+@keyframes fsImpact {
+  0% {
+    transform: translate(-50%, -50%) scaleY(0.42) scale(0.15);
+    opacity: 0;
+  }
+  18% {
+    opacity: var(--impact-peak, 0.5);
+  }
+  100% {
+    transform: translate(-50%, -50%) scaleY(0.42) scale(1);
+    opacity: 0;
+  }
+}
+
+/* 47 — ม่านฝนชั้นหน้าสุด เร็วกว่าและเบลอกว่า ให้เกิดพารัลแลกซ์ */
+@keyframes fsRainNear {
+  from {
+    transform: translate3d(-96px, -760px, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* ──────────────────────────────────────────────────────────────────────────
+   keyframes ของหน้าข้อมูล (แดชบอร์ด) — ขึ้นต้น sy- คนละ namespace กับฉากเกม
+   มีเฉพาะตัวที่ CSS ในโปรเจกต์เรียกใช้จริง ตัวของ Irrigation/Greenhouse
+   (sy-draw · sy-drawer · sy-emerg · sy-glowring · sy-pulse · sy-slide · sy-spin · sy-wave)
+   ยังไม่เอามา จะกลับมาพร้อมหน้าเหล่านั้น — ดูสำเนาใน _backup
+   ────────────────────────────────────────────────────────────────────────── */
+/* ──────────────────────────────────────────────────────────────────────────
+   keyframes ของหน้าจอข้อมูล (Dashboard / Irrigation / Greenhouse)
+   ถอดตรงจาก Syntech Dashboard.dc.html — ใช้ prefix `sy-` แยกจาก `fs*` ของฉากเกม
+   ────────────────────────────────────────────────────────────────────────── */
+
+@keyframes sy-pop {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sy-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* แบนเนอร์ต้องไม่ดันเลย์เอาต์ตอนเข้า: ถ้า timeline ถูกแช่ (แท็บซ่อน/พิมพ์/แคปหน้าจอ)
+   มันจะค้างที่เฟรมแรก จึงใช้แค่ fade ห้ามใช้ transform */
+@keyframes sy-bannerin {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+/* ป้าย "ค่าค้าง" บนการ์ดเซนเซอร์ (เรียกจาก inline style ใน SensorCard.tsx) */
+@keyframes sy-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+/* เส้นกราฟลากตัวเองตอนเข้าหน้า (เรียกจาก inline style ใน LineChart/Sparkline) */
+@keyframes sy-draw {
+  from {
+    stroke-dashoffset: var(--draw-len, 1200);
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes sy-rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes sy-ripple {
+  0% {
+    transform: scale(0.8);
+    opacity: 0.5;
+  }
+  100% {
+    transform: scale(2.2);
+    opacity: 0;
+  }
+}
+@keyframes sy-shim {
+  0% {
+    background-position: -180% 0;
+  }
+  100% {
+    background-position: 180% 0;
+  }
+}
+@keyframes sy-onpulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 3px rgba(47, 158, 110, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(47, 158, 110, 0);
+  }
+}
+/**
+ * แถบความชื้นของการ์ดโซน กางออกจากซ้ายตอนเข้าหน้า
+ * ใช้ scaleX ไม่ใช่ width — ความกว้างจริงตั้งไว้ที่ `--zone-fill` แล้ว จะได้ไม่ trigger layout
+ */
+@keyframes sy-zonefill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+@keyframes sy-railglow {
+  0%,
+  100% {
+    box-shadow: 0 0 5px rgba(39, 113, 80, 0.5);
+    opacity: 1;
+  }
+  50% {
+    box-shadow: 0 0 12px rgba(39, 113, 80, 0.85);
+    opacity: 0.85;
+  }
+}
+@keyframes sy-navin {
+  from {
+    opacity: 0;
+    transform: translateX(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+/* ปุ่มหยุดฉุกเฉินที่กำลังทำงาน — เต้นช้าๆ ให้เห็นชัดว่าระบบยังถูกล็อกอยู่ */
+/* วงเรืองรอบแปลงที่ต้องดูแล */
+/* ผิวน้ำวาวบนแปลงที่กำลังรดน้ำ */
+
+@keyframes sy-drawer {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+/* ปุ่มหยุดฉุกเฉินที่กำลังทำงาน — เต้นช้าๆ ให้เห็นชัดว่าระบบยังถูกล็อกอยู่ */
+@keyframes sy-emerg {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(192, 50, 45, 0.55);
+  }
+  50% {
+    box-shadow: 0 0 0 10px rgba(192, 50, 45, 0);
+  }
+}
+/* วงเรืองรอบแปลงที่ต้องดูแล */
+@keyframes sy-glowring {
+  0%,
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.02);
+  }
+}
+@keyframes sy-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* ผิวน้ำวาวบนแปลงที่กำลังรดน้ำ */
+@keyframes sy-wave {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 0.7;
+    transform: translateY(-2px);
+  }
+}
+
+/* ผู้ใช้ที่ตั้งค่า reduce ต้องไม่เจอ animation ต่อเนื่องเลย (สเปกข้อ 6 / DoD) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}

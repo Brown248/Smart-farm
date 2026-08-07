@@ -1,0 +1,126 @@
+/* Design tokens — ถอดจาก Farm Scene.dc.html ห้ามคิดสีใหม่ (สเปกข้อ 4) */
+:root {
+  /* ── แบรนด์ ── */
+  --brand-green: #277150; /* primary */
+  --brand-green-2: #2b6746;
+  --brand-green-dark: #1d4630;
+
+  /* ── สถานะ (ตรงกับต้นแบบเป๊ะ) ── */
+  --st-ok: #2f9e5f; /* ปกติ */
+  --st-warn: #e08a2e; /* ต่ำกว่าเกณฑ์ */
+  --st-crit: #d9463c; /* วิกฤต */
+  --st-water: #2f8fd8; /* กำลังรดน้ำ */
+  --st-offline: #8a8272; /* ออฟไลน์ (OFFC ในต้นแบบ) */
+
+  /* ── การ์ดสไตล์เกม (โทนครีม/ไม้) ── */
+  --card-cream-1: #fffdf7;
+  --card-cream-2: #fff8ea;
+  --card-cream-3: #f6e7c9;
+  --card-border: #cfc9b4;
+  --wood: #b07b41;
+  --wood-dark: #7a5327;
+
+  /* ── ตัวหนังสือ ── */
+  --ink: #23342b;
+  --ink-2: #4a5b50;
+  --ink-3: #6b6353;
+
+  /* ── ขอบมน 3 ระดับ (มาตรฐานเดียวทั้งระบบ) ── */
+  --r-sm: 10px;
+  --r-md: 14px;
+  --r-lg: 18px;
+  --r-pill: 999px;
+
+  /* ── เงา 3 ระดับ ── */
+  --sh-1: 0 2px 0 rgba(60, 80, 60, 0.18), 0 4px 10px rgba(20, 40, 25, 0.14);
+  --sh-2: 0 3px 0 rgba(60, 80, 60, 0.22), 0 8px 18px rgba(20, 40, 25, 0.2);
+  --sh-3: 0 4px 0 rgba(60, 80, 60, 0.26), 0 14px 30px rgba(20, 40, 25, 0.28);
+
+  /* ── ฟอนต์ ── */
+  --font: 'Prompt', system-ui, sans-serif;
+  --fs-min: 13px; /* ห้ามเล็กกว่านี้ */
+
+  /* ── สัดส่วนฉาก ── */
+  --scene-ar: 1.604; /* 1760 / 1097 */
+
+  /* ── โทนพื้นหลัง/ไม้ ที่ต้นแบบใช้ซ้ำในหลายชั้น ── */
+  --scene-backdrop: #26351f;
+  --scene-void: #0c1420;
+  --cream-panel-top: #fff8ea;
+  --cream-panel-bottom: #f6e7c9;
+  --cream-hud-top: rgba(255, 246, 226, 0.94);
+  --cream-hud-bottom: rgba(247, 230, 196, 0.94);
+  --gauge-track: #e0cfa8;
+  --gauge-face: #fff8e8;
+  --ink-wood: #3b2410;
+  --ink-wood-2: #4a2f16;
+  --scrim: rgba(8, 16, 12, 0.5);
+
+  /* ── ปุ่มไม้/เขียวที่ใช้ซ้ำ ── */
+  --btn-green-top: #3d8a5f;
+  --btn-green-bottom: #2b6746;
+  --btn-green-shadow: 0 3px 0 rgba(15, 52, 34, 0.5), 0 6px 12px rgba(20, 30, 20, 0.35);
+  --wood-shadow: 0 3px 0 rgba(122, 80, 38, 0.38), 0 6px 14px rgba(28, 18, 8, 0.3);
+
+  /* ══════════════════════════════════════════════════════════════════════
+     โทนหน้าจอข้อมูล (Dashboard / Irrigation / Greenhouse)
+     ถอดจาก Syntech Dashboard.dc.html — เป็นคนละภาษาภาพกับฉากเกมโดยตั้งใจ
+     ฉากเกม = ครีม/ไม้ · หน้าข้อมูล = ขาว/แก้ว/เขียวอ่อน
+     ══════════════════════════════════════════════════════════════════════ */
+
+  /* ตัวหนังสือและเส้น */
+  --d-ink: #1c2621;
+  --d-ink-2: #3a4740;
+  --d-ink-3: #4a544f;
+  --d-ink-4: #5b6862;
+  --d-muted: #68756e;
+  --d-line: #e4eae6;
+  --d-line-2: #edf1ed;
+  --d-line-dash: #d3dbd5;
+
+  /* พื้นหลัง */
+  --d-surface: #fff;
+  --d-surface-2: #f4f7f3;
+  --d-surface-3: #f0f3ef;
+  --d-green-dark: #1e5b3e;
+
+  /* สถานะ 3 ระดับ + พื้นอ่อนคู่กัน */
+  --d-ok: #2f9e6e;
+  --d-ok-bg: #e1f1e9;
+  --d-ok-ink: #26805a;
+  --d-warn: #b9720f;
+  --d-warn-bg: #fbeedb;
+  --d-warn-ink: #8a6118;
+  --d-warn-ink-2: #9a6c1f;
+  --d-warn-deep: #7d4e0a;
+  --d-warn-hover: #9a5e0c;
+  --d-crit: #d14b47;
+  --d-crit-bg: #f8e4e2;
+  --d-crit-ink: #a8302b;
+
+  /* สีประจำค่าเซนเซอร์แต่ละชนิด (ใช้ทั้งการ์ดและเส้นกราฟ) */
+  --d-m-soil: #b9720f;
+  --d-m-temp: #d1594a;
+  --d-m-hum: #2f8f8a;
+  --d-m-light: #c89a2c;
+  --d-m-soil-bg: #fbeedb;
+  --d-m-temp-bg: #f8e4e2;
+  --d-m-hum-bg: #def0ef;
+  --d-m-light-bg: #f6efd9;
+
+  /* ฟอนต์ตัวเลข — ตัวเลขเรียงตรงคอลัมน์ อ่านค่าเทียบกันง่าย */
+  --font-num: 'IBM Plex Mono', 'Prompt', monospace;
+
+  /* พื้นหลังหน้า + การ์ดแก้ว */
+  --d-page-bg:
+    radial-gradient(58% 42% at 8% 2%, rgba(47, 158, 110, 0.16), transparent 62%),
+    radial-gradient(48% 38% at 96% 8%, rgba(120, 190, 160, 0.2), transparent 66%),
+    radial-gradient(62% 46% at 78% 96%, rgba(39, 113, 80, 0.13), transparent 68%),
+    radial-gradient(44% 34% at 22% 82%, rgba(201, 222, 196, 0.42), transparent 64%),
+    linear-gradient(168deg, #f3f7f1 0%, #eef3ee 45%, #e8f0e9 100%);
+  --d-glass-shadow:
+    0 1px 1px rgba(28, 38, 33, 0.04), 0 4px 8px -4px rgba(28, 38, 33, 0.1),
+    0 18px 40px -26px rgba(28, 38, 33, 0.36);
+  --d-card-shadow: 0 1px 2px rgba(28, 38, 33, 0.04), 0 10px 24px -20px rgba(28, 38, 33, 0.3);
+  --d-scrim: rgba(23, 50, 37, 0.42);
+}

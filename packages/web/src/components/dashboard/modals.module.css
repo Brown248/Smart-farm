@@ -1,0 +1,348 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  background: var(--d-scrim);
+  backdrop-filter: blur(3px);
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  animation: sy-fade 0.18s ease;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  cursor: default;
+}
+
+.panel {
+  position: relative;
+  background: var(--d-surface);
+  border-radius: 18px;
+  box-shadow: 0 30px 70px -20px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  max-width: 420px;
+  width: 100%;
+  animation: sy-pop 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.headIcon {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.title {
+  margin: 0;
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.subtitle {
+  font-size: 13.5px;
+  color: var(--d-muted);
+  margin-top: 2px;
+}
+
+.close {
+  composes: tap from '@/styles/dashboard.module.css';
+  margin-left: auto;
+  width: 32px;
+  height: 32px;
+  border-radius: 10px;
+  border: none;
+  background: var(--d-surface-3);
+  color: var(--d-ink-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.hint {
+  margin: 14px 0 0;
+  font-size: 13.5px;
+  color: var(--d-muted);
+  line-height: 1.5;
+}
+
+.fields {
+  margin-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.field {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+}
+
+.fieldDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex: none;
+}
+
+.fieldLabel {
+  flex: 1;
+  font-size: var(--fs-min);
+  color: var(--d-ink-2);
+}
+
+.numInput {
+  width: 88px;
+  min-height: 40px;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--d-ink);
+  background: var(--d-surface);
+  border: 1.5px solid var(--d-line);
+  border-radius: 9px;
+  padding: 6px 12px;
+  outline: none;
+  text-align: right;
+  transition:
+    border-color var(--dur-fast) ease,
+    background var(--dur-fast) ease;
+}
+
+.numInput:focus-visible {
+  border-color: var(--brand-green);
+  outline: 2px solid var(--brand-green);
+  outline-offset: 1px;
+}
+
+.textInput {
+  margin-top: 12px;
+  width: 100%;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface-2);
+  border-radius: 12px;
+  padding: 11px 13px;
+  font-size: 14px;
+  font-family: inherit;
+  outline: none;
+  color: var(--d-ink);
+  min-height: 44px;
+  transition:
+    border-color var(--dur-fast) ease,
+    background var(--dur-fast) ease;
+}
+
+.actions {
+  display: flex;
+  gap: 9px;
+  margin-top: 18px;
+}
+
+.cancelBtn {
+  /* tap = hover/active/disabled + วงโฟกัส — ปุ่มยืนยันทุกกล่อง (รวมกล่องเตือน guard) และฟอร์มล็อกอินใช้ตัวนี้ */
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: 1;
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-ink-3);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 46px;
+}
+
+.saveBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: 1.4;
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  background: var(--brand-green);
+  color: #fff;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 46px;
+  box-shadow: 0 8px 18px -8px rgba(39, 113, 80, 0.8);
+}
+
+/* ── สุขภาพเซนเซอร์ ── */
+.healthCard {
+  margin-top: 14px;
+  background: var(--d-warn-bg);
+  border: 1px solid rgba(185, 114, 15, 0.35);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.healthCardTitle {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-warn-deep);
+}
+
+.healthCardBody {
+  font-size: 13.5px;
+  color: var(--d-warn-ink-2);
+  line-height: 1.5;
+  margin-top: 6px;
+}
+
+.steps {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.stepsTitle {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+}
+
+.step {
+  display: flex;
+  gap: 9px;
+  font-size: 13.5px;
+  color: var(--d-ink-3);
+  align-items: flex-start;
+}
+
+.stepNum {
+  color: var(--brand-green);
+  font-weight: 700;
+}
+
+.ackBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  margin-top: 16px;
+  width: 100%;
+  padding: 12px;
+  border-radius: 13px;
+  border: none;
+  background: var(--d-warn);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 46px;
+  box-shadow: 0 8px 18px -8px rgba(185, 114, 15, 0.8);
+}
+
+/* ── บันทึกเร็ว ── */
+.catRow {
+  margin-top: 12px;
+  display: flex;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.catBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  padding: 8px 13px;
+  border-radius: 10px;
+  border: 1.5px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-ink-3);
+  font-size: var(--fs-min);
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 38px;
+}
+
+.catBtnOn {
+  border-color: var(--brand-green);
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.autoNote {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+/* ── การแจ้งเตือน ── */
+.notifOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 65;
+  background: rgba(23, 50, 37, 0.3);
+  backdrop-filter: blur(2px);
+  display: flex;
+  justify-content: flex-end;
+  align-items: flex-start;
+  padding: 70px 16px 16px;
+  animation: sy-fade 0.15s ease;
+}
+
+.notifPanel {
+  position: relative;
+  background: var(--d-surface);
+  border-radius: 16px;
+  box-shadow: 0 24px 54px -18px rgba(0, 0, 0, 0.4);
+  padding: 8px;
+  max-width: 360px;
+  width: 100%;
+  animation: sy-pop 0.18s ease;
+}
+
+.notifTitle {
+  padding: 10px 12px 8px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.notifRow {
+  display: flex;
+  gap: 10px;
+  padding: 11px;
+  border-radius: 12px;
+}
+
+.notifDot {
+  width: 9px;
+  height: 9px;
+  margin-top: 5px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.notifText {
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-ink);
+  line-height: 1.35;
+}
+
+.notifTime {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  margin-top: 2px;
+}

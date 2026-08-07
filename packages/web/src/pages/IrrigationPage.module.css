@@ -1,0 +1,1069 @@
+/* ── แถบอากาศ + คำแนะนำเรื่องฝน ── */
+.wx {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  border-radius: 16px;
+  padding: 14px 16px;
+  flex-wrap: wrap;
+  background: linear-gradient(120deg, #eaf3f2, #ddeeec 55%, #e7f0ea);
+}
+
+/* ดึงพยากรณ์ไม่ได้ — บอกตรงๆ ไม่โชว์ตัวเลขปลอม */
+.wxEmpty {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-muted);
+}
+
+.wxNow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.wxIcon {
+  width: 46px;
+  height: 46px;
+  flex: none;
+  border-radius: 13px;
+  background: var(--d-surface);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 6px 14px -8px rgba(47, 143, 138, 0.6);
+  /* ลอยเบาๆ ให้มีชีวิตเหมือนไอคอนอากาศบนแดชบอร์ด (reduced-motion ปิดให้เองจาก keyframes.css) */
+  animation: irrWxFloat 4.6s ease-in-out infinite;
+}
+
+@keyframes irrWxFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.wxTemp {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.wxCond {
+  font-size: 13.5px;
+  color: var(--d-ink-3);
+}
+
+.wxRain {
+  font-size: var(--fs-min);
+  color: var(--d-m-hum);
+  font-weight: 600;
+  margin-top: 3px;
+}
+
+.wxDivider {
+  width: 1px;
+  align-self: stretch;
+  background: rgba(47, 143, 138, 0.25);
+  margin: 0 2px;
+}
+
+.advisory {
+  flex: 1;
+  min-width: 200px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.advIcon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--r-sm);
+  background: rgba(47, 143, 138, 0.16);
+  display: grid;
+  place-items: center;
+}
+
+.advTitle {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: #1f5f5b;
+}
+
+.advBody {
+  font-size: 13.5px;
+  color: var(--d-ink-2);
+}
+
+.advBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--d-surface);
+  border: 1px solid #cfe1e0;
+  color: #26746f;
+  padding: 7px 12px;
+  border-radius: var(--r-sm);
+  font-size: var(--fs-min);
+  font-weight: 700;
+}
+
+.forecastRow {
+  flex-basis: 100%;
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding-top: 12px;
+  margin-top: 2px;
+  border-top: 1px solid rgba(47, 143, 138, 0.18);
+}
+
+.forecastCell {
+  flex: 1;
+  min-width: 66px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(47, 143, 138, 0.16);
+  border-radius: 11px;
+  padding: 8px 6px;
+  /* ไล่ขึ้นทีละใบตอนเข้า + ตอบสนองตอนชี้ (เหมือนแถบพยากรณ์บนแดชบอร์ด) */
+  animation: irrCellRise 0.5s ease-out backwards;
+  transition:
+    transform 0.22s cubic-bezier(0.2, 0.9, 0.3, 1),
+    box-shadow 0.22s ease,
+    border-color 0.22s ease;
+}
+
+.forecastCell:hover {
+  transform: translateY(-3px);
+  border-color: rgba(47, 143, 138, 0.4);
+  box-shadow: 0 10px 20px -14px rgba(47, 143, 138, 0.7);
+}
+
+.forecastCell:nth-child(1) {
+  animation-delay: 0.04s;
+}
+.forecastCell:nth-child(2) {
+  animation-delay: 0.09s;
+}
+.forecastCell:nth-child(3) {
+  animation-delay: 0.14s;
+}
+.forecastCell:nth-child(4) {
+  animation-delay: 0.19s;
+}
+.forecastCell:nth-child(n + 5) {
+  animation-delay: 0.24s;
+}
+
+@keyframes irrCellRise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.forecastTime {
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.forecastTemp {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.attnCard {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  /* surface-2 — #f8faf7 เดิมต่างจากพื้นขาวของการ์ดแค่นิดเดียวจนแทบไม่เห็นขอบแถว */
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-line);
+  border-radius: 13px;
+  padding: 11px 12px;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 44px;
+}
+
+.attnDot {
+  width: 10px;
+  height: 10px;
+  flex: none;
+  border-radius: 50%;
+}
+
+.attnTitle {
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-ink);
+  line-height: 1.35;
+}
+
+.attnSub {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  margin-top: 1px;
+}
+
+/*
+ * ── ควบคุมการรดน้ำ + อัตโนมัติ (ย้ายมาจาก ZoneDrawer.module.css) ──
+ * เดิมเป็นแท็บในลิ้นชักรายแปลง แต่ปั๊มมีตัวเดียวและไม่มีวาล์วแยกแปลง
+ * คำสั่งจึงเป็นของทั้งฟาร์ม สไตล์เลยย้ายมาอยู่กับหน้าที่ใช้จริง
+ */
+
+.blockMsg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--d-warn-bg);
+  border: 1px solid rgba(185, 114, 15, 0.4);
+  border-radius: 13px;
+  padding: 12px 13px;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-warn-deep);
+  line-height: 1.45;
+}
+
+.ctrlBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 15px 12px;
+  border-radius: 13px;
+  border: none;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  min-height: 52px;
+}
+
+.ctrlBtn:disabled {
+  background: var(--d-line-2);
+  color: #8b9a92;
+  cursor: not-allowed;
+  border: none;
+  box-shadow: none;
+}
+
+.startIdle {
+  background: var(--d-m-hum);
+  color: #fff;
+  box-shadow: 0 8px 18px -8px rgba(47, 143, 138, 0.8);
+}
+
+.startRunning {
+  background: var(--d-surface);
+  color: #c0322d;
+  border: 1.5px solid rgba(192, 50, 45, 0.4);
+}
+
+.btnSpin {
+  width: 14px;
+  height: 14px;
+  flex: none;
+  border-radius: 50%;
+  border: 2.5px solid rgba(255, 255, 255, 0.45);
+  border-top-color: #fff;
+  animation: sy-spin 0.7s linear infinite;
+}
+
+.confirmState {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-min);
+  color: var(--d-ink-4);
+}
+
+.confirmDot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  border-radius: 50%;
+  transition: background var(--dur) ease;
+}
+
+/* ── อัตโนมัติ ── */
+/* สวิตช์หลัก: รดน้ำอัตโนมัติ เปิด/ปิด */
+.autoMaster {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 13px 15px;
+  border-radius: 14px;
+  border: 1.5px solid var(--d-line);
+  background: var(--d-surface);
+}
+
+.autoMasterText {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.autoMasterTitle {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--d-ink);
+}
+
+.autoMasterSub {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.masterSwitch {
+  composes: ring from '@/styles/dashboard.module.css';
+  position: relative;
+  flex: none;
+  width: 52px;
+  height: 30px;
+  border-radius: 999px;
+  border: none;
+  background: var(--d-line-2);
+  cursor: pointer;
+  transition: background-color var(--dur) var(--ease-out);
+}
+
+.masterSwitchOn {
+  background: var(--brand-green);
+}
+
+.masterKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: transform var(--dur) var(--ease-out);
+}
+
+.masterKnobOn {
+  transform: translateX(22px);
+}
+
+.stratGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(212px, 1fr));
+  gap: 9px;
+}
+
+.stratBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border-radius: 13px;
+  border: 1.5px solid var(--d-line);
+  background: var(--d-surface);
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  color: var(--d-ink);
+  min-height: 56px;
+}
+
+/* สีขอบ/พื้นของตัวที่เลือกมาจาก MODE_COLOR (inline) — คลาสนี้คุมแค่น้ำหนัก/เงา */
+.stratBtnOn {
+  box-shadow: 0 3px 12px -5px rgba(20, 40, 60, 0.28);
+}
+
+/* วงกลมไอคอนประจำกลยุทธ์ — พื้น/สีไอคอนมาจาก MODE_COLOR (inline) */
+.stratIcon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  display: grid;
+  place-items: center;
+  transition:
+    background-color 0.15s,
+    transform 0.15s;
+}
+
+.stratBtnOn .stratIcon {
+  transform: scale(1.06);
+}
+
+.stratText {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  line-height: 1.2;
+}
+
+.stratLabel {
+  font-size: var(--fs-min);
+  font-weight: 700;
+}
+
+.stratDesc {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+/* ── โหมดตั้งเวลา: ปุ่มเพิ่ม/ลบเวลา ── */
+.schedAddBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 13px;
+  border-radius: 10px;
+  border: 1.5px dashed var(--d-line);
+  background: var(--d-surface);
+  color: var(--brand-green);
+  font-family: inherit;
+  font-weight: 600;
+  font-size: var(--fs-min);
+  cursor: pointer;
+}
+
+.schedRemoveBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 8px;
+  border: 1.5px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-muted);
+  cursor: pointer;
+}
+
+/* หัวข้อย่อยในโหมดตามความชื้น/ตั้งเวลา */
+.ctlHint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.ruleGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+
+.ruleGroupIcon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+}
+
+.ruleGroupTitle {
+  font-size: var(--fs-min);
+  font-weight: 700;
+}
+
+.ruleRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-radius: 11px;
+  padding: 9px 12px;
+  flex-wrap: wrap;
+  font-size: 13.5px;
+  color: var(--d-ink-2);
+}
+
+/* ป้ายชื่อในแถวกติกา — ยืดเพื่อดันช่องกรอกไปชิดขวาให้เรียงตรงกัน · คงกว้างพออ่านไม่แตกบรรทัด */
+.ruleName {
+  flex: 1 1 auto;
+  min-width: 96px;
+  line-height: 1.3;
+}
+
+.ruleRowRun {
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-line);
+}
+
+.ruleRowSkip {
+  background: #fdf6ec;
+  border: 1px solid #f0e2c8;
+}
+
+.ruleInput {
+  flex: none;
+  font-family: var(--font-num);
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--d-ink);
+  background: #f8faf7;
+  border: 1.5px solid var(--d-line);
+  border-radius: 9px;
+  padding: 7px 10px;
+  outline: none;
+  min-height: 40px;
+  box-sizing: border-box;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.ruleInput:focus-visible {
+  border-color: var(--brand-green);
+  background: var(--d-surface);
+  outline: 2px solid var(--brand-green);
+  outline-offset: 1px;
+}
+
+.ruleNum {
+  width: 72px;
+  text-align: right;
+}
+
+/* ช่องเวลา — กว้างพอให้ "06:00 AM" + ไอคอนนาฬิกาของเบราว์เซอร์ไม่ถูกตัด */
+.ruleTime {
+  width: 136px;
+  text-align: center;
+}
+
+.opRow {
+  display: flex;
+  justify-content: center;
+}
+
+/* ตัวคั่น "–" ระหว่างช่วงเวลา ให้อยู่กลางแนวตั้ง ไม่เบียดช่อง */
+.timeSep {
+  flex: none;
+  color: var(--d-muted);
+  font-weight: 700;
+}
+
+.opAnd {
+  font-size: var(--fs-min);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--d-ok-ink);
+  background: var(--d-ok-bg);
+  border: 1px solid rgba(47, 158, 110, 0.3);
+  padding: 3px 12px;
+  border-radius: var(--r-pill);
+}
+
+.opOr {
+  font-size: var(--fs-min);
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--d-warn-ink-2);
+  background: var(--d-warn-bg);
+  border: 1px solid rgba(185, 114, 15, 0.3);
+  padding: 3px 12px;
+  border-radius: var(--r-pill);
+}
+
+.hybridNote {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  line-height: 1.5;
+  display: flex;
+  gap: 7px;
+}
+
+.ctlStack {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.ctlCard {
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.ctlLabel {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink-2);
+  margin-bottom: 10px;
+}
+
+/* ── แผนที่ฟาร์ม ── */
+.mapHead {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.mapLegend {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.legendSwatch {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+}
+
+.layerRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.layerBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  padding: 7px 12px;
+  border-radius: 9px;
+  border: 1px solid var(--d-line);
+  background: var(--d-surface);
+  color: var(--d-ink-3);
+  font-size: var(--fs-min);
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  font-family: inherit;
+  min-height: 34px;
+}
+
+.layerBtnOn {
+  border-color: var(--brand-green);
+  background: var(--brand-green);
+  color: #fff;
+}
+
+.mapWrap {
+  position: relative;
+  width: 100%;
+  height: clamp(430px, 52vw, 540px);
+  border-radius: 14px;
+  overflow: hidden;
+  border: 1px solid var(--d-line);
+  user-select: none;
+  touch-action: none;
+  background:
+    linear-gradient(180deg, rgba(255, 241, 204, 0.5), rgba(255, 241, 204, 0) 34%),
+    repeating-linear-gradient(90deg, rgba(122, 133, 127, 0.08) 0 1px, transparent 1px 30px),
+    repeating-linear-gradient(rgba(122, 133, 127, 0.08) 0 1px, transparent 1px 30px),
+    linear-gradient(180deg, #f2efe7, #ece9df);
+}
+
+.sunStrip {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: #8a6a12;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  pointer-events: none;
+}
+
+.plot {
+  position: absolute;
+  inset: 34px 15px 32px;
+}
+
+.plotFrame {
+  position: absolute;
+  inset: -10px;
+  border-radius: 8px;
+  border: 4px solid #9db4a0;
+  box-shadow:
+    inset 0 0 0 1.5px rgba(255, 255, 255, 0.7),
+    inset 0 2px 14px rgba(28, 60, 40, 0.08),
+    0 18px 34px -26px rgba(28, 60, 40, 0.5);
+  pointer-events: none;
+}
+
+.doorTag {
+  position: absolute;
+  right: -8px;
+  top: 60.5%;
+  transform: translateY(4px);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: var(--d-surface);
+  border: 1px solid #c6d6c1;
+  border-radius: 7px;
+  padding: 2px 8px;
+  box-shadow: 0 4px 10px -6px rgba(28, 60, 40, 0.5);
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-ink-3);
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+/* แปลงปลูกหนึ่งแปลง */
+/**
+ * แปลงบนแผนที่ — อยู่ในตำแหน่ง absolute จึงยกด้วย scale แทน translateY
+ * (translateY จะทำให้หลุดจากพิกัดที่คำนวณไว้)
+ */
+.bed {
+  position: absolute;
+  border-radius: var(--r-sm);
+  padding: 9px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  cursor: pointer;
+  font-family: inherit;
+  overflow: hidden;
+  text-align: left;
+  z-index: 2;
+  animation: sy-rise 0.45s both;
+  transition:
+    transform var(--dur) var(--ease-out),
+    box-shadow var(--dur) ease,
+    filter var(--dur) ease,
+    background var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.bed:hover {
+  transform: scale(1.035);
+  z-index: 4;
+  box-shadow: 0 14px 26px -14px rgba(20, 32, 24, 0.55);
+  filter: saturate(1.08);
+}
+
+.bed:active {
+  transform: scale(1.005);
+  transition-duration: var(--dur-fast);
+}
+
+.bed:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 1px;
+  z-index: 5;
+}
+
+.waterSheen {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.55) 0%,
+    rgba(255, 255, 255, 0) 45%
+  );
+}
+
+.waterWave {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 40%;
+  pointer-events: none;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.35));
+  animation: sy-wave 2.6s ease-in-out infinite;
+}
+
+.closedHatch {
+  position: absolute;
+  inset: 3px;
+  border-radius: 8px;
+  border: 3px dashed rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+}
+
+.bedTop {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.bedCropWrap {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 2px 5px -2px rgba(28, 60, 40, 0.35);
+}
+
+.bedName {
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.1;
+  white-space: nowrap;
+}
+
+.bedDot {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 50%;
+  box-shadow: 0 0 0 2.5px rgba(255, 255, 255, 0.9);
+  transition: background var(--dur) ease;
+}
+
+.sensorChip {
+  composes: tap from '@/styles/dashboard.module.css';
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  flex: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  border-radius: 7px;
+}
+
+.bedCrop {
+  position: relative;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.bedFoot {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: flex-end;
+  gap: 6px;
+  width: 100%;
+  margin-top: auto;
+}
+
+.bedMoist {
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.alertRing {
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-sm);
+  pointer-events: none;
+  animation: sy-glowring 1.9s ease-in-out infinite;
+}
+
+.hoverCard {
+  position: absolute;
+  z-index: 6;
+  pointer-events: none;
+  border-radius: 12px;
+  padding: 11px 13px;
+  min-width: 190px;
+  max-width: 230px;
+  animation: sy-fade 0.22s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.hoverTitle {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--d-ink);
+  margin-bottom: 6px;
+}
+
+.hoverStats {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.hoverStat {
+  line-height: 1.1;
+}
+
+.hoverValue {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.hoverLabel {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.hoverFoot {
+  display: flex;
+  gap: 14px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid var(--d-line-2);
+}
+
+/*
+ * ป้ายบอกว่ากติกาที่ตั้งยังไม่ได้สั่งงานจริง — ไม่ใช่คำเตือน จึงใช้โทนกลาง
+ * เส้นประสื่อว่า "ยังไม่เชื่อมของจริง" โดยไม่ต้องใช้สีเตือนแย่งความสนใจจากแถบ guard
+ */
+.notLiveNote {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 0 1 auto;
+  max-width: 380px;
+  padding: 8px 12px;
+  border-radius: 11px;
+  background: var(--d-surface-3);
+  border: 1px dashed var(--d-line-dash);
+  font-size: var(--fs-min);
+  color: var(--d-ink-3);
+  line-height: 1.45;
+}
+
+/* ══════════════ รดน้ำทั้งโรงเรือน ══════════════ */
+
+/*
+ * ปุ่มสั่งงานต้องไม่ยืดเต็มคอลัมน์ 1,088px — ปุ่มยาวขนาดนั้นอ่านยากและกดพลาดง่าย
+ * จับคู่กับกลุ่มสถานะไว้ข้างกัน ให้ตาเห็น "กดอะไร" กับ "ตอนนี้เป็นยังไง" พร้อมกัน
+ */
+.waterRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.waterBtn {
+  flex: 0 1 300px;
+  min-width: 220px;
+}
+
+.waterFacts {
+  flex: 1 1 260px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* ไม่มีเส้นคั่น — แต่ละก้อนมีไอคอนนำอยู่แล้ว และเส้นคั่นจะค้างเก้ๆ กังๆ ตอนขึ้นบรรทัดใหม่ */
+.factRow {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.fact {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.factValue {
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+/* ══════════════ อัตโนมัติ ══════════════ */
+
+.autoHead {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+/*
+ * "รดน้ำเมื่อ" กับ "ข้ามเมื่อ" — วางคู่กันเฉพาะจอกว้างพอ (การ์ด ≥ 440px)
+ * ถ้าแคบกว่านั้นให้ซ้อนเต็มความกว้าง ไม่งั้นช่องเวลา 2 ช่องจะเบียดจนป้ายชื่อแตกบรรทัด
+ */
+.ruleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(440px, 1fr));
+  gap: 12px;
+  align-items: start;
+}
+
+/* ข้อความปิดท้ายกินเต็มแถว ไม่ใช่ไปเบียดเป็นคอลัมน์ที่สาม */
+.ruleGrid > .hybridNote {
+  grid-column: 1 / -1;
+}
+
+/*
+ * แถวคู่: "รดน้ำทั้งโรงเรือน" กับ "ต้องดูแลด่วน"
+ * ทั้งคู่เนื้อหาสั้น ถ้าเรียงลงมาทีละอันจะได้กล่องเตี้ยยาว 1,088px ที่ว่างเปล่าทางขวา
+ */
+.dualRow {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+  gap: 14px;
+  align-items: stretch;
+}
+
+.attnList {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+/* ไม่มีแปลงต้องดูแล — สถานะบวก แทนการ์ดปัญหาที่ฝังไว้ตายตัว */
+.attnEmpty {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 14px 4px;
+  color: var(--d-muted);
+  font-weight: 600;
+}

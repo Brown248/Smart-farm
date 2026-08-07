@@ -1,0 +1,72 @@
+/* พื้นที่กดของแต่ละแปลง — โปร่งใส แต่ต้องไม่เล็กกว่า 44×44 */
+.hit {
+  position: absolute;
+  min-width: 44px;
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  z-index: 3;
+  border-radius: var(--r-sm);
+}
+
+/* หมุดโซนอยู่บนภาพฉาก จึงใช้วงขาวให้เห็นชัดบนพื้นหลังทุกสี */
+.hit:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.95);
+  outline-offset: 2px;
+  z-index: 6;
+}
+
+.pin {
+  position: absolute;
+  transform-origin: 50% 50%;
+  transition: transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  z-index: 4;
+}
+
+.pop {
+  display: block;
+}
+
+.beat {
+  position: relative;
+  display: block;
+}
+
+.ripple {
+  position: absolute;
+  inset: -2px;
+  border-radius: 50%;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.dot {
+  display: block;
+  width: clamp(17px, 1.7vw, 25px);
+  height: clamp(17px, 1.7vw, 25px);
+  border-radius: 50%;
+  border: 3px solid #fffdf5;
+  box-shadow:
+    0 0 0 2px rgba(58, 38, 16, 0.4),
+    0 4px 8px rgba(30, 20, 8, 0.45);
+}
+
+/* ป้ายบอกค่า — โชว์เฉพาะโซนที่เตือนหรือวิกฤต โซนปกติเป็นหมุดเปล่า */
+.chip {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  white-space: nowrap;
+  padding: 4px 10px;
+  border-radius: var(--r-pill);
+  background: linear-gradient(180deg, #fff6e2, #f6e2bb);
+  color: var(--ink-wood-2);
+  box-shadow:
+    0 3px 0 rgba(122, 80, 38, 0.28),
+    0 5px 12px rgba(30, 20, 8, 0.35);
+}

@@ -1,0 +1,10 @@
+.dot {
+  display: block;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  transition: background-color 0.5s ease;
+}
+
+.ringed {
+  border: 2px solid #fff;
+}

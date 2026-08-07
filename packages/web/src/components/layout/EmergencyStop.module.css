@@ -1,0 +1,85 @@
+/*
+ * ปุ่มหยุดฉุกเฉินของแถบเมนู — ปุ่มเดียวของทั้งระบบสำหรับหน้าจอข้อมูล
+ * อยู่ในแถบเมนูเพราะแถบเป็น sticky เต็มความสูง (`AppRail.module.css .side`)
+ * ส่วน header ของหน้าไม่ sticky — วางไว้ตรงนั้นจะหลุดจอทันทีที่เลื่อนลง
+ *
+ * หมายเหตุ: คลาส `collapsed` ของแถบเมนูอยู่คนละ CSS module จึงใช้ selector
+ * แบบ `.collapsed .estop` ข้ามไฟล์ไม่ได้ — ต้องรับ prop มาแล้วติดคลาสที่ปุ่มเอง
+ */
+.estop {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  flex: none;
+  /* ระยะห่างมาจาก `.side { gap: 8px }` กับ `.foot { margin-top: 6px }` แล้ว อย่าเติมซ้ำ */
+  padding: 12px;
+  border-radius: 12px;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 800;
+  text-align: left;
+  color: #fff;
+  background: #c0322d;
+  box-shadow: 0 10px 22px -12px rgba(192, 50, 45, 0.9);
+  min-height: 46px;
+}
+
+.icon {
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+/*
+ * ล็อกอยู่ = เต้นเบาๆ ให้เห็นว่ายังไม่ปลด
+ * ต้องเป็นคลาส ห้ามเป็น inline style — `ironRules.test.tsx` จับ inline `infinite`
+ * เพราะ inline ไม่ถูก @media (prefers-reduced-motion) ปิด แต่คลาสถูกปิดด้วยกฎรวมใน keyframes.css
+ */
+.active {
+  background: #7a1e1a;
+  box-shadow: none;
+  animation: sy-emerg 1.1s ease-in-out infinite;
+}
+
+/* แถบยุบเหลือ 76px — เหลือไอคอนอย่างเดียว แต่ aria-label เหมือนเดิม */
+.compact {
+  justify-content: center;
+  padding: 12px 0;
+}
+
+.compact .label {
+  display: none;
+}
+
+/*
+ * จอเล็ก แถบเมนูกลายเป็นบาร์ล่าง และ `.spacer`/`.foot` ถูกซ่อน
+ * ปุ่มนี้ต้องไม่หายไปด้วย — ย่อเป็นไอคอน+ข้อความสองบรรทัดเหมือน navItem ตัวอื่น
+ */
+@media (max-width: 860px) {
+  .estop,
+  .compact {
+    flex-direction: column;
+    gap: 3px;
+    width: auto;
+    padding: 6px 10px;
+    font-size: var(--fs-min);
+    text-align: center;
+    min-height: 46px;
+  }
+
+  .label,
+  .compact .label {
+    display: block;
+    flex: none;
+  }
+}

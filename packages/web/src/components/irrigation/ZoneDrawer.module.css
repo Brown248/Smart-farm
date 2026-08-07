@@ -1,0 +1,488 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 70;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.scrim {
+  position: absolute;
+  inset: 0;
+  border: 0;
+  padding: 0;
+  background: rgba(23, 50, 37, 0.4);
+  backdrop-filter: blur(3px);
+  animation: sy-fade 0.2s ease;
+  cursor: default;
+}
+
+.panel {
+  position: relative;
+  width: min(460px, 100%);
+  height: 100%;
+  background: var(--d-surface-2);
+  box-shadow: -20px 0 60px -24px rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  animation: sy-drawer 0.26s cubic-bezier(0.2, 0.9, 0.3, 1);
+}
+
+.head {
+  padding: 16px 16px 0;
+  background: var(--d-surface);
+  border-bottom: 1px solid var(--d-line);
+}
+
+.headRow {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+
+.headIcon {
+  width: 44px;
+  height: 44px;
+  flex: none;
+  border-radius: 13px;
+  display: grid;
+  place-items: center;
+}
+
+.headTitleRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.headTitle {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.statusBadge {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 8px;
+}
+
+.headSub {
+  font-size: 13.5px;
+  color: var(--d-muted);
+  margin-top: 2px;
+}
+
+.close {
+  composes: tap from '@/styles/dashboard.module.css';
+  width: 34px;
+  height: 34px;
+  border-radius: var(--r-sm);
+  border: none;
+  background: var(--d-surface-3);
+  color: var(--d-ink-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  flex: none;
+}
+
+.tabs {
+  display: flex;
+  gap: 2px;
+  margin-top: 14px;
+  overflow-x: auto;
+}
+
+.tab {
+  composes: tap from '@/styles/dashboard.module.css';
+  flex: none;
+  padding: 9px 13px;
+  border: none;
+  background: none;
+  border-bottom: 2.5px solid transparent;
+  color: var(--d-muted);
+  font-size: 13.5px;
+  font-weight: 600;
+  cursor: pointer;
+  font-family: inherit;
+  white-space: nowrap;
+  min-height: 40px;
+}
+
+.tabOn {
+  border-bottom-color: var(--brand-green);
+  color: var(--brand-green);
+  font-weight: 700;
+}
+
+.body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+}
+
+.stack {
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.card {
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.cardLg {
+  padding: 16px;
+}
+
+.label {
+  font-size: 13.5px;
+  color: var(--d-muted);
+}
+
+.labelSm {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+/* ── ภาพรวม ── */
+.moistRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.moistValue {
+  font-size: 34px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.moistTarget {
+  margin-bottom: 5px;
+  font-size: 13.5px;
+  color: var(--d-muted);
+}
+
+.moistTrack {
+  margin-top: 11px;
+  height: 9px;
+  border-radius: 5px;
+  background: var(--d-line-2);
+  position: relative;
+  overflow: hidden;
+}
+
+.moistFill {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  border-radius: 5px;
+}
+
+.moistTick {
+  position: absolute;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--d-ink);
+}
+
+.statGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 11px;
+}
+
+.statBig {
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--d-ink);
+  margin-top: 6px;
+}
+
+.statMode {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 6px;
+}
+
+.modeDot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+}
+
+.modeText {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+/* ── เซนเซอร์ ── */
+.sensorRow {
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  border-radius: 14px;
+  padding: 14px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.sensorIcon {
+  width: 34px;
+  height: 34px;
+  flex: none;
+  border-radius: var(--r-sm);
+  display: grid;
+  place-items: center;
+}
+
+.sensorTop {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.sensorLabel {
+  font-size: 13.5px;
+  color: var(--d-ink-3);
+  font-weight: 500;
+}
+
+.sensorDot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.sensorValueRow {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  margin-top: 2px;
+}
+
+.sensorValue {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.sensorUnit {
+  margin-bottom: 2px;
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.sensorSpark {
+  width: 96px;
+  flex: none;
+}
+
+.ruleGroupHead {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 11px;
+}
+
+/* ── ประวัติ ── */
+.timelineRow {
+  display: flex;
+  gap: 12px;
+}
+
+.timelineRail {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.timelineDot {
+  width: 11px;
+  height: 11px;
+  flex: none;
+  border-radius: 50%;
+  border-width: 2.5px;
+  border-style: solid;
+}
+
+.timelineLine {
+  flex: 1;
+  width: 2px;
+  background: var(--d-line);
+  margin: 3px 0;
+}
+
+.timelineBody {
+  flex: 1;
+  padding-bottom: 15px;
+  min-width: 0;
+}
+
+.timelineTop {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.timelineTag {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+}
+
+.timelineTitle {
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-ink);
+  margin-top: 3px;
+  line-height: 1.4;
+}
+
+/* ── ตั้งค่า ── */
+.settingRow {
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  border-radius: 13px;
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.settingLabel {
+  font-size: 13.5px;
+  color: var(--d-muted);
+  flex: none;
+  min-width: 96px;
+}
+
+.settingInput {
+  flex: 1;
+  min-width: 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  background: #f8faf7;
+  border: 1.5px solid var(--d-line);
+  border-radius: 9px;
+  padding: 8px 11px;
+  outline: none;
+  font-family: inherit;
+  text-align: right;
+  min-height: 40px;
+  transition:
+    border-color var(--dur-fast) var(--ease-out),
+    background var(--dur-fast) var(--ease-out);
+}
+
+.settingInput:focus-visible {
+  border-color: var(--brand-green);
+  background: var(--d-surface);
+  outline: 2px solid var(--brand-green);
+  outline-offset: 1px;
+}
+
+.notifRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.notifLabel {
+  font-size: var(--fs-min);
+  color: var(--d-ink-2);
+  flex: 1;
+}
+
+.toggle {
+  composes: tap from '@/styles/dashboard.module.css';
+  position: relative;
+  width: 44px;
+  height: 26px;
+  flex: none;
+  border-radius: 13px;
+  border: none;
+  cursor: pointer;
+  background: var(--d-line-dash);
+  transition: background 0.2s;
+}
+
+.toggleOn {
+  background: var(--brand-green);
+}
+
+/* เลื่อนด้วย transform ไม่ใช่ left — เหตุผลเดียวกับลูกบิดสวิตช์หน้าโรงเรือน */
+.toggleKnob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.25);
+  transition: transform 0.22s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+
+.toggleKnobOn {
+  transform: translateX(18px);
+}
+
+.savedMsg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--d-ok-bg);
+  border: 1px solid rgba(47, 158, 110, 0.3);
+  border-radius: 11px;
+  padding: 10px 13px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-ok-ink);
+}
+
+/* มีการแก้ค้างยังไม่บันทึก — โทนกลางๆ ต่างจาก savedMsg สีเขียว */
+.unsavedMsg {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--d-surface-3);
+  border: 1px solid var(--d-line);
+  border-radius: 11px;
+  padding: 10px 13px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-muted);
+}
+
+.saveBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  margin-top: 4px;
+  width: 100%;
+  padding: 13px;
+  border-radius: 13px;
+  border: none;
+  background: var(--brand-green);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+  font-family: inherit;
+  box-shadow: 0 8px 18px -8px rgba(39, 113, 80, 0.8);
+  min-height: 48px;
+}

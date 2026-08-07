@@ -1,0 +1,103 @@
+.head {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.headDot {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  margin-top: 7px;
+  flex: 0 0 auto;
+  box-shadow:
+    0 0 0 3px rgba(255, 255, 255, 0.9),
+    0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.headText {
+  min-width: 0;
+}
+
+.name {
+  font-size: 23px;
+  font-weight: 700;
+  display: block;
+}
+
+.crop {
+  font-size: 15px;
+  color: var(--ink-3);
+}
+
+.spacer {
+  flex: 1 1 auto;
+}
+
+.close {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 12px;
+  border: 1px solid var(--card-border);
+  background: #fff;
+  font-size: 18px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.metrics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.metricLabel {
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.metricValue {
+  font-size: 22px;
+  font-weight: 700;
+}
+
+.history {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.historyTitle {
+  font-size: 14px;
+  color: var(--ink-3);
+  font-weight: 600;
+}
+
+.historyRow {
+  display: flex;
+  gap: 10px;
+  font-size: 14px;
+  color: #3d4c43;
+  border-bottom: 1px dashed #e3dcc8;
+  padding-bottom: 8px;
+}
+
+.historyTime {
+  color: #8a8272;
+  flex: 0 0 70px;
+}
+
+.waterBtn {
+  min-height: 56px;
+  font-size: 17px;
+  font-weight: 600;
+}
+
+/* วงโฟกัสสำหรับคนใช้คีย์บอร์ด — ต้องมีทุกที่ที่กดได้ (styles/motion.test.ts บังคับ) */
+.close:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px var(--card-cream-1),
+    0 0 0 4px color-mix(in srgb, var(--brand-green) 55%, transparent);
+}

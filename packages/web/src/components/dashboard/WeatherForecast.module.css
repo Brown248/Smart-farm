@@ -1,0 +1,290 @@
+/*
+ * การ์ดพยากรณ์อากาศ — แบนเนอร์ใหญ่บนสุดของแดชบอร์ด
+ * พื้นไล่สีตามกลางวัน/กลางคืน (ตามอากาศจริง) ตัวหนังสือขาวอ่านชัดบนพื้นเข้ม
+ */
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  padding: 16px 22px 20px;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 14px 34px -16px rgba(20, 40, 60, 0.55);
+}
+
+/* แสงกวาดผ่านการ์ดช้าๆ ให้ดูมีชีวิต — ตกแต่งล้วน คลิปด้วย overflow ของ .card */
+.sheen {
+  position: absolute;
+  top: -20%;
+  bottom: -20%;
+  left: -40%;
+  width: 40%;
+  pointer-events: none;
+  z-index: 0;
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0),
+    rgba(255, 255, 255, 0.14),
+    rgba(255, 255, 255, 0)
+  );
+  transform: skewX(-12deg);
+  animation: wxSheen 9s ease-in-out infinite;
+}
+
+/* ── แถบหัว: ชื่อ + นาฬิกาไทยจริง ── */
+.head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.22);
+}
+
+.headTitle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+}
+
+.clock {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.24);
+}
+
+.clockTime {
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.5px;
+  font-variant-numeric: tabular-nums;
+}
+
+.clockDate {
+  font-size: var(--fs-min);
+  font-weight: 600;
+  opacity: 0.9;
+}
+
+/* ── ตัวเนื้อ: ตอนนี้ + 5 วัน ── */
+.body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 18px 26px;
+}
+
+/* กลางวัน — ฟ้าใสอมเขียว */
+.day {
+  background: linear-gradient(135deg, #3aa0e6 0%, #4db6ac 60%, #58c9a3 100%);
+}
+
+/* กลางคืน — น้ำเงินเข้มม่วง */
+.night {
+  background: linear-gradient(135deg, #23325e 0%, #33306b 55%, #3a2f57 100%);
+}
+
+/* ── ตอนนี้ ── */
+.now {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1 1 240px;
+  min-width: 0;
+}
+
+.nowIcon {
+  width: 68px;
+  height: 68px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.16);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  /* ลอยขึ้น-ลงเบาๆ ให้ไม่ดูแข็ง */
+  animation: wxFloat 4.5s ease-in-out infinite;
+}
+
+.nowText {
+  min-width: 0;
+}
+
+.nowTempRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.nowTemp {
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -1px;
+}
+
+.nowMeta {
+  min-width: 0;
+}
+
+.nowCond {
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.nowSub {
+  font-size: var(--fs-min);
+  opacity: 0.9;
+}
+
+.rainNow {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 8px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.2);
+  font-size: var(--fs-min);
+  font-weight: 700;
+  /* เต้นจางๆ เรียกสายตาตอนฝนตกจริง */
+  animation: wxPulse 1.9s ease-in-out infinite;
+}
+
+/* ── 5 วัน ── */
+.days {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(58px, 1fr));
+  gap: 8px;
+  flex: 2 1 340px;
+}
+
+.dayCell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 4px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  /* ไล่โผล่ทีละใบตอนเข้าหน้า (เล่นครั้งเดียว) */
+  animation: wxRise 0.5s ease-out backwards;
+}
+
+.dayCell:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.dayCell:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.dayCell:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.dayCell:nth-child(5) {
+  animation-delay: 0.2s;
+}
+
+.dayName {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+.dayTemps {
+  display: flex;
+  align-items: baseline;
+  gap: 5px;
+  font-size: 14px;
+}
+
+.dayMin {
+  opacity: 0.7;
+}
+
+.dayRain {
+  /* ฟอนต์ต้อง ≥ 13px (--fs-min) — เดิม 11px เล็กกว่าเกณฑ์ */
+  font-size: var(--fs-min);
+  opacity: 0.82;
+}
+
+/* จอแคบ — พยากรณ์เลื่อนแนวนอนแทนบีบจนอ่านไม่ออก */
+@media (max-width: 560px) {
+  .days {
+    display: flex;
+    overflow-x: auto;
+  }
+  .dayCell {
+    flex: 0 0 62px;
+  }
+}
+
+/* ── keyframes (transform/opacity เท่านั้น) ── */
+@keyframes wxFloat {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+@keyframes wxSheen {
+  0% {
+    transform: translateX(0) skewX(-12deg);
+  }
+  55%,
+  100% {
+    transform: translateX(700%) skewX(-12deg);
+  }
+}
+
+@keyframes wxRise {
+  from {
+    opacity: 0;
+    transform: translateY(9px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes wxPulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* เคารพผู้ที่ขอลดการเคลื่อนไหว — ปิด animation ทั้งหมด */
+@media (prefers-reduced-motion: reduce) {
+  .sheen,
+  .nowIcon,
+  .rainNow,
+  .dayCell {
+    animation: none;
+  }
+  .sheen {
+    display: none;
+  }
+}

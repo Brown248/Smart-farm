@@ -1,0 +1,56 @@
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.row {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  /* surface-2 ไม่ใช่ #f8faf7 — แถวนี้วางบนพื้นขาวทั้งในการ์ดลิ้นชักและในหน้าโรงเรือน
+     สีเดิมต่างจากขาวแค่นิดเดียวจนแทบไม่เห็นว่าเป็นแถวแยกกัน */
+  background: var(--d-surface-2);
+  border: 1px solid var(--d-line);
+  border-radius: 12px;
+  padding: 11px 12px;
+}
+
+.dot {
+  width: 9px;
+  height: 9px;
+  flex: none;
+  margin-top: 5px;
+  border-radius: 50%;
+}
+
+.body {
+  flex: 1;
+  min-width: 0;
+}
+
+.top {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.action {
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--d-ink);
+}
+
+.tag {
+  font-size: var(--fs-min);
+  font-weight: 700;
+  padding: 1px 8px;
+  border-radius: 6px;
+}
+
+.meta {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+  margin-top: 2px;
+}

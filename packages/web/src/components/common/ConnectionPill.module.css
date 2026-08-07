@@ -1,0 +1,101 @@
+/*
+ * ป้ายสถานะการไหลของข้อมูล — โครงเดียวกับ `.statusPill` เดิมใน dashboard.module.css
+ * ต่างที่สีกับข้อความเปลี่ยนตามสถานะจริง ไม่ใช่เขียน "ออนไลน์" ไว้ตายตัว
+ */
+.pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border-radius: 11px;
+  background: var(--d-surface);
+  border: 1px solid var(--d-line);
+  transition:
+    background var(--dur) ease,
+    border-color var(--dur) ease;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  flex: none;
+  border-radius: 50%;
+  transition: background var(--dur) ease;
+}
+
+/* เต้นเฉพาะตอนกำลังต่อ/สด — ตอน offline หรือจำลองอยู่นิ่งๆ ดีกว่า ไม่ต้องดึงสายตา */
+.dotPulse {
+  animation: sy-onpulse 2.4s ease-in-out infinite;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+  min-width: 0;
+}
+
+.label {
+  font-size: var(--fs-min);
+  font-weight: 600;
+}
+
+.ago {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+/* ── สด ── */
+.live .dot {
+  background: var(--d-ok);
+  box-shadow: 0 0 0 3px rgba(47, 158, 110, 0.28);
+}
+
+.live .label {
+  color: var(--d-ok-ink);
+}
+
+/* ── กำลังต่อ / ต่อใหม่ ── */
+.busy {
+  border-color: rgba(185, 114, 15, 0.4);
+  background: var(--d-warn-bg);
+}
+
+.busy .dot {
+  background: var(--d-warn);
+  box-shadow: 0 0 0 3px rgba(185, 114, 15, 0.24);
+}
+
+.busy .label {
+  color: var(--d-warn-ink-2);
+}
+
+/* ── ขาดการเชื่อมต่อ ── */
+.offline {
+  border-color: rgba(192, 50, 45, 0.35);
+  background: #fceeec;
+}
+
+.offline .dot {
+  background: #c0322d;
+  box-shadow: 0 0 0 3px rgba(192, 50, 45, 0.2);
+}
+
+.offline .label {
+  color: #a8302b;
+}
+
+/* ── ข้อมูลจำลอง — เส้นประสื่อว่า "ยังไม่ได้ต่อของจริง" โดยไม่ใช้สีเตือน ── */
+.mock {
+  border-style: dashed;
+  border-color: var(--d-line-dash);
+  background: var(--d-surface-3);
+}
+
+.mock .dot {
+  background: var(--d-muted);
+}
+
+.mock .label {
+  color: var(--d-ink-3);
+}

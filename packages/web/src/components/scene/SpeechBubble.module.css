@@ -1,0 +1,59 @@
+.float {
+  animation: fsFloat 5.5s ease-in-out infinite;
+  margin-bottom: 10px;
+  max-width: 100%;
+}
+
+.bubble {
+  position: relative;
+  max-width: 100%;
+  background: linear-gradient(180deg, #fff6e2, #f7e6c4);
+  border: 3px solid var(--wood);
+  border-radius: var(--r-lg);
+  padding: 9px 12px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  line-height: 1.35;
+  color: var(--ink-wood);
+  box-shadow:
+    0 4px 0 rgba(122, 80, 38, 0.4),
+    0 8px 18px rgba(28, 18, 8, 0.34);
+  transform-origin: 22% 100%;
+  animation: fsBubblePop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.name {
+  display: block;
+  font-size: var(--fs-min);
+  font-weight: 700;
+  color: var(--brand-green);
+  margin-bottom: 2px;
+}
+
+.zzz {
+  display: inline-block;
+  margin-left: 6px;
+  font-size: var(--fs-min);
+  color: var(--wood-dark);
+  animation: fsZzz 2.6s ease-in-out infinite;
+}
+
+.zzz2 {
+  margin-left: 3px;
+  opacity: 0;
+  animation: fsZzz 2.6s ease-in-out 1.3s infinite;
+}
+
+/* หางบับเบิลชี้ลงไปที่ตัวหมี — หมีอยู่มุมขวา หางจึงชี้ทางขวา */
+.tail {
+  position: absolute;
+  right: 34px;
+  bottom: -10px;
+  width: 16px;
+  height: 16px;
+  transform: rotate(45deg);
+  background: #f7e6c4;
+  border-right: 3px solid var(--wood);
+  border-bottom: 3px solid var(--wood);
+  border-bottom-right-radius: 4px;
+}

@@ -1,0 +1,133 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  animation: fsFade 0.16s ease-out;
+}
+
+.nav {
+  width: min(80vw, 284px);
+  background: linear-gradient(180deg, var(--btn-green-bottom), #1d4f39);
+  border-right: 4px solid #14382a;
+  color: #fff;
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  animation: fsSlideL 0.18s ease-out;
+  box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
+  overflow: auto;
+}
+
+.heading {
+  font-size: var(--fs-min);
+  opacity: 0.7;
+  padding: 6px 10px 10px;
+}
+
+.item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+  padding: 12px;
+  border-radius: var(--r-sm);
+  min-height: 44px;
+  border: 0;
+  background: transparent;
+  color: #fff;
+  text-align: left;
+  font-family: var(--font);
+  cursor: pointer;
+  width: 100%;
+  /* ไฮไลต์เส้นทางที่เลือก + hover ค่อยๆ ไล่สี ไม่ดีดทันที */
+  transition:
+    background var(--dur) ease,
+    color var(--dur) ease;
+}
+
+.item:not(.itemSoon):hover {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.item:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.75);
+}
+
+.itemActive {
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.itemSoon {
+  color: rgba(255, 255, 255, 0.55);
+  cursor: not-allowed;
+}
+
+.itemDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+  flex: 0 0 auto;
+}
+
+.grow {
+  flex: 1 1 auto;
+}
+
+.soonTag {
+  font-size: var(--fs-min);
+  opacity: 0.6;
+}
+
+.legend {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.08);
+  margin-bottom: 6px;
+}
+
+.legendRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--fs-min);
+  color: #fff;
+}
+
+.toggles {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.drawerBtn {
+  min-height: 44px;
+  font-size: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: transparent;
+  color: #fff;
+  border-radius: var(--r-sm);
+  justify-content: center;
+}
+
+.scrim {
+  flex: 1 1 auto;
+  border: 0;
+  padding: 0;
+  background: rgba(8, 16, 12, 0.5);
+  cursor: default;
+}
+
+/* วงโฟกัสสำหรับคนใช้คีย์บอร์ด — ต้องมีทุกที่ที่กดได้ (styles/motion.test.ts บังคับ) */
+.item:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 2px rgba(0, 0, 0, 0.35),
+    0 0 0 4px color-mix(in srgb, var(--brand-green) 55%, transparent);
+}

@@ -1,0 +1,122 @@
+/*
+ * ท้ายแถบเมนู — โครงเดียวกับ `.foot` เดิมใน AppRail.module.css
+ * ต่างที่เนื้อหาเป็นบัญชีจริง ไม่ใช่ชื่อที่ฝังไว้
+ */
+.box {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  border-radius: 13px;
+  background: linear-gradient(135deg, rgba(39, 113, 80, 0.05), rgba(39, 113, 80, 0));
+  border: 1px solid rgba(39, 113, 80, 0.1);
+  padding: 10px 11px;
+  margin-top: 6px;
+}
+
+.avatar {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: linear-gradient(150deg, #b9720f, #9a5e0c);
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font-weight: 700;
+  font-size: 13.5px;
+}
+
+/* ยังไม่ได้ตั้งค่า auth — โทนกลาง ไม่ใช่สีที่สื่อว่ามีคนใช้งานอยู่ */
+.avatarOff {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--d-surface-3);
+  border: 1px dashed var(--d-line-dash);
+  display: grid;
+  place-items: center;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+  min-width: 0;
+  flex: 1;
+}
+
+.name {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-ink);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.role {
+  font-size: var(--fs-min);
+  color: var(--d-muted);
+}
+
+.iconBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  width: 28px;
+  height: 28px;
+  flex: none;
+  border: none;
+  border-radius: 8px;
+  background: var(--d-surface-3);
+  color: var(--d-ink-3);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.signInBtn {
+  composes: tap from '@/styles/dashboard.module.css';
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  margin-top: 6px;
+  padding: 10px 11px;
+  border-radius: 13px;
+  border: 1px solid rgba(39, 113, 80, 0.25);
+  background: var(--d-ok-bg);
+  color: var(--d-ok-ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 700;
+  text-align: left;
+  min-height: 44px;
+}
+
+.compact {
+  justify-content: center;
+  padding: 10px 0;
+}
+
+.signInIcon {
+  width: 32px;
+  height: 32px;
+  flex: none;
+  border-radius: 9px;
+  background: var(--d-surface);
+  display: grid;
+  place-items: center;
+}
+
+.signInLabel {
+  flex: 1;
+  min-width: 0;
+}
+
+@media (max-width: 860px) {
+  .box,
+  .signInBtn {
+    display: none;
+  }
+}
