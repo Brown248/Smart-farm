@@ -113,8 +113,8 @@ export const isLiveConfigured = (): boolean => readLiveDataConfig() !== null;
  *
  * 🔴 **`baseUrl` เป็น path ของ proxy บน origin เดียวกับหน้าเว็บเสมอ ไม่ใช่ URL ของเครื่อง AI ตรงๆ**
  *
- * หน้าเว็บเสิร์ฟด้วย HTTPS (dev ใช้ basic-ssl · prod อยู่หลัง TLS) แต่เครื่อง AI เป็น `http://`
- * เบราว์เซอร์บล็อกคำขอ HTTP ที่ออกจากหน้า HTTPS (mixed content) — ยิงตรงไม่มีทางผ่าน
+ * เหตุผลมีสองชั้น: (1) เครื่อง AI ไม่ได้เปิด CORS ให้ origin ของเรา ยิงตรงจากเบราว์เซอร์ไม่ผ่าน
+ * (2) วันที่หน้าเว็บอยู่หลัง TLS การยิง `http://` ตรงจะโดนบล็อกเป็น mixed content ทันที
  * และ CSP ของเราตั้ง `connect-src 'self'` ไว้ ซึ่ง proxy บน origin เดียวกันผ่านอยู่แล้ว ไม่ต้องแก้
  * (แพตเทิร์นเดียวกับ `/hs-proxy` ของคำสั่งอุปกรณ์ · ปลายทางตั้งที่ vite.config / nginx)
  *

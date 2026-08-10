@@ -4,9 +4,6 @@ import { defineConfig } from 'vitest/config';
 import { loadEnv } from 'vite';
 import type { Plugin } from 'vite';
 import react from '@vitejs/plugin-react';
-// เปิด HTTPS ให้ dev server (cert self-signed สร้างอัตโนมัติ) — ให้เปิดจากวง LAN ได้ที่ https://<ip>:5173
-// (เบราว์เซอร์จะเตือน "ไม่ปลอดภัย" เพราะ cert เซ็นเอง กด "ดำเนินการต่อ" ได้ · ใช้ในวงบริษัทเท่านั้น)
-import basicSsl from '@vitejs/plugin-basic-ssl';
 
 /** ชื่อ env ที่แอปใช้ — ถ้าเจอชื่อพวกนี้แบบไม่มี prefix ให้เตือน */
 const NEEDS_PREFIX = [
@@ -61,7 +58,15 @@ export default defineConfig(({ mode }) => {
   const ai = (loadEnv(mode, root, '').AI_ORIGIN ?? '').replace(/\/+$/, '');
 
   return {
-    plugins: [react(), basicSsl(), warnUnprefixedEnv()],
+    /*
+     * **dev server เป็น HTTP ธรรมดาโดยตั้งใจ** — เคยใช้ `@vitejs/plugin-basic-ssl` เปิด HTTPS ให้
+     * แต่ cert เป็นแบบเซ็นเอง เบราว์เซอร์จึงขึ้นหน้าเตือนเต็มจอที่ต้องกดผ่าน **ทุกเครื่อง**
+     * และต้องกดใหม่ทุกครั้งที่ cert ถูกสร้างใหม่ — แย่กว่า HTTP ล้วนสำหรับการเปิดจากแท็บเล็ตในวง
+     *
+     * ใบรับรองที่เบราว์เซอร์เชื่อถือจริงออกให้ IP ส่วนตัว (172.16.x.x) ไม่ได้ตามกฎของ CA
+     * ต้องมีโดเมนจริงหรือติดตั้ง CA เองลงทุกเครื่อง ซึ่งเกินความจำเป็นของ dev server
+     */
+    plugins: [react(), warnUnprefixedEnv()],
     resolve: {
       alias: {
         '@shared': fileURLToPath(new URL('../shared/src', import.meta.url)),
@@ -103,10 +108,10 @@ export default defineConfig(({ mode }) => {
             }
           : {}),
         /**
-         * ผู้ช่วย AI — **จำเป็นต้อง proxy ไม่ใช่แค่เลี่ยง CORS**
-         *
-         * dev server เป็น HTTPS (basic-ssl) แต่เครื่อง AI เป็น `http://` ธรรมดา
-         * เบราว์เซอร์บล็อกคำขอ HTTP ที่ออกจากหน้า HTTPS (mixed content) — ยิงตรงไม่มีทางผ่าน
+         * ผู้ช่วย AI — proxy ไว้ด้วย 2 เหตุผล
+         *   1. **CORS** — เครื่อง AI ไม่ได้ตั้ง `Access-Control-Allow-Origin` ให้ origin ของเรา
+         *   2. **mixed content** — วันที่หน้าเว็บอยู่หลัง TLS (prod) การยิง `http://` ตรงจะถูกบล็อกทันที
+         *      ถึง dev จะเป็น HTTP แล้วก็ต้องคงเส้นทางเดียวกันไว้ ไม่งั้น dev ผ่านแต่ prod พัง
          * `secure: false` เพราะปลายทางเป็น http ในวง LAN ไม่มี cert ให้ตรวจ
          */
         ...(ai
