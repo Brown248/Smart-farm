@@ -42,6 +42,12 @@ ENV AI_ORIGIN=http://172.16.7.60:8080
 # แล้วฝังลง image · override ตอน run จะไม่มีผลกับ CSP (nginx proxy ถูก แต่เบราว์เซอร์บล็อก)
 # ประกอบตอน container start แทน ดู `deploy/10-csp.envsh`
 COPY deploy/10-csp.envsh /docker-entrypoint.d/10-csp.envsh
+# 🔴 **ต้อง chmod ตรงนี้ ห้ามพึ่ง mode ที่ติดมากับไฟล์**
+# `docker-entrypoint.sh` ของ nginx เช็ค `if [ -x "$f" ]` ก่อน source — ไม่ executable = **ข้ามเงียบๆ**
+# แล้ว `CSP` จะไม่ถูกตั้ง กลายเป็น `Content-Security-Policy: ""` โดยไม่มีอะไรฟ้อง
+# build จาก Windows ผ่านเพราะ Docker ใส่ exec bit ให้เอง (ระบบไฟล์ Windows ไม่มี bit นี้)
+# แต่ clone บน Linux จะได้ 644 → พังเฉพาะบนเซิร์ฟเวอร์จริง ซึ่งเป็นที่ที่เจ็บที่สุด
+RUN chmod +x /docker-entrypoint.d/10-csp.envsh
 
 # nginx:alpine จะรัน envsubst บนไฟล์ใน /etc/nginx/templates/*.template ตอน start
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
