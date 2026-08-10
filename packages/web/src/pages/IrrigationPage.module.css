@@ -527,6 +527,7 @@
 .ruleInput {
   flex: none;
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: 14px;
   font-weight: 700;
   color: var(--d-ink);

@@ -59,6 +59,37 @@
   font-weight: 600;
 }
 
+/*
+ * ตัวเลขกลางวงเกจ (การ์ดเซนเซอร์แดชบอร์ด + การ์ดสภาพอากาศหน้าโรงเรือน)
+ *
+ * 🔴 เดิมเขียน `fontFamily="IBM Plex Mono"` ลงใน `<text>` ตรงๆ ไม่มี fallback
+ * `<text>` ของ SVG ที่หาฟอนต์ไม่เจอจะตกไปใช้ค่าเริ่มต้นของเบราว์เซอร์ ซึ่งเป็น **serif**
+ * ไม่ใช่ `Prompt` เหมือนที่อื่น → เพี้ยนแรงกว่าจุดอื่นด้วยซ้ำ และไม่มี error ฟ้อง
+ * ต้องมาจาก `--font-num` ตัวเดียวกับตัวเลขทั้งระบบเสมอ
+ */
+.gaugeText {
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 700;
+  font-feature-settings: 'tnum' 1;
+  fill: var(--d-ink);
+}
+
+/* ตัวเลขกลางโดนัทในการ์ดภาพรวม — วางบนพื้นเขียวเข้ม จึงเป็นตัวหนังสือขาว (เหตุผลเดียวกับ .gaugeText) */
+.donutValue {
+  font-family: var(--font-num);
+  font-size: 21px;
+  font-weight: 700;
+  font-feature-settings: 'tnum' 1;
+  fill: var(--d-surface);
+}
+
+.donutLabel {
+  font-family: var(--font);
+  font-size: var(--fs-min);
+  fill: var(--d-donut-label);
+}
+
 .lastText {
   font-family: var(--font);
   font-size: 14px;

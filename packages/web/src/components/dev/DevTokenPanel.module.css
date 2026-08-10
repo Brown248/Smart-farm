@@ -85,6 +85,7 @@
   background: #101713;
   color: #dcead9;
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: 13px;
   resize: vertical;
 }
@@ -166,6 +167,7 @@
 
 .rowOk {
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   color: #8fd3a8;
 }
 
@@ -188,6 +190,7 @@
 .unmatchedList {
   margin-top: 4px;
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   color: #dcead9;
   word-break: break-all;
 }

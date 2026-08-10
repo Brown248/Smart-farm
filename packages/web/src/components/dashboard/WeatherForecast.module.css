@@ -65,12 +65,14 @@
   border: 1px solid rgba(255, 255, 255, 0.24);
 }
 
+/* นาฬิกา — เดิมมีแต่ tabular-nums แต่ไม่ได้เปลี่ยนฟอนต์ เลขเลยเป็นคนละหน้ากับที่อื่น */
 .clockTime {
+  font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: 20px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: 0.5px;
-  font-variant-numeric: tabular-nums;
 }
 
 .clockDate {
@@ -131,9 +133,20 @@
   gap: 12px;
 }
 
+/*
+ * อุณหภูมิตัวใหญ่ — ต้องเป็นฟอนต์ตัวเลขชุดเดียวกับที่อื่น
+ * ค่าตัวเดียวกันนี้โผล่ที่หน้าชลประทานด้วย (`wxTemp` ซึ่งใช้ `.num` มาตลอด)
+ * เดิมใบนี้ไม่ได้ตั้ง → อุณหภูมิเดียวกันหน้าตาคนละแบบสองหน้า
+ *
+ * weight 700 ไม่ใช่ 800 — IBM Plex Mono หนาสุดที่ 700 (Bold)
+ * ขอ 800 เบราว์เซอร์จะ **faux-bold** ให้ ซึ่งหนาไม่เท่าจุดอื่นและเส้นเละ
+ * ต้นแบบก็ใช้ 700 กับตัวเลขใหญ่เหมือนกัน
+ */
 .nowTemp {
+  font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: 48px;
-  font-weight: 800;
+  font-weight: 700;
   line-height: 1;
   letter-spacing: -1px;
 }
@@ -206,11 +219,14 @@
   opacity: 0.95;
 }
 
+/* สูงสุด/ต่ำสุดรายวัน — เรียงเป็นคอลัมน์ 7 วัน ต้องกว้างเท่ากันถึงจะอ่านไล่ลงมาได้ */
 .dayTemps {
   display: flex;
   align-items: baseline;
   gap: 5px;
   font-size: 14px;
+  font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
 }
 
 .dayMin {

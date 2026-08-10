@@ -446,6 +446,7 @@
   font-weight: 700;
   color: #eaf3ee;
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
 }
 
 .heroDotMark {

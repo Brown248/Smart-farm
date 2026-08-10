@@ -1,3 +1,5 @@
+import s from './chart.module.css';
+
 export interface DonutSlice {
   readonly value: number;
   readonly color: string;
@@ -43,18 +45,10 @@ export function Donut({ slices, unitLabel }: DonutProps) {
     <svg width={92} height={92} viewBox="0 0 92 92" aria-hidden="true" style={{ flex: 'none' }}>
       <circle cx={46} cy={46} r={R} fill="none" stroke="rgba(255,255,255,.16)" strokeWidth={11} />
       {arcs}
-      <text
-        x={46}
-        y={44}
-        textAnchor="middle"
-        fontSize={21}
-        fontWeight={700}
-        fill="#fff"
-        fontFamily="IBM Plex Mono"
-      >
+      <text x={46} y={44} textAnchor="middle" className={s.donutValue}>
         {total}
       </text>
-      <text x={46} y={60} textAnchor="middle" fontSize={13} fill="#cfe3d6" fontFamily="Prompt">
+      <text x={46} y={60} textAnchor="middle" className={s.donutLabel}>
         {unitLabel}
       </text>
     </svg>

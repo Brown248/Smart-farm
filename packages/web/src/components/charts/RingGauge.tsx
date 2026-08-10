@@ -1,4 +1,5 @@
 import { clamp } from '@/lib/format';
+import s from './chart.module.css';
 
 export interface RingGaugeProps {
   /** 0–100 */
@@ -27,15 +28,7 @@ export function RingGauge({ percent, color }: RingGaugeProps) {
         transform="rotate(-90 31 31)"
         style={{ stroke: color, transition: 'stroke-dashoffset .7s cubic-bezier(.2,.9,.3,1)' }}
       />
-      <text
-        x={31}
-        y={36}
-        textAnchor="middle"
-        fontSize={15}
-        fontWeight={700}
-        fill="#1c2621"
-        fontFamily="IBM Plex Mono"
-      >
+      <text x={31} y={36} textAnchor="middle" className={s.gaugeText}>
         {Math.round(v)}%
       </text>
     </svg>

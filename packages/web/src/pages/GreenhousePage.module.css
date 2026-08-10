@@ -448,6 +448,7 @@
   width: 68px;
   flex: none;
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: var(--fs-min);
   font-weight: 700;
   color: var(--d-ink);
@@ -526,6 +527,7 @@
 
 .schedInput {
   font-family: var(--font-num);
+  font-feature-settings: 'tnum' 1;
   font-size: var(--fs-min);
   font-weight: 700;
   color: var(--d-ink);
