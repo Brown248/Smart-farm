@@ -481,16 +481,8 @@ export function AllMetricsChart({
           const active = cursor ? pts[cursor.index] : null;
           const band = targetBandBox(k, extent, panel);
           const lastValue = values[values.length - 1];
-          const gid = `ag-${k}`;
           return (
             <g key={k}>
-              <defs>
-                <linearGradient id={gid} x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="0%" stopColor={color} stopOpacity={0.16} />
-                  <stop offset="100%" stopColor={color} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-
               {/* หัวช่อง: จุดสีบอกตัวตน + ชื่อค่า/หน่วย (ตัวหนังสือใช้สีหมึก ไม่ใช่สีเส้น) */}
               <circle cx={panel.padLeft + 3} cy={panel.top - 9} r={3.5} style={{ fill: color }} />
               <text x={panel.padLeft + 12} y={panel.top - 5} className={s.panelName}>
@@ -531,7 +523,14 @@ export function AllMetricsChart({
                 {fmt(extent.min)}
               </text>
 
-              <path d={smoothPath(pts, true, panel.bottom)} fill={`url(#${gid})`} />
+              {/*
+                🔴 **ไม่ระบายพื้นใต้เส้นในโหมดแยกช่อง** — ต่างจากกราฟค่าเดียวโดยตั้งใจ
+                ในช่องเดียวกันมีพื้นระบายอยู่แล้วหนึ่งชั้นคือ "ช่วงค่าเหมาะสม" ซึ่ง**มีความหมาย**
+                ถ้าใส่พื้นใต้เส้นเข้าไปอีก จะมีสองพื้นสีจางในกรอบเดียวที่แปลคนละเรื่อง
+                คนอ่านแยกไม่ออกว่าอันไหนคือเกณฑ์ อันไหนแค่ตกแต่ง
+                และค่าที่นิ่งใกล้ยอดแกน (เช่นดิน 99% บนแกน 90–100) จะกลายเป็นแท่งสีทึบเกือบเต็มช่อง
+                ซึ่งดึงสายตาไปทั้งที่ไม่ได้บอกอะไรเลย
+              */}
               <path
                 d={smoothPath(pts)}
                 fill="none"
