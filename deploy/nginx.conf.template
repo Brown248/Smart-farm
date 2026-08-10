@@ -42,6 +42,30 @@ server {
     add_header Content-Security-Policy "${CSP}" always;
   }
 
+  # ── reverse-proxy ผู้ช่วย AI → เซิร์ฟเวอร์ llama.cpp ในวง LAN ──
+  # /ai-proxy/v1/chat/completions → ${AI_ORIGIN}/v1/chat/completions
+  #
+  # 🔴 **จำเป็นต้อง proxy ไม่ใช่แค่ความสะดวก** — หน้าเว็บอยู่หลัง TLS แต่เครื่อง AI เป็น http://
+  # เบราว์เซอร์บล็อกคำขอ HTTP ที่ออกจากหน้า HTTPS (mixed content) ยิงตรงไม่มีทางผ่าน
+  # และ CSP ตั้ง `connect-src 'self'` ไว้ ซึ่ง path บน origin เดียวกันผ่านอยู่แล้ว
+  #
+  # ถ้าวันหลังเซิร์ฟเวอร์ AI ต้องใช้คีย์ **ให้ใส่ตรงนี้** (`proxy_set_header Authorization ...`)
+  # ห้ามเอาไปไว้ใน VITE_* เด็ดขาด — ค่าพวกนั้นถูกฝังลงไฟล์ JS ที่ใครเปิดเว็บก็อ่านได้
+  location /ai-proxy/ {
+    proxy_pass ${AI_ORIGIN}/;
+    proxy_http_version 1.1;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    # โมเดล 9B คิดนานกว่า API คลาวด์ — ดีฟอลต์ 60 วิของ nginx ตัดกลางคันได้
+    proxy_read_timeout 120s;
+    proxy_send_timeout 120s;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
+  }
+
   # ── health endpoint สำหรับ Docker/orchestrator healthcheck — เบา ไม่ลง access log ──
   location = /healthz {
     access_log off;

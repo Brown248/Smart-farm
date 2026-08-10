@@ -107,3 +107,34 @@ export const isAuthConfigured = (): boolean => readSupabaseConfig() !== null;
 
 /** ต่อของจริงได้แล้วหรือยัง — ใช้สลับ mock/live */
 export const isLiveConfigured = (): boolean => readLiveDataConfig() !== null;
+
+/**
+ * ผู้ช่วย AI — เซิร์ฟเวอร์ llama.cpp ในวง LAN ที่พูดภาษาเดียวกับ OpenAI API (`/v1/chat/completions`)
+ *
+ * 🔴 **`baseUrl` เป็น path ของ proxy บน origin เดียวกับหน้าเว็บเสมอ ไม่ใช่ URL ของเครื่อง AI ตรงๆ**
+ *
+ * หน้าเว็บเสิร์ฟด้วย HTTPS (dev ใช้ basic-ssl · prod อยู่หลัง TLS) แต่เครื่อง AI เป็น `http://`
+ * เบราว์เซอร์บล็อกคำขอ HTTP ที่ออกจากหน้า HTTPS (mixed content) — ยิงตรงไม่มีทางผ่าน
+ * และ CSP ของเราตั้ง `connect-src 'self'` ไว้ ซึ่ง proxy บน origin เดียวกันผ่านอยู่แล้ว ไม่ต้องแก้
+ * (แพตเทิร์นเดียวกับ `/hs-proxy` ของคำสั่งอุปกรณ์ · ปลายทางตั้งที่ vite.config / nginx)
+ *
+ * **ไม่มีคีย์ในฝั่งเบราว์เซอร์โดยตั้งใจ** — เซิร์ฟเวอร์ตัวนี้ไม่ต้องใช้คีย์ (ทดสอบแล้ว)
+ * ถ้าวันหลังต้องใช้ ให้ **nginx เป็นคนใส่ header ให้** อย่าเอามาไว้ใน `VITE_*`
+ * เพราะทุกค่า `VITE_*` ถูกฝังลงไฟล์ JS ที่ใครเปิดเว็บก็อ่านได้ (กฎเหล็กข้อ 10)
+ */
+export interface AiConfig {
+  /** เช่น `/ai-proxy/v1` — ต่อท้ายด้วย `/chat/completions` */
+  readonly baseUrl: string;
+  readonly model: string;
+}
+
+export const AI_ENV_KEYS = ['VITE_AI_MODEL'] as const;
+
+/** คืน `null` = ยังไม่ได้ตั้งค่า AI → แชทใช้คำตอบสำเร็จรูปต่อ (และบอกผู้ใช้ว่ายังไม่ได้ต่อ) */
+export function readAiConfig(): AiConfig | null {
+  const model = read('VITE_AI_MODEL');
+  if (model === '') return null;
+  return { baseUrl: '/ai-proxy/v1', model };
+}
+
+export const isAiConfigured = (): boolean => readAiConfig() !== null;

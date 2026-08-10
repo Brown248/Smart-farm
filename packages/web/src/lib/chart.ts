@@ -60,6 +60,25 @@ export const METRIC_CFG: Readonly<Record<MetricKey, MetricConfig>> = {
   },
 };
 
+/**
+ * ขอบเขตที่ค่านั้น **เป็นไปได้จริงทางกายภาพ** — แกนกราฟห้ามเลยออกไปนอกนี้
+ *
+ * เคยพลาดมาแล้วและเห็นชัดบนจอ: แกนความชื้นอากาศขึ้น `102.9%` และแสงลงไป `-0.8 k lux`
+ * เพราะช่วงของแกนเผื่อขอบ 18% จากค่าจริงโดยไม่สนใจว่าค่านั้นเกินจริงไปแล้ว
+ * ตัวเลขที่เป็นไปไม่ได้บนแกนทำให้คนอ่านสงสัยข้อมูลทั้งกราฟ
+ *
+ * `minSpan` = ความกว้างต่ำสุดของแกน — ค่านิ่งๆ (เช่นเซนเซอร์ดินค้างที่ 99%) ถ้าไม่กำหนดไว้
+ * จะถูกซูมจนช่วงแกนกว้าง 0.4% แล้วสัญญาณรบกวนเล็กน้อยดูเหมือนความเปลี่ยนแปลงใหญ่โต
+ */
+export const METRIC_LIMITS: Readonly<
+  Record<MetricKey, { readonly min: number; readonly max: number; readonly minSpan: number }>
+> = {
+  soil: { min: 0, max: 100, minSpan: 10 },
+  temp: { min: 0, max: 60, minSpan: 4 },
+  hum: { min: 0, max: 100, minSpan: 10 },
+  light: { min: 0, max: 150, minSpan: 2 },
+};
+
 /** ช่วงค่าเหมาะสมที่วาดเป็นแถบเขียวบนกราฟ */
 export const TARGET_BANDS: Readonly<Record<MetricKey, readonly [number, number]>> = {
   soil: [30, 60],

@@ -83,27 +83,41 @@ export function ChartControls({ state, onDownload }: ChartControlsProps) {
       </div>
 
       <div className={`${s.axisRow} ${g.hscroll}`}>
-        <span className={g.sub} style={{ flex: 'none' }}>
-          {t.axisMode}
-        </span>
-        <div className={s.segGroup}>
-          <button
-            type="button"
-            aria-pressed={state.splitAxis}
-            className={[s.segBtn, state.splitAxis ? s.segBtnOn : null].filter(Boolean).join(' ')}
-            onClick={() => state.setSplitAxis(true)}
-          >
-            {t.axisSplit}
-          </button>
-          <button
-            type="button"
-            aria-pressed={!state.splitAxis}
-            className={[s.segBtn, !state.splitAxis ? s.segBtnOn : null].filter(Boolean).join(' ')}
-            onClick={() => state.setSplitAxis(false)}
-          >
-            {t.axisSingle}
-          </button>
-        </div>
+        {/*
+          ตัวเลือกแกนใช้ได้เฉพาะกราฟค่าเดียว — โหมด "ทุกค่ารวม" แยกเป็น 4 ช่อง
+          แต่ละช่องมีแกนของหน่วยตัวเองอยู่แล้ว จะเอามารวมแกนเดียวไม่ได้ (คนละหน่วย)
+          เคยโชว์ปุ่มไว้ตลอดแล้วกดแล้วกราฟไม่เปลี่ยนอะไรเลย = ปุ่มหลอก (ผิดกฎเหล็กข้อ 3)
+        */}
+        {state.isAll ? null : (
+          <>
+            <span className={g.sub} style={{ flex: 'none' }}>
+              {t.axisMode}
+            </span>
+            <div className={s.segGroup}>
+              <button
+                type="button"
+                aria-pressed={state.splitAxis}
+                className={[s.segBtn, state.splitAxis ? s.segBtnOn : null]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => state.setSplitAxis(true)}
+              >
+                {t.axisSplit}
+              </button>
+              <button
+                type="button"
+                aria-pressed={!state.splitAxis}
+                className={[s.segBtn, !state.splitAxis ? s.segBtnOn : null]
+                  .filter(Boolean)
+                  .join(' ')}
+                onClick={() => state.setSplitAxis(false)}
+              >
+                {t.axisSingle}
+              </button>
+            </div>
+          </>
+        )}
+        {/* แถบช่วงค่าเหมาะสมมีทั้งสองโหมด (กราฟแยกช่องก็วาดแถบให้ทุกช่อง) จึงอยู่นอกเงื่อนไข */}
         <span className={s.bandKey}>
           <span className={s.bandSwatch} aria-hidden="true" />
           {t.targetBand}

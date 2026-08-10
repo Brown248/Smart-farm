@@ -23,14 +23,16 @@ export interface NavItem {
 }
 
 /**
- * เมนู 6 รายการเหมือนต้นแบบเป๊ะ
- * เหลือ "รายงาน" กับ "ตั้งค่า" ที่ยัง `soon` — สองหน้านี้ไม่มีไฟล์ต้นแบบให้ถอด
+ * เมนูของเมนูสไลด์ในฉากเกม — **ต้องเป็นชุดเดียวกับ `AppRail` ของหน้าข้อมูล**
+ * ไม่งั้นเมนูสองที่ในแอปเดียวกันจะไม่ตรงกัน ซึ่งผู้ใช้จับได้ทันที
+ *
+ * ตัด "รายงาน/ประวัติ" กับ "ตั้งค่า" ออกแล้ว (เจ้าของงานสั่ง 2026-08-10)
+ * — ไม่มีต้นแบบและไม่มีแผนจะทำ · ของที่ควรอยู่ในนั้นมีอยู่แล้วในหน้าอื่น
+ * `soon` คงไว้ในโครงสร้างเผื่อวันหน้ามีหน้าใหม่ที่ยังทำไม่เสร็จจริงๆ
  */
 export const NAV_ITEMS: readonly NavItem[] = [
   { key: 'navDashboard', to: ROUTES.dashboard, soon: false },
   { key: 'navIrrigation', to: ROUTES.irrigation, soon: false },
   { key: 'navGreenhouse', to: ROUTES.greenhouse, soon: false },
   { key: 'navFarmGame', to: ROUTES.farm, soon: false },
-  { key: 'navReports', to: null, soon: true },
-  { key: 'navSettings', to: null, soon: true },
 ];

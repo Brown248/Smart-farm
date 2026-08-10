@@ -324,12 +324,16 @@ describe('DashboardPage', () => {
     expect(await screen.findByRole('heading', { name: TH.irrTitle })).toBeInTheDocument();
   });
 
-  it('เมนูรายงาน/ตั้งค่าที่ยังไม่ได้ทำ แจ้ง "เร็วๆ นี้" แทนการพาไปหน้าเปล่า', async () => {
-    const user = userEvent.setup();
+  /**
+   * เดิมเทสนี้ยืนยันว่ากด "รายงาน" แล้วขึ้น toast "เร็วๆ นี้"
+   * เจ้าของงานสั่งตัดสองเมนูนั้นออก (2026-08-10) เพราะไม่มีต้นแบบและไม่มีแผนจะทำ
+   * ป้าย "เร็วๆ นี้" ถาวรกัดกินความเชื่อถือของป้ายอื่น — ตอนนี้จึงกลับด้านมายืนยันว่า **ไม่มีแล้ว**
+   */
+  it('ไม่มีเมนูรายงาน/ตั้งค่าที่กดแล้วไปไหนไม่ได้แล้ว', () => {
     renderPage();
     const nav = screen.getByRole('navigation');
-    await user.click(within(nav).getByRole('button', { name: new RegExp(TH.navReports) }));
-    expect(await screen.findByText(TH.soonToast)).toBeInTheDocument();
+    expect(within(nav).queryByRole('button', { name: new RegExp(TH.navReports) })).toBeNull();
+    expect(within(nav).queryByRole('button', { name: new RegExp(TH.navSettings) })).toBeNull();
   });
 
   it('สลับภาษาเป็นอังกฤษได้ทั้งหน้า', async () => {
@@ -355,10 +359,11 @@ describe('DashboardPage', () => {
   });
 
   /**
-   * เลิกทำปฏิทินแล้ว — ล็อกจำนวนรายการไว้ ถ้ามีใครเผลอเติมกลับเข้ามาจะ fail
-   * (เช็กเป็นจำนวน+รายชื่อ ไม่อ้างคำว่า "ปฏิทินดูแล" เพราะลบคีย์แปลนั้นทิ้งไปแล้ว)
+   * ล็อกรายการเมนูไว้ ถ้ามีใครเผลอเติมกลับเข้ามาจะ fail
+   * เลิกทำปฏิทินแล้ว · ตัด "รายงาน/ประวัติ" กับ "ตั้งค่า" ออกด้วย (เจ้าของงานสั่ง 2026-08-10)
+   * เหลือเฉพาะเมนูที่มีหน้าจริงรองรับ 4 รายการ
    */
-  it('เมนูเหลือ 6 รายการ ไม่มีปฏิทินดูแล', () => {
+  it('เมนูเหลือ 4 รายการ ทุกอันมีหน้าจริง', () => {
     renderPage();
     const nav = screen.getByRole('navigation');
     const labels = within(nav)
@@ -367,15 +372,8 @@ describe('DashboardPage', () => {
 
     // ปุ่มพับเมนูไม่มีข้อความ จึงกรองออก · ปุ่มหยุดฉุกเฉินอยู่ในแถบนี้ด้วยแต่ไม่ใช่รายการเมนู
     const items = labels.filter(Boolean).filter((l) => l !== TH.estopFab && l !== TH.unlockFab);
-    expect(items).toHaveLength(6);
-    for (const name of [
-      TH.navDashboard,
-      TH.navIrrigation,
-      TH.navGreenhouse,
-      TH.navFarmGame,
-      TH.navReports,
-      TH.navSettings,
-    ]) {
+    expect(items).toHaveLength(4);
+    for (const name of [TH.navDashboard, TH.navIrrigation, TH.navGreenhouse, TH.navFarmGame]) {
       expect(
         items.some((l) => l.includes(name)),
         `เมนูขาด "${name}"`,
@@ -411,15 +409,19 @@ describe('DashboardPage', () => {
     expect(await screen.findByAltText(TH.agentName)).toBeInTheDocument();
   });
 
-  /** เหลือแค่ 2 หน้าที่ยังไม่มีต้นแบบ — ต้องแจ้งตรงๆ ไม่ใช่พาไปหน้าเปล่า */
-  it('เมนูรายงาน/ตั้งค่า ที่ยังไม่ได้ทำ แจ้ง "เร็วๆ นี้"', async () => {
+  /**
+   * **ทุกรายการในเมนูต้องพาไปหน้าที่มีอยู่จริง** — ไม่มีปลายทางว่างอีกแล้ว
+   * (เดิมมี "รายงาน"/"ตั้งค่า" ที่กดแล้วได้แค่ toast · ตัดออกตามที่เจ้าของงานสั่ง)
+   * เทสนี้จะ fail ทันทีถ้ามีใครเติมเมนูที่ยังไม่มีหน้าเข้ามาอีก
+   */
+  it('ทุกเมนูพาไปหน้าจริง ไม่มีอันไหนได้แค่ toast "เร็วๆ นี้"', async () => {
     const user = userEvent.setup();
     renderPage();
     const nav = screen.getByRole('navigation');
 
-    for (const label of [TH.navReports, TH.navSettings]) {
+    for (const label of [TH.navDashboard, TH.navIrrigation, TH.navGreenhouse, TH.navFarmGame]) {
       await user.click(within(nav).getByRole('button', { name: new RegExp(label) }));
-      expect(await screen.findByText(TH.soonToast)).toBeInTheDocument();
+      expect(screen.queryByText(TH.soonToast)).toBeNull();
     }
   });
 

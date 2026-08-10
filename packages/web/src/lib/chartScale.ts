@@ -1,4 +1,4 @@
-import { TARGET_BANDS } from './chart';
+import { METRIC_LIMITS, TARGET_BANDS } from './chart';
 import type { MetricKey, Pt } from './chart';
 
 /**
@@ -145,6 +145,43 @@ export function stackedPanelPlot(
 /** ความสูงรวมของกราฟแยกช่อง (รวมแกนเวลาด้านล่าง) */
 export const stackedHeight = (panels: number, panelHeight: number, xAxisHeight = 20): number =>
   panels * (panelHeight + PANEL_GAP) - PANEL_GAP + xAxisHeight;
+
+/**
+ * แกนของช่องย่อยหนึ่งช่อง — เหมือน `seriesExtent` แต่ **ไม่ยอมให้เลยค่าที่เป็นไปได้จริง**
+ * และ **ไม่ยอมให้แคบเกินไป**
+ *
+ * สองอย่างนี้เห็นชัดบนจอตอนใช้ `seriesExtent` ตรงๆ:
+ *   · ความชื้นอากาศขึ้นไป `102.9%` และแสงลงไป `-0.8 k lux` (ขอบเผื่อ 18% ทะลุความจริง)
+ *   · ความชื้นดินที่ค้างนิ่ง ถูกซูมจนแกนกว้าง 0.4% เส้นสั่นนิดเดียวดูเป็นเรื่องใหญ่
+ *
+ * เมื่อช่วงจริงแคบกว่า `minSpan` จะ **ขยายออกจากจุดกึ่งกลาง** เพื่อให้เส้นนิ่งอยู่กลางช่อง
+ * (ดูแล้วรู้ทันทีว่า "ไม่ขยับ" ไม่ใช่ "ขยับเยอะ")
+ */
+export function panelExtent(values: readonly number[], metric: MetricKey): Extent {
+  const limit = METRIC_LIMITS[metric];
+  const raw = seriesExtent(values);
+  let min = Math.max(limit.min, raw.min);
+  let max = Math.min(limit.max, raw.max);
+  if (max <= min) max = min + limit.minSpan;
+
+  const grow = limit.minSpan - (max - min);
+  if (grow > 0) {
+    min -= grow / 2;
+    max += grow / 2;
+    // ชนขอบล่าง/บนแล้วดันไปอีกฝั่งแทน จะได้กว้างครบ `minSpan` เสมอ
+    if (min < limit.min) {
+      max += limit.min - min;
+      min = limit.min;
+    }
+    if (max > limit.max) {
+      min -= max - limit.max;
+      max = limit.max;
+    }
+    min = Math.max(limit.min, min);
+    max = Math.min(limit.max, max);
+  }
+  return { min, max };
+}
 
 /**
  * ดัชนีจุดที่ใกล้ตำแหน่ง x ที่สุด — ใช้ตอนเลื่อนเมาส์เพื่อโชว์ค่า

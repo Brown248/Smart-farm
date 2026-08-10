@@ -49,9 +49,16 @@ function warnUnprefixedEnv(): Plugin {
 export default defineConfig(({ mode }) => {
   // ปลายทาง backend สำหรับ dev proxy — อ่านจาก env เดียวกับที่แอปใช้ (ไม่ hardcode)
   const root = fileURLToPath(new URL('.', import.meta.url));
-  const backend = (loadEnv(mode, root).VITE_WS_URL ?? '')
-    .replace(/\/+$/, '')
-    .replace(/\/telemetry$/, '');
+  const env = loadEnv(mode, root);
+  const backend = (env.VITE_WS_URL ?? '').replace(/\/+$/, '').replace(/\/telemetry$/, '');
+  /*
+   * ปลายทางเครื่อง AI สำหรับ dev proxy — ตั้งใน `.env` เป็น `AI_ORIGIN` (ไม่ต้องมี prefix VITE_)
+   * **ตั้งใจไม่ให้มี prefix** เพราะค่านี้ไม่ควรถูกฝังลงไฟล์ JS ของเบราว์เซอร์
+   * ฝั่งหน้าเว็บรู้จักแค่ path `/ai-proxy` เท่านั้น (ดู `config/liveData.readAiConfig`)
+   */
+  // 🔴 ต้องส่ง prefix เป็น `''` — `loadEnv(mode, root)` คืนเฉพาะตัวที่ขึ้นต้น `VITE_`
+  // ถ้าลืม `AI_ORIGIN` จะเป็น undefined เงียบๆ แล้ว proxy ไม่ถูกสร้าง (คำขอได้ 404 โดยไม่มีคำเตือน)
+  const ai = (loadEnv(mode, root, '').AI_ORIGIN ?? '').replace(/\/+$/, '');
 
   return {
     plugins: [react(), basicSsl(), warnUnprefixedEnv()],
@@ -84,18 +91,35 @@ export default defineConfig(({ mode }) => {
        * `apiBaseUrl()` จึงคืน `/hs-proxy/api/v1` ตอน dev · **นี่แค่ workaround ตอนพัฒนา**
        * production ต้องให้ backend เปิด CORS ให้ origin ของเว็บเอง
        */
-      ...(backend
-        ? {
-            proxy: {
+      proxy: {
+        ...(backend
+          ? {
               '/hs-proxy': {
                 target: backend,
                 changeOrigin: true,
                 secure: true,
                 rewrite: (p) => p.replace(/^\/hs-proxy/, ''),
               },
-            },
-          }
-        : {}),
+            }
+          : {}),
+        /**
+         * ผู้ช่วย AI — **จำเป็นต้อง proxy ไม่ใช่แค่เลี่ยง CORS**
+         *
+         * dev server เป็น HTTPS (basic-ssl) แต่เครื่อง AI เป็น `http://` ธรรมดา
+         * เบราว์เซอร์บล็อกคำขอ HTTP ที่ออกจากหน้า HTTPS (mixed content) — ยิงตรงไม่มีทางผ่าน
+         * `secure: false` เพราะปลายทางเป็น http ในวง LAN ไม่มี cert ให้ตรวจ
+         */
+        ...(ai
+          ? {
+              '/ai-proxy': {
+                target: ai,
+                changeOrigin: true,
+                secure: false,
+                rewrite: (p) => p.replace(/^\/ai-proxy/, ''),
+              },
+            }
+          : {}),
+      },
     },
     preview: { host: true, port: 4173, strictPort: true },
     test: {

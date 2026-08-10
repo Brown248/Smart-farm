@@ -8,9 +8,9 @@ import {
   chartHeightFor,
   combinedExtent,
   nearestIndex,
+  panelExtent,
   panelHeightFor,
   pixelPlot,
-  seriesExtent,
   stackedHeight,
   stackedPanelPlot,
   targetBandBox,
@@ -474,7 +474,8 @@ export function AllMetricsChart({
           const color = cfg.color;
           const panel = stackedPanelPlot(width, height, i, panelH, PANEL_PAD_RIGHT);
           // แกนจริงของค่านี้ (ไม่ใช่ 0–1 ปลอม) → ตัวเลขข้างแกนอ่านแล้วมีความหมาย
-          const extent = seriesExtent(values);
+          // `panelExtent` กันแกนทะลุค่าที่เป็นไปได้จริง (ความชื้น >100% · แสงติดลบ) และกันแกนแคบเกิน
+          const extent = panelExtent(values, k);
           const pts = toPoints(values, extent, panel);
           const last = pts[pts.length - 1];
           const active = cursor ? pts[cursor.index] : null;

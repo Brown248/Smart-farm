@@ -395,9 +395,9 @@ export const EN: Dict = {
 
   chartTitle: 'History chart',
   historySub: 'View one metric at a time — each has its own axis and unit',
-  historySubAll: 'All 4 metrics at once — each line scaled to its own range',
+  historySubAll: 'All 4 metrics at once — separate panels, each with its own axis and unit',
   latestPoint: 'Latest · matches the last point on the chart',
-  latestAll: 'Each line uses a different color',
+  latestAll: 'Hover once to read all 4 panels at the same moment in time',
   latestShort: 'latest',
   compare: 'Compare previous',
   download: 'Download',
@@ -492,6 +492,11 @@ export const EN: Dict = {
   askAI: 'Ask AI',
   chatTitle: 'Syntech Assistant',
   chatStatus: 'Ready to help',
+  chatOffline: 'AI assistant not connected — showing built-in answers',
+  chatThinking: 'Thinking…',
+  chatCanned: 'built-in answer',
+  chatTimeout: 'The AI assistant took too long — here is what I have for now',
+  chatUnreachable: 'Could not reach the AI assistant — here is what I have for now',
   chatPlaceholder: 'Type your question...',
   chatGreeting:
     'Hi 🌱 I’m the SynFarm assistant. The farm looks healthy today with 1 item to watch (Zone B sensor) — how can I help?',

@@ -171,6 +171,45 @@
   box-shadow: 0 2px 8px -4px rgba(28, 38, 33, 0.12);
 }
 
+/*
+ * ป้ายบอกว่าข้อความนี้เป็นคำตอบสำเร็จรูป ไม่ได้มาจากโมเดลจริง
+ * กฎเดียวกับป้าย "จำลอง" ของค่าเซนเซอร์ — ห้ามให้ของจริงกับของสำเร็จรูปปนกันเงียบๆ
+ */
+.cannedTag {
+  display: block;
+  margin-top: 5px;
+  font-size: var(--fs-min);
+  font-weight: 600;
+  color: var(--d-muted);
+}
+
+/* จุดกะพริบตอนรอโมเดลตอบ — animate เฉพาะ opacity (motion.test.ts บังคับ) */
+.typing {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  margin-right: 7px;
+  background: var(--brand-green);
+  animation: aiTyping 1s ease-in-out infinite;
+}
+
+@keyframes aiTyping {
+  0%,
+  100% {
+    opacity: 0.25;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .typing {
+    animation: none;
+  }
+}
+
 .bubbleUser {
   max-width: 80%;
   background: var(--brand-green);

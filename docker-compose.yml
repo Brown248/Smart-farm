@@ -19,6 +19,9 @@ services:
       BACKEND_WS_ORIGIN: ${BACKEND_WS_ORIGIN:-wss://backend-prod.synexta.ai}
       # ตั้งให้ตรงกับ VITE_SUPABASE_URL ของ build นั้น ไม่งั้น CSP จะบล็อกหน้าล็อกอิน
       SUPABASE_ORIGIN: ${SUPABASE_ORIGIN:-https://*.supabase.co}
+      # เซิร์ฟเวอร์ผู้ช่วย AI (llama.cpp ในวง LAN) — nginx proxy `/ai-proxy` ไปหา
+      # ไม่ต้องใส่ใน CSP เพราะหน้าเว็บเรียกผ่าน path เดียวกับตัวเอง (connect-src 'self')
+      AI_ORIGIN: ${AI_ORIGIN:-http://172.16.7.60:8080}
     ports:
       - '${WEB_PORT:-8080}:80'
     restart: always

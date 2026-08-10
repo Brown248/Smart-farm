@@ -1,0 +1,20 @@
+#!/bin/sh
+# ประกอบ Content-Security-Policy **ตอน container start** ไม่ใช่ตอน build image
+#
+# 🔴 เหตุที่ต้องมีไฟล์นี้ — เคยพลาดมาแล้วและจับได้ตอนทดสอบ container จริง
+#
+# ถ้าเขียน `ENV CSP="... ${BACKEND_ORIGIN} ..."` ใน Dockerfile ตรงๆ Docker จะแทนค่า
+# **ตั้งแต่ตอน build** แล้วฝังลงใน image · พอ deploy จริงแล้ว override ด้วย
+# `-e BACKEND_WS_ORIGIN=...` nginx จะ proxy ไปปลายทางใหม่ถูกต้อง
+# แต่ CSP ยังอนุญาตเฉพาะ origin เก่า → **เบราว์เซอร์บล็อก WebSocket และหน้าล็อกอิน**
+# โดยที่ log ฝั่ง server ไม่ฟ้องอะไรเลย (เห็นแค่ error ใน console ของเบราว์เซอร์)
+#
+# nginx:alpine `docker-entrypoint.sh` จะ **source** ไฟล์ `*.envsh` ใน /docker-entrypoint.d/
+# ตามลำดับตัวอักษร ก่อน `20-envsubst-on-templates.sh` — ค่าที่ export ที่นี่จึงถึง envsubst ทัน
+#
+# หมายเหตุ:
+#   style-src 'unsafe-inline' **จำเป็น** — LineChart/Sparkline/SensorCard ใช้ inline style
+#   connect-src ต้องมีทั้ง https (REST/Supabase) · wss (telemetry ต่อตรง) · Open-Meteo
+#   ไม่ต้องใส่ AI_ORIGIN เพราะหน้าเว็บเรียกผ่าน /ai-proxy บน origin ตัวเอง ('self' ครอบอยู่แล้ว)
+#   frame-ancestors 'self' = กัน clickjacking บนปุ่มสั่งอุปกรณ์จริง (คู่กับ X-Frame-Options)
+export CSP="default-src 'self'; connect-src 'self' ${BACKEND_ORIGIN} ${BACKEND_WS_ORIGIN} ${SUPABASE_ORIGIN} https://api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"

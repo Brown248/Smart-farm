@@ -3,6 +3,7 @@ import {
   axisExtent,
   axisTicks,
   combinedExtent,
+  panelExtent,
   seriesExtent,
   stackedHeight,
   stackedPanelPlot,
@@ -12,6 +13,7 @@ import {
   yAt,
 } from './chartScale';
 import type { Plot } from './chartScale';
+import { METRIC_LIMITS } from './chart';
 import { allHistory } from '@/data/mockSensorHistory';
 
 const PLOT: Plot = { width: 720, height: 300, padLeft: 12, padRight: 52, top: 20, bottom: 266 };
@@ -149,6 +151,31 @@ describe('stackedPanelPlot — กราฟแยกช่อง', () => {
       if (i > 0) expect(p.top).toBeGreaterThan(panels[i - 1]!.bottom);
     }
     expect(panels[N - 1]!.bottom).toBeLessThanOrEqual(H);
+  });
+
+  /**
+   * เห็นบนจอจริงมาแล้ว: แกนความชื้นขึ้น `102.9%` และแสงลงไป `-0.8 k lux`
+   * ตัวเลขที่เป็นไปไม่ได้บนแกนทำให้คนอ่านสงสัยข้อมูลทั้งกราฟ
+   */
+  it('แกนห้ามเลยค่าที่เป็นไปได้จริง (ความชื้นไม่เกิน 100% · แสงไม่ติดลบ)', () => {
+    const hum = panelExtent([96, 98, 100, 99], 'hum');
+    expect(hum.max).toBeLessThanOrEqual(100);
+    expect(hum.min).toBeGreaterThanOrEqual(0);
+
+    const light = panelExtent([0.2, 1.1, 0.4], 'light');
+    expect(light.min).toBeGreaterThanOrEqual(0);
+  });
+
+  it('ค่านิ่งๆ ต้องไม่ถูกซูมจนสัญญาณรบกวนดูเป็นเรื่องใหญ่', () => {
+    // เซนเซอร์ดินค้างที่ 99% — เดิมได้แกนกว้าง 0.4% เส้นสั่นนิดเดียวดูเหมือนขยับเยอะ
+    const soil = panelExtent([99, 99, 99.1, 99], 'soil');
+    expect(soil.max - soil.min).toBeGreaterThanOrEqual(METRIC_LIMITS.soil.minSpan - 0.001);
+    expect(soil.max).toBeLessThanOrEqual(100);
+  });
+
+  it('ช่วงกว้างอยู่แล้วไม่ถูกบีบ — ยังเห็นรูปคลื่นเต็มตา', () => {
+    const temp = panelExtent([20, 35], 'temp');
+    expect(temp.max - temp.min).toBeGreaterThan(15);
   });
 
   it('แต่ละช่องมีแกนค่าเป็นของตัวเอง — ค่าเท่ากันในคนละช่วงได้ y คนละที่', () => {

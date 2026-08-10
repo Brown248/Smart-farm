@@ -34,11 +34,14 @@ ENV BACKEND_WS_ORIGIN=wss://backend-prod.synexta.ai
 # Supabase (ผู้ใช้ล็อกอินเอง) — ตั้งให้ตรงกับ VITE_SUPABASE_URL ของ build นั้น
 ENV SUPABASE_ORIGIN=https://*.supabase.co
 
-# Content-Security-Policy — ประกอบเป็น env ตัวเดียวเพื่อไม่ต้องเขียนซ้ำ 5 ที่ใน template
-#   style-src 'unsafe-inline' **จำเป็น** — LineChart/Sparkline/SensorCard ใช้ inline style
-#   connect-src ต้องมีทั้ง https (REST/Supabase) · wss (telemetry) · Open-Meteo (พยากรณ์อากาศ)
-#   frame-ancestors 'self' = กัน clickjacking บนปุ่มสั่งอุปกรณ์จริง (คู่กับ X-Frame-Options)
-ENV CSP="default-src 'self'; connect-src 'self' ${BACKEND_ORIGIN} ${BACKEND_WS_ORIGIN} ${SUPABASE_ORIGIN} https://api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+# ปลายทางผู้ช่วย AI (llama.cpp ในวง LAN) สำหรับ reverse-proxy `/ai-proxy`
+# **ต้องมีค่าดีฟอลต์** — ถ้าว่าง `proxy_pass /;` จะเป็น URL ไม่ถูกต้อง แล้ว nginx ไม่ยอมสตาร์ต
+ENV AI_ORIGIN=http://172.16.7.60:8080
+
+# 🔴 **ห้ามตั้ง `ENV CSP=...` ที่นี่** — Docker แทนค่า `${BACKEND_ORIGIN}` ตั้งแต่ตอน build
+# แล้วฝังลง image · override ตอน run จะไม่มีผลกับ CSP (nginx proxy ถูก แต่เบราว์เซอร์บล็อก)
+# ประกอบตอน container start แทน ดู `deploy/10-csp.envsh`
+COPY deploy/10-csp.envsh /docker-entrypoint.d/10-csp.envsh
 
 # nginx:alpine จะรัน envsubst บนไฟล์ใน /etc/nginx/templates/*.template ตอน start
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
