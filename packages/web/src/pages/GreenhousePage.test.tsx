@@ -122,6 +122,27 @@ describe('GreenhousePage — เติมเกณฑ์จากอุปกร
     rerender(live({ led0: 'false', min_temp0: '22', max_temp0: '33' }));
     expect(screen.getByLabelText(minLabel)).toHaveValue(26);
   });
+
+  /**
+   * ตารางเวลาไม่ได้เกี่ยวกับ attribute เกณฑ์อุณหภูมิเลย — ห้ามให้ `hasThreshold` มาคุม
+   *
+   * ปั๊มเป็นช่องที่จงใจไม่ผูกกับอุณหภูมิ ถ้าอุปกรณ์ไม่ส่ง `min_temp2`/`max_temp2` มา
+   * ตารางจริงจะไม่มีวันขึ้นบนฟอร์ม → ผู้ใช้เห็นว่าง แล้วกด "เพิ่มช่วงเวลา" ทับของจริง
+   */
+  it('ตารางเวลาของปั๊มต้องเติมได้ แม้ไม่มี attribute เกณฑ์อุณหภูมิของช่องนั้นเลย', () => {
+    const timer = JSON.stringify({
+      enable: true,
+      days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true },
+      startTime: '06:00:00',
+      endTime: '06:15:00',
+    });
+    render(live({ led2: 'false', timer20: timer }));
+
+    const start = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedAt}`);
+    const end = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedEnd}`);
+    expect(start).toHaveValue('06:00');
+    expect(end).toHaveValue('06:15');
+  });
 });
 
 describe('GreenhousePage', () => {

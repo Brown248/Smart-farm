@@ -852,7 +852,16 @@ export function GreenhousePage() {
    * เขียนทับเฉพาะตอน**ค่าฝั่งอุปกรณ์เปลี่ยนจริง** (เทียบ signature) ไม่งั้นจะ setState ทุกรอบ attribute
    */
   const dirtyRef = useRef<Set<DeviceId>>(new Set());
-  const seededSigRef = useRef<Partial<Record<DeviceId, string>>>({});
+  /**
+   * แยกลายเซ็นของ "เกณฑ์" กับ "ตารางเวลา" ออกจากกัน — **ห้ามรวมเป็นตัวเดียว**
+   *
+   * ของเดิมรวมกันแล้วใช้เงื่อนไข `hasThreshold` คุมทั้งคู่ ทั้งที่ตารางเวลาไม่ได้เกี่ยวอะไร
+   * กับ attribute เกณฑ์อุณหภูมิเลย → ช่องที่ไม่เคยส่ง `min_temp`/`max_temp` มา
+   * (เช่นปั๊มซึ่งจงใจไม่ผูกกับอุณหภูมิ) จะ **ไม่มีวันเติมตารางเวลาจริงลงฟอร์ม**
+   * ผู้ใช้เห็นตารางว่างทั้งที่อุปกรณ์มีตารางตั้งอยู่ = จอโกหกแบบเดียวกับที่ B3 แก้ไป
+   */
+  const seededThreshRef = useRef<Partial<Record<DeviceId, string>>>({});
+  const seededSchedRef = useRef<Partial<Record<DeviceId, string>>>({});
   useEffect(() => {
     if (!channelStates) return; // null = ไม่ใช่โหมดจริง
     const ALL: Record<string, boolean> = {
@@ -868,30 +877,39 @@ export function GreenhousePage() {
       const ch = channelOf(dev.id);
       if (ch === null || dirtyRef.current.has(dev.id)) continue;
       const state = channelStates[ch];
-      if (!state || state.on === null || !state.hasThreshold) continue;
-      const sig = JSON.stringify({ temp: state.temp, timers: state.timers });
-      if (seededSigRef.current[dev.id] === sig) continue;
-      seededSigRef.current[dev.id] = sig;
-      // เกณฑ์อุณหภูมิจริง — ถ้าอุปกรณ์ไม่มีเกณฑ์ (0,0) โชว์ "ปิด" ไม่ใช่ default ปลอม
-      const temp = state?.temp;
-      setDeviceThreshold(
-        dev.id,
-        temp?.on
-          ? { enabled: true, min: temp.min ?? 30, max: temp.max ?? 35 }
-          : { enabled: false, min: 30, max: 35 },
-      );
-      // ตารางเวลาจริง
-      const timers = state?.timers ?? [];
-      setDeviceSchedule(
-        dev.id,
-        timers.map((tm) => ({
-          slot: tm.slot,
-          enable: tm.enable,
-          days: (tm.days ?? ALL) as DeviceScheduleSlot['days'],
-          startTime: (tm.startTime ?? '00:00:00').slice(0, 5),
-          endTime: (tm.endTime ?? '00:00:00').slice(0, 5),
-        })),
-      );
+      if (!state || state.on === null) continue;
+
+      // ── เกณฑ์อุณหภูมิ — ต้องรอ attribute เกณฑ์มาถึงจริงก่อน ไม่งั้นได้ค่า default ปลอม ──
+      if (state.hasThreshold) {
+        const sig = JSON.stringify(state.temp);
+        if (seededThreshRef.current[dev.id] !== sig) {
+          seededThreshRef.current[dev.id] = sig;
+          // อุปกรณ์ไม่มีเกณฑ์ (0,0) → โชว์ "ปิด" ไม่ใช่ default ปลอม
+          const temp = state.temp;
+          setDeviceThreshold(
+            dev.id,
+            temp.on
+              ? { enabled: true, min: temp.min ?? 30, max: temp.max ?? 35 }
+              : { enabled: false, min: 30, max: 35 },
+          );
+        }
+      }
+
+      // ── ตารางเวลา — คนละ attribute คนละเรื่อง ห้ามให้เกณฑ์อุณหภูมิมาคุม ──
+      const schedSig = JSON.stringify(state.timers);
+      if (seededSchedRef.current[dev.id] !== schedSig) {
+        seededSchedRef.current[dev.id] = schedSig;
+        setDeviceSchedule(
+          dev.id,
+          state.timers.map((tm) => ({
+            slot: tm.slot,
+            enable: tm.enable,
+            days: (tm.days ?? ALL) as DeviceScheduleSlot['days'],
+            startTime: (tm.startTime ?? '00:00:00').slice(0, 5),
+            endTime: (tm.endTime ?? '00:00:00').slice(0, 5),
+          })),
+        );
+      }
     }
   }, [channelStates, setDeviceThreshold, setDeviceSchedule]);
 

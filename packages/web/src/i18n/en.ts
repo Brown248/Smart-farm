@@ -719,7 +719,7 @@ export const EN: Dict = {
     'Works only while the app is open + connected to the real device — stops when the app is closed',
   humInvalidRange: 'Invalid — "start" must be higher than "stop"',
   ghPumpSchedOnly:
-    'The pump only takes a schedule — it is not tied to temperature (hot air does not mean dry soil). The system cuts it off automatically after 20 minutes, so a longer window will still stop early.',
+    'The pump only takes a schedule — it is not tied to temperature (hot air does not mean dry soil). The schedule is stored in the device and runs even when the web app is closed, but the 20-minute auto cut-off only works while the app is open — set a window no longer than you actually need.',
   ghSchedTitle: 'Schedule',
   ghSchedAt: 'Runs at',
   dBFanSub: 'Exhausts humidity · north wall',
