@@ -17,4 +17,13 @@
 #   connect-src ต้องมีทั้ง https (REST/Supabase) · wss (telemetry ต่อตรง) · Open-Meteo
 #   ไม่ต้องใส่ AI_ORIGIN เพราะหน้าเว็บเรียกผ่าน /ai-proxy บน origin ตัวเอง ('self' ครอบอยู่แล้ว)
 #   frame-ancestors 'self' = กัน clickjacking บนปุ่มสั่งอุปกรณ์จริง (คู่กับ X-Frame-Options)
-export CSP="default-src 'self'; connect-src 'self' ${BACKEND_ORIGIN} ${BACKEND_WS_ORIGIN} ${SUPABASE_ORIGIN} https://api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+#
+# 🔴 **fonts.googleapis.com / fonts.gstatic.com ห้ามตัดออก**
+#   `index.html` โหลดฟอนต์ Prompt จาก Google Fonts และทั้งแอปใช้ฟอนต์นี้ (`--font` ใน tokens.css)
+#   ถ้าไม่อนุญาต 2 โดเมนนี้ CSP จะบล็อกทั้ง stylesheet และไฟล์ฟอนต์ → ทั้งเว็บตกไปใช้ฟอนต์สำรอง
+#   **โดยไม่มี error บนหน้าจอ** เห็นได้อย่างเดียวคือเปิดดูแล้วรู้สึกว่าตัวหนังสือหน้าตาเปลี่ยนไป
+#   (เจอจริงตอน deploy ครั้งแรก เพราะตรวจแต่ header ไม่เคยเปิดหน้าดู)
+#
+# ตั้ง `CSP` มาจากภายนอกเองก็ได้ (เช่นใน .env ที่รากโปรเจกต์) — ค่าที่ส่งมาชนะ
+# จะได้แก้ CSP โดยไม่ต้อง build image ใหม่
+export CSP="${CSP:-default-src 'self'; connect-src 'self' ${BACKEND_ORIGIN} ${BACKEND_WS_ORIGIN} ${SUPABASE_ORIGIN} https://api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; script-src 'self'; font-src 'self' https://fonts.gstatic.com; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'}"
