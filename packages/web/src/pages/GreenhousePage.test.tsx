@@ -43,6 +43,41 @@ const BIG1 = 'พัดลมใบใหญ่ #1';
 const SML1 = 'พัดลมตัวเล็ก #1';
 
 /**
+ * ปั๊มน้ำอยู่ในส่วน "เงื่อนไขอัตโนมัติ" ได้ **แต่มีแค่ตารางเวลา**
+ *
+ * ห้ามผูกปั๊มกับอุณหภูมิ — อากาศร้อนไม่ได้แปลว่าดินแห้ง สั่งรดน้ำตามอุณหภูมิคือรดผิดเหตุ
+ * และแท็บเดียวที่กดแล้วไม่ไปไหนก็คือปุ่มหลอก จึงไม่แสดงแถบแท็บให้ปั๊มเลย
+ */
+describe('GreenhousePage — ปั๊มน้ำในเงื่อนไขอัตโนมัติ', () => {
+  it('ปั๊มมีการ์ดเงื่อนไข พร้อมบอกว่าตั้งได้แค่ตารางเวลา', () => {
+    renderPage();
+    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
+    expect(within(auto).getByText(TH.pump)).toBeInTheDocument();
+    expect(within(auto).getByText(TH.ghPumpSchedOnly)).toBeInTheDocument();
+  });
+
+  it('ปั๊มไม่มีแท็บอุณหภูมิ — มีเฉพาะพัดลมใหญ่ 2 ตัว', () => {
+    renderPage();
+    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
+    const tempTabs = within(auto).getAllByRole('button', { name: new RegExp(TH.ghTabTemp) });
+    expect(tempTabs).toHaveLength(2);
+    for (const tab of tempTabs) {
+      expect(tab.getAttribute('aria-label')).not.toContain(TH.pump);
+    }
+  });
+
+  it('ปั๊มโชว์ตารางเวลาเลยโดยไม่ต้องกดแท็บ', () => {
+    renderPage();
+    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
+    // ปุ่มเพิ่มช่วงเวลาของปั๊มต้องเห็นตั้งแต่แรก (ไม่ถูกซ่อนอยู่หลังแท็บ)
+    const add = within(auto).getAllByRole('button', {
+      name: new RegExp(`${TH.pump}.*${TH.ghSchedAddSlot}`),
+    });
+    expect(add).toHaveLength(1);
+  });
+});
+
+/**
  * attribute ไหลเข้ามาสะสมทีละก้อน — `led0` มาถึงก่อน `min_temp0`/`max_temp0` ได้
  *
  * ของเดิมใช้ `led` อย่างเดียวเป็นสัญญาณว่า "ข้อมูลพร้อม" แล้วล็อกไม่เติมซ้ำอีกเลย

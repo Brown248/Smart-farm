@@ -231,9 +231,16 @@ const DeviceControlCard = memo(function DeviceControlCard({
  * การ์ดเงื่อนไขต่อพัดลม — แท็บ "อุณหภูมิ / ตารางเวลา" โชว์ทีละอย่าง (ไม่ยัดพร้อมกันให้รก)
  * มี state แท็บของตัวเอง จึงต้องแยกเป็น component (เรียก useState ใน .map() ไม่ได้)
  */
-interface FanConditionCardProps {
+interface DeviceConditionCardProps {
   readonly dev: GhDevice;
   readonly name: string;
+  /**
+   * อุปกรณ์นี้ใช้เกณฑ์อุณหภูมิได้ไหม — `false` = มีแต่ตารางเวลา (ปั๊มน้ำ)
+   *
+   * ปั๊มไม่ควรผูกกับอุณหภูมิ: อากาศร้อนไม่ได้แปลว่าดินแห้ง สั่งรดน้ำตามอุณหภูมิคือรดผิดเหตุ
+   * เจ้าของงานจึงสั่งให้ปั๊มมีแค่ตารางเวลา (2026-08-10)
+   */
+  readonly tempAuto: boolean;
   readonly th: FanTempThreshold;
   readonly slots: readonly DeviceScheduleSlot[];
   readonly channel: HsChannel | null;
@@ -252,9 +259,10 @@ interface FanConditionCardProps {
   readonly onConfirmAsk: ConfirmApi['ask'];
 }
 
-const FanConditionCard = memo(function FanConditionCard({
+const DeviceConditionCard = memo(function DeviceConditionCard({
   dev,
   name,
+  tempAuto,
   th,
   slots,
   channel,
@@ -271,8 +279,10 @@ const FanConditionCard = memo(function FanConditionCard({
   onScheduleSave,
   onScheduleDelete,
   onConfirmAsk,
-}: FanConditionCardProps) {
-  const [tab, setTab] = useState<'temp' | 'sched'>('temp');
+}: DeviceConditionCardProps) {
+  const [tab, setTab] = useState<'temp' | 'sched'>(tempAuto ? 'temp' : 'sched');
+  // อุปกรณ์ที่ไม่มีเกณฑ์อุณหภูมิ (ปั๊ม) ล็อกอยู่ที่ตารางเวลาเสมอ ไม่ต้องมีแท็บให้กด
+  const view = tempAuto ? tab : 'sched';
 
   // ── แท็บ อุณหภูมิ ──
   // ค่าจริงจากอุปกรณ์ (real) / ค่าที่ตั้งไว้ (sim) แล้วซ้อน "optimistic" ตอนกด — ลูกบิดขยับทันที
@@ -320,31 +330,45 @@ const FanConditionCard = memo(function FanConditionCard({
         <span className={s.autoCardName}>{name}</span>
       </div>
 
-      {/* สลับ อุณหภูมิ / ตารางเวลา — โชว์ทีละอัน ตารางเวลาไม่โผล่รกจนกว่าจะกดแท็บ */}
-      <div className={s.segRow}>
-        <button
-          type="button"
-          aria-pressed={tab === 'temp'}
-          aria-label={`${name} · ${t.ghTabTemp}`}
-          className={[s.segTab, tab === 'temp' ? s.segTabOn : null].filter(Boolean).join(' ')}
-          onClick={() => setTab('temp')}
-        >
-          <Icon name="temp" size={14} color="var(--d-m-temp)" strokeWidth={1.9} />
-          {t.ghTabTemp}
-        </button>
-        <button
-          type="button"
-          aria-pressed={tab === 'sched'}
-          aria-label={`${name} · ${t.ghSchedTitle}`}
-          className={[s.segTab, tab === 'sched' ? s.segTabOn : null].filter(Boolean).join(' ')}
-          onClick={() => setTab('sched')}
-        >
-          <Icon name="clock" size={14} color="var(--d-warn)" strokeWidth={1.9} />
-          {t.ghSchedTitle}
-        </button>
-      </div>
+      {/*
+        สลับ อุณหภูมิ / ตารางเวลา — โชว์ทีละอัน ตารางเวลาไม่โผล่รกจนกว่าจะกดแท็บ
+        ปั๊มไม่มีเกณฑ์อุณหภูมิ จึงไม่ต้องมีแถบแท็บเลย (แท็บเดียวให้กดคือปุ่มหลอก)
+      */}
+      {tempAuto ? (
+        <div className={s.segRow}>
+          <button
+            type="button"
+            aria-pressed={tab === 'temp'}
+            aria-label={`${name} · ${t.ghTabTemp}`}
+            className={[s.segTab, tab === 'temp' ? s.segTabOn : null].filter(Boolean).join(' ')}
+            onClick={() => setTab('temp')}
+          >
+            <Icon name="temp" size={14} color="var(--d-m-temp)" strokeWidth={1.9} />
+            {t.ghTabTemp}
+          </button>
+          <button
+            type="button"
+            aria-pressed={tab === 'sched'}
+            aria-label={`${name} · ${t.ghSchedTitle}`}
+            className={[s.segTab, tab === 'sched' ? s.segTabOn : null].filter(Boolean).join(' ')}
+            onClick={() => setTab('sched')}
+          >
+            <Icon name="clock" size={14} color="var(--d-warn)" strokeWidth={1.9} />
+            {t.ghSchedTitle}
+          </button>
+        </div>
+      ) : (
+        /*
+          ปั๊มมีแต่ตารางเวลา — บอกให้ชัดว่าทำไม และเตือนเรื่องตัดอัตโนมัติ 20 นาที
+          ถ้าไม่บอก ผู้ใช้ตั้ง 06:00–07:00 แล้วงงว่าทำไมปั๊มหยุดตั้งแต่ 06:20
+        */
+        <div className={s.notLiveNote} role="note">
+          <Icon name="info" size={15} color="var(--d-muted)" strokeWidth={1.9} />
+          <span>{t.ghPumpSchedOnly}</span>
+        </div>
+      )}
 
-      {tab === 'temp' ? (
+      {view === 'temp' ? (
         <div className={s.ruleList}>
           <div className={s.autoSwitchRow}>
             <div className={s.schedLabel}>
@@ -1105,35 +1129,38 @@ export function GreenhousePage() {
           />
 
           <div className={s.autoGrid}>
-            {/* เกณฑ์อุณหภูมิ = เฉพาะพัดลมใหญ่ (big1/big2) · พัดลมเล็กพ่วงใหญ่#2 (ตั้งที่ใหญ่#2) · ปั๊มไม่ใช้เกณฑ์อุณหภูมิ */}
-            {GH_DEVICES.filter((dev) => dev.id !== 'pump' && bondedTo(dev.id) === null).map(
-              (dev) => {
-                const channel = channelOf(dev.id);
-                return (
-                  <FanConditionCard
-                    key={dev.id}
-                    dev={dev}
-                    name={deviceLabel(dev.id, dev.nameKey, t)}
-                    th={deviceThresholds[dev.id]}
-                    slots={deviceSchedules[dev.id] ?? []}
-                    channel={channel}
-                    chState={channel !== null ? channelStates?.[channel] : undefined}
-                    realControl={realControl}
-                    offline={offlineOf(dev.id)}
-                    emergency={emergency}
-                    t={t}
-                    onSetThreshold={setThresholdByUser}
-                    onSendThreshold={command.sendThreshold}
-                    onDisableTempAuto={command.disableTempAuto}
-                    onSetSchedule={setScheduleByUser}
-                    onScheduleToggle={command.sendScheduleToggle}
-                    onScheduleSave={command.sendScheduleSave}
-                    onScheduleDelete={command.sendScheduleDelete}
-                    onConfirmAsk={confirm.ask}
-                  />
-                );
-              },
-            )}
+            {/*
+              อุปกรณ์ที่ตั้งเงื่อนไขได้ = ทุกตัวที่มี relay ของตัวเอง
+              พัดลมเล็กไม่อยู่ในนี้เพราะพ่วงสายกับใหญ่ #2 (ตั้งที่ใหญ่ #2 แล้วมันตามเอง)
+              ปั๊มอยู่ด้วยแต่มีแค่ตารางเวลา — ไม่ผูกกับอุณหภูมิ (`tempAuto={false}`)
+            */}
+            {GH_DEVICES.filter((dev) => bondedTo(dev.id) === null).map((dev) => {
+              const channel = channelOf(dev.id);
+              return (
+                <DeviceConditionCard
+                  key={dev.id}
+                  dev={dev}
+                  name={deviceLabel(dev.id, dev.nameKey, t)}
+                  tempAuto={dev.id !== 'pump'}
+                  th={deviceThresholds[dev.id]}
+                  slots={deviceSchedules[dev.id] ?? []}
+                  channel={channel}
+                  chState={channel !== null ? channelStates?.[channel] : undefined}
+                  realControl={realControl}
+                  offline={offlineOf(dev.id)}
+                  emergency={emergency}
+                  t={t}
+                  onSetThreshold={setThresholdByUser}
+                  onSendThreshold={command.sendThreshold}
+                  onDisableTempAuto={command.disableTempAuto}
+                  onSetSchedule={setScheduleByUser}
+                  onScheduleToggle={command.sendScheduleToggle}
+                  onScheduleSave={command.sendScheduleSave}
+                  onScheduleDelete={command.sendScheduleDelete}
+                  onConfirmAsk={confirm.ask}
+                />
+              );
+            })}
           </div>
         </section>
       </DataPage>
