@@ -271,6 +271,19 @@ describe('DashboardPage', () => {
     expect(within(panel).getByText(TH.n2)).toBeInTheDocument();
   });
 
+  /*
+   * ยังไม่ต่อของจริง (เทสตั้ง env ว่างไว้) → `useFarmAlerts` สลับไปใช้ข้อความ mock
+   * ถ้าไม่ติดป้าย ผู้ใช้จะเปิดแผงนี้มาอ่านข้อความปลอมตอนเน็ตหลุดโดยไม่รู้ตัว
+   * ซึ่งขัดกฎ "ห้ามให้ค่าจำลองปนกับของจริงเงียบๆ" — และแผงนี้คือที่ที่คนกดดูตอนสงสัยว่ามีปัญหา
+   */
+  it('แจ้งเตือนที่ยังเป็นข้อมูลจำลอง ต้องติดป้ายบอกให้เห็นในแผง', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    await user.click(screen.getByRole('button', { name: TH.notifTitle }));
+    const panel = await screen.findByRole('dialog', { name: TH.notifTitle });
+    expect(within(panel).getByText(TH.simTag)).toBeInTheDocument();
+  });
+
   function renderApp(at: string = ROUTES.dashboard) {
     return render(
       <I18nProvider>

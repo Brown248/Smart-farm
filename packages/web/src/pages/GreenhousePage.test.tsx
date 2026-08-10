@@ -42,6 +42,53 @@ function renderLive(attrs: Record<string, string>) {
 const BIG1 = 'พัดลมใบใหญ่ #1';
 const SML1 = 'พัดลมตัวเล็ก #1';
 
+/**
+ * attribute ไหลเข้ามาสะสมทีละก้อน — `led0` มาถึงก่อน `min_temp0`/`max_temp0` ได้
+ *
+ * ของเดิมใช้ `led` อย่างเดียวเป็นสัญญาณว่า "ข้อมูลพร้อม" แล้วล็อกไม่เติมซ้ำอีกเลย
+ * → ฟอร์มค้างที่ค่า default ปลอม และถ้าผู้ใช้กดบันทึกต่อ = เขียนเกณฑ์ผิดลงอุปกรณ์จริง
+ */
+describe('GreenhousePage — เติมเกณฑ์จากอุปกรณ์จริง (กันค่า default ปลอมล็อกถาวร)', () => {
+  const minLabel = `${BIG1} · ${TH.ghTempMinLabel}`;
+  const maxLabel = `${BIG1} · ${TH.ghTempMaxLabel}`;
+
+  const live = (attrs: Record<string, string>) => (
+    <I18nProvider>
+      <FarmStateProvider forceRealControl forceAttributes={mkAttrs(attrs)}>
+        <MemoryRouter initialEntries={[ROUTES.greenhouse]}>
+          <GreenhousePage />
+        </MemoryRouter>
+      </FarmStateProvider>
+    </I18nProvider>
+  );
+
+  it('led มาก่อนเกณฑ์ → พอเกณฑ์จริงมาถึงต้องเติมด้วยค่าจริง (ไม่ค้างที่ค่าปลอม)', () => {
+    // รอบแรก: มีแต่ led0 — ยังไม่รู้เกณฑ์จริง ช่องกรอกยังไม่โผล่ (โหมดจริงเชื่อค่าอุปกรณ์เท่านั้น)
+    const { rerender } = render(live({ led0: 'false' }));
+    expect(screen.queryByLabelText(minLabel)).not.toBeInTheDocument();
+
+    // รอบสอง: เกณฑ์จริงมาถึง → ต้องเติมตามอุปกรณ์ แม้จะเคย render ไปแล้วรอบหนึ่ง
+    // ของเดิมล็อกไว้ตั้งแต่รอบแรกแล้วเติมเป็น 30/35 (ค่า default ปลอม) — เทสนี้จะจับได้
+    rerender(live({ led0: 'false', min_temp0: '28', max_temp0: '33' }));
+    expect(screen.getByLabelText(minLabel)).toHaveValue(28);
+    expect(screen.getByLabelText(maxLabel)).toHaveValue(33);
+  });
+
+  it('ผู้ใช้แก้ฟอร์มแล้ว ค่าจากอุปกรณ์ต้องไม่ทับสิ่งที่กำลังแก้', async () => {
+    const user = userEvent.setup();
+    const { rerender } = render(live({ led0: 'false', min_temp0: '28', max_temp0: '33' }));
+
+    const min = screen.getByLabelText(minLabel);
+    await user.clear(min);
+    await user.type(min, '26');
+    expect(min).toHaveValue(26);
+
+    // อุปกรณ์รายงานค่าใหม่ระหว่างที่ผู้ใช้กำลังแก้ → ห้ามกระชากค่าในช่องไป
+    rerender(live({ led0: 'false', min_temp0: '22', max_temp0: '33' }));
+    expect(screen.getByLabelText(minLabel)).toHaveValue(26);
+  });
+});
+
 describe('GreenhousePage', () => {
   /** ระบบน้ำถอดออกจากทั้งระบบแล้ว — เป็นค่าจำลองล้วน (`DESIGN_SOURCE.md` ข้อ 28) */
   it('ไม่มีระบบน้ำในหน้านี้แล้ว', () => {

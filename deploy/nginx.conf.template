@@ -1,5 +1,17 @@
 # Syntech Smart Farm — nginx (prod)
-# envsubst แทน ${BACKEND_ORIGIN} ตอน container start (ตัวแปร nginx เช่น $uri/$host ไม่ถูกแตะ)
+# envsubst แทน ${BACKEND_ORIGIN} ฯลฯ ตอน container start (ตัวแปร nginx เช่น $uri/$host ไม่ถูกแตะ)
+#
+# ⚠️⚠️ ชุด security header ถูก **เขียนซ้ำในทุก location block โดยตั้งใจ** ⚠️⚠️
+#
+# nginx สืบทอด `add_header` ลง location **เฉพาะเมื่อ location นั้นไม่มี `add_header` ของตัวเอง**
+# มีแม้แต่ตัวเดียว (เช่น Cache-Control) = ทิ้งของชั้น server ทั้งหมด และ `always` ไม่ช่วย (คนละเรื่อง)
+#
+# ของเดิมประกาศไว้ชั้น server ชั้นเดียว ผลคือ `/index.html` (ซึ่ง SPA fallback วิ่งเข้าทุกครั้ง
+# ผ่าน internal redirect ของ try_files) **ไม่มี security header เลยสักตัว** ทุกการโหลดหน้า
+# → เว็บถูกฝังใน iframe ของใครก็ได้ = clickjacking บนปุ่มสั่งพัดลม/ปั๊มจริง
+#
+# nginx ไม่มี macro และไฟล์ snippet แยกใช้ envsubst ไม่ได้ (entrypoint ประมวลผลเฉพาะ
+# /etc/nginx/templates/*.template แล้วเขียนลง conf.d) จึงต้องยอมซ้ำ — **ห้ามรวบให้เหลือที่เดียว**
 
 server {
   listen 80;
@@ -23,6 +35,11 @@ server {
     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
     proxy_set_header X-Forwarded-Proto $scheme;
     # ส่ง Authorization/Content-Type ต่อให้ upstream อัตโนมัติ (ไม่ล้าง) · ไม่ cache ผล
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
   }
 
   # ── health endpoint สำหรับ Docker/orchestrator healthcheck — เบา ไม่ลง access log ──
@@ -30,6 +47,11 @@ server {
     access_log off;
     add_header Content-Type text/plain;
     return 200 "ok\n";
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
   }
 
   # ── static assets (JS/CSS hashed + รูปฉาก) — cache นานหน่อย ──
@@ -37,20 +59,31 @@ server {
     expires 7d;
     add_header Cache-Control "public";
     try_files $uri =404;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
   }
 
   # index.html ห้าม cache — จะได้เห็น build ใหม่ทันทีหลัง deploy
+  # (SPA fallback ของ location / วิ่งเข้าบล็อกนี้ผ่าน internal redirect → คือหน้าที่คนเปิดจริงทุกครั้ง)
   location = /index.html {
     add_header Cache-Control "no-cache";
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
   }
 
   # ── SPA fallback — เส้นทางฝั่ง client (react-router) ให้ตกมาที่ index.html ──
   location / {
     try_files $uri $uri/ /index.html;
-  }
 
-  # security headers เบาๆ
-  add_header X-Content-Type-Options "nosniff" always;
-  add_header X-Frame-Options "SAMEORIGIN" always;
-  add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
+  }
 }

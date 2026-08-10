@@ -16,7 +16,7 @@ import { deviceRunning } from '@shared/device';
 import type { Device, DeviceId } from '@shared/device';
 import { BIG_FAN_LOCK_TEMP } from '@shared/thresholds';
 import type { SceneZone } from '@shared/zone';
-import { HS_CHANNELS, type HsChannel } from '@shared/handysense';
+import { HS_CHANNELS, HS_TEST_CHANNEL, type HsChannel } from '@shared/handysense';
 import { CHANNEL_BY_DEVICE, channelOf } from '@/config/deviceChannels';
 import {
   HS_ATTRIBUTE_KEYS,
@@ -32,6 +32,7 @@ import { hhmm } from '@/lib/format';
 import {
   DEVICE_STALE_MS,
   HUM_TICK_MS,
+  LED_CONFIRM_TIMEOUT_MS,
   LOG_LIMIT,
   PUMP_CUTOFF_MS,
   SEND_LATENCY_MS,
@@ -47,14 +48,14 @@ import {
 import { DEFAULT_THRESHOLDS } from '@/data/dashboard';
 import type { SensorKey, Threshold } from '@/data/dashboard';
 import { DEFAULT_WATERING_CONFIG, NOTIF_TOGGLE_KEYS } from '@/data/irrigation';
-import type { NotifToggleKey, WateringConfig } from '@/data/irrigation';
+import type { NotifToggleKey, WateringConfig, ZoneSettings } from '@/data/irrigation';
 import {
   DEFAULT_DEVICE_SCHEDULES,
   DEFAULT_FAN_THRESHOLDS,
   DEFAULT_HUMIDITY_AUTO,
 } from '@/data/greenhouse';
 import type { DeviceScheduleSlot, FanTempThreshold, HumidityAuto } from '@/data/greenhouse';
-import type { DashLogEntry } from '@/data/mockActivityLog';
+import { ACTIVITY_LOG_LIMIT, type DashLogEntry } from '@/data/mockActivityLog';
 import { GH_DEVICES } from '@/data/greenhouse';
 import type { GhMode } from '@/data/greenhouse';
 import {
@@ -157,6 +158,11 @@ export interface FarmState {
   /** หยุดฉุกเฉิน — ต้องมีตัวเดียวทั้งระบบ ไม่งั้นกดที่หน้าหนึ่งแล้วอีกหน้ายังสั่งได้ */
   readonly estop: boolean;
   readonly setEstop: Dispatch<SetStateAction<boolean>>;
+  /**
+   * หยุดฉุกเฉินติดอยู่ แต่อุปกรณ์เหล่านี้ยังรายงานว่าทำงานอยู่ (`led=true`) — ว่างเมื่อทุกอย่างหยุดจริง
+   * ทุกหน้าที่แสดงสถานะ estop ต้องเตือนแรงเมื่อไม่ว่าง (อ่านจากที่นี่ที่เดียว ห้ามคำนวณเอง)
+   */
+  readonly estopDefied: readonly DeviceId[];
 
   readonly tank: number;
   readonly log: readonly LogEntry[];
@@ -180,11 +186,30 @@ export interface FarmState {
   readonly wateringConfig: WateringConfig;
   readonly updateWatering: (patch: Partial<WateringConfig>) => void;
 
+  /**
+   * ข้อมูลแปลงที่ผู้ใช้ตั้งเอง (ชื่อ · พืช · พื้นที่ · เป้าหมาย) — key คือตัวอักษรโซน A–H
+   * เก็บเฉพาะแปลงที่ตั้งจริง ที่เหลือ fallback เป็น "โซน X" ที่หน้าจอ (provider ไม่รู้จัก i18n)
+   *
+   * เคยเป็น state ของหน้าชลประทาน → กดบันทึกแล้วขึ้นว่าบันทึกแล้ว แต่เปลี่ยนหน้ากลับมาหายหมด
+   */
+  readonly zoneSettings: Readonly<Record<string, ZoneSettings>>;
+  readonly setZoneSettings: (letter: string, next: ZoneSettings) => void;
+
   /** ควบคุมความชื้นด้วยพัดลมดูด (แอปสั่งเองตาม RH · ประหยัดไฟ) — ของทั้งฟาร์ม */
   readonly humidityAuto: HumidityAuto;
   readonly setHumidityAuto: (patch: Partial<HumidityAuto>) => void;
   /** สถานะการดูดปัจจุบัน (0 ปิด · 1 ใหญ่#1 · 2 ใหญ่#1+#2) — โชว์บน UI อ่านอย่างเดียว */
   readonly humidityVentStage: 0 | 1 | 2;
+  /**
+   * พัดลมที่ **ตัวคุมความชื้นกำลังคุมอยู่จริง** — ติดป้ายบนการ์ดให้ผู้ใช้รู้ว่าใครสั่ง
+   * ตัวที่ผู้ใช้สั่งเองในรอบนี้จะหลุดออกจากรายการ (ผู้ใช้ชนะจนกว่ารอบดูดจะจบ)
+   */
+  readonly ventOwned: readonly DeviceId[];
+  /**
+   * แจ้งว่า "ผู้ใช้สั่งพัดลมตัวนี้เอง" — `useDeviceCommand` เรียกให้ทุกครั้งที่มีคำสั่งมือ
+   * ตัวคุมความชื้นจะไม่ทับพัดลมตัวนั้นจนกว่ารอบดูดปัจจุบันจะจบ
+   */
+  readonly noteManualFanCommand: (id: DeviceId) => void;
 
   /** สมุดบันทึกกิจกรรม (แดชบอร์ด) — เริ่มว่าง · เพิ่มแล้วอยู่รอดข้ามหน้า */
   readonly activityLogs: readonly DashLogEntry[];
@@ -210,6 +235,9 @@ const FarmContext = createContext<FarmState | null>(null);
 
 /** จำนวนจุดของเส้นแนวโน้มย่อในการ์ดเซนเซอร์ — ตรงกับ `SensorDef.spark` ของต้นแบบ */
 const TRAIL_POINTS = 8;
+
+/** array ว่างตัวเดียวใช้ร่วมกัน — คืน `[]` ใหม่ทุกครั้งจะทำให้ผู้ใช้ context re-render เปล่าๆ */
+const NO_DEVICES: readonly DeviceId[] = [];
 
 function initialZones(): SceneZone[] {
   return ZONE_IDS.map((id) => ({
@@ -287,6 +315,11 @@ export function FarmStateProvider({
   const updateWatering = useCallback((patch: Partial<WateringConfig>) => {
     setWateringConfig((prev) => ({ ...prev, ...patch }));
   }, []);
+  // ข้อมูลแปลงที่ผู้ใช้ตั้งเอง — เริ่มว่าง เก็บเฉพาะแปลงที่ตั้งจริง (ที่เหลือใช้ชื่อเริ่มต้นของหน้าจอ)
+  const [zoneSettings, setZoneSettingsState] = useState<Readonly<Record<string, ZoneSettings>>>({});
+  const setZoneSettings = useCallback((letter: string, next: ZoneSettings) => {
+    setZoneSettingsState((prev) => ({ ...prev, [letter]: next }));
+  }, []);
   // ควบคุมความชื้นด้วยพัดลมดูด (แอปสั่งเองตาม RH) — ค่าตั้ง + สถานะการดูดปัจจุบัน
   const [humidityAuto, setHumidityAutoState] = useState<HumidityAuto>(DEFAULT_HUMIDITY_AUTO);
   const setHumidityAuto = useCallback((patch: Partial<HumidityAuto>) => {
@@ -296,7 +329,8 @@ export function FarmStateProvider({
   // สมุดบันทึกเริ่มว่าง (empty state) — ไม่ seed รายการปลอม · เพิ่มเองแล้วอยู่ข้ามหน้า
   const [activityLogs, setActivityLogs] = useState<readonly DashLogEntry[]>([]);
   const addActivityLog = useCallback((entry: DashLogEntry) => {
-    setActivityLogs((prev) => [entry, ...prev]);
+    // จำกัดเพดานเหมือน control log — ไม่งั้นแท็บเล็ตที่เปิดค้างทั้งสัปดาห์จะสะสมไม่รู้จบ
+    setActivityLogs((prev) => [entry, ...prev].slice(0, ACTIVITY_LOG_LIMIT));
   }, []);
 
   /**
@@ -353,11 +387,14 @@ export function FarmStateProvider({
   /**
    * โหมดจริง: sync `Device.on` (จาก `led{channel}`) และ `Device.auto` (จาก mode จริง = มีเกณฑ์ไหม)
    * ให้ตรงกับอุปกรณ์จริง — ไม่ใช่คำสั่งที่เพิ่งส่ง (กฎ #2 · guide ข้อ 7) · ทั้งหน้าโรงเรือนและแผงเกม
-   * อ่านจากชุดเดียวกันจึงตรงกัน · ข้ามตอน estop (คง "ปิดหมด" · relay จริงถูกสั่งปิดใน useEstop)
-   * ปั๊ม (ยังไม่ต่อ relay) ไม่มี led จึงข้าม · เคลียร์ pending เมื่อ led **เปลี่ยนค่าจริง** (ยืนยันแล้ว)
+   * อ่านจากชุดเดียวกันจึงตรงกัน · เคลียร์ pending เมื่อ led **เปลี่ยนค่าจริง** (ยืนยันแล้ว)
+   *
+   * ⚠️ **ห้ามข้ามตอน estop** — ของเดิมข้าม ทำให้จอค้างที่ "ปิดหมด" ตลอดไป
+   * ทั้งที่ของจริงอาจยังหมุนอยู่ (automation ในอุปกรณ์เปิดกลับ) = แอปโกหกในจังหวะที่อันตรายที่สุด
+   * ตอนนี้ estop ปิดเกณฑ์ในอุปกรณ์ให้แล้ว (`useEstop`) และถ้ายังไม่หยุดจริง `estopDefied` จะเตือนแรง
    */
   useEffect(() => {
-    if (!realControl || estop || channelStates === null) return;
+    if (!realControl || channelStates === null) return;
     setDevices((prev) => {
       let changed = false;
       const next = prev.map((d) => {
@@ -393,7 +430,63 @@ export function FarmStateProvider({
       }
       return changed ? next : prev;
     });
-  }, [realControl, estop, channelStates]);
+  }, [realControl, channelStates]);
+
+  /**
+   * ช่วงผ่อนผันหลังกด estop — อุปกรณ์รายงาน `led` ทุก ~10 วิ และเปลี่ยนตามจริง ~8-9 วิ
+   * ถ้าไม่รอ จะขึ้นเตือน "อุปกรณ์ไม่ยอมหยุด" ทันทีทุกครั้งที่กด ทั้งที่เป็นเรื่องปกติ
+   * → คำเตือนที่ขึ้นทุกครั้งคือคำเตือนที่ไม่มีใครอ่าน ต้องขึ้นเฉพาะตอนผิดปกติจริงเท่านั้น
+   */
+  const [estopGraceOver, setEstopGraceOver] = useState(false);
+  useEffect(() => {
+    setEstopGraceOver(false);
+    if (!estop) return;
+    const id = window.setTimeout(() => setEstopGraceOver(true), LED_CONFIRM_TIMEOUT_MS);
+    return () => window.clearTimeout(id);
+  }, [estop]);
+
+  /**
+   * กด estop แล้วผ่านช่วงผ่อนผันไปแล้ว แต่ยังมีช่องที่รายงาน `led=true` = **อุปกรณ์ไม่ยอมหยุด**
+   *
+   * ต้องเตือนแรง ไม่ใช่ซ่อน — ผู้ใช้กดหยุดฉุกเฉินแล้วเดินจากไปโดยเชื่อว่าปลอดภัย
+   * คือสถานการณ์ที่แย่ที่สุดที่แอปนี้ทำให้เกิดได้
+   */
+  const estopDefied = useMemo<readonly DeviceId[]>(() => {
+    if (!estop || !estopGraceOver || !realControl || channelStates === null) return NO_DEVICES;
+    const out: DeviceId[] = [];
+    for (const id of Object.keys(CHANNEL_BY_DEVICE) as DeviceId[]) {
+      const ch = CHANNEL_BY_DEVICE[id];
+      // ตัวพ่วง (พัดลมเล็ก) ใช้ช่องเดียวกับตัวหลัก — ขึ้นทั้งคู่โดยตั้งใจ เพราะของจริงหมุนทั้งคู่
+      if (ch !== null && channelStates[ch]?.on === true) out.push(id);
+    }
+    return out.length > 0 ? out : NO_DEVICES;
+  }, [estop, estopGraceOver, realControl, channelStates]);
+
+  /**
+   * ตาข่ายชั้นสอง: ยิง `setSwitch off` ซ้ำ **ครั้งเดียวต่อช่อง ต่อรอบ estop**
+   *
+   * เผื่อคำสั่งแรกหล่นหาย — แต่ **ห้ามยิงวนไม่จบ** ถ้ายิงซ้ำแล้วยังไม่หยุด แปลว่าเป็นปัญหา
+   * ฮาร์ดแวร์หรือมีตัวควบคุมอื่นสั่งอยู่ ต้องให้คนไปจัดการหน้างาน การ retry ไม่รู้จบจะกลบอาการเสียจริง
+   */
+  const estopRetryRef = useRef<Set<HsChannel>>(new Set());
+  useEffect(() => {
+    if (!estop) {
+      estopRetryRef.current.clear();
+      return;
+    }
+    // รอให้พ้นช่วงผ่อนผันก่อน — ยิงซ้ำทันทีไม่มีประโยชน์ อุปกรณ์ยังไม่ทันประมวลผลคำสั่งแรกด้วยซ้ำ
+    if (!estopGraceOver || !realControl || channelStates === null) return;
+    const ctx = readHsContext();
+    if (ctx === null) return;
+    for (const ch of HS_CHANNELS) {
+      if (ch === HS_TEST_CHANNEL) continue;
+      if (channelStates[ch]?.on !== true || estopRetryRef.current.has(ch)) continue;
+      estopRetryRef.current.add(ch);
+      void postHsCommand(ctx, { action: 'setSwitch', channel: ch, on: false }, newReqId()).catch(
+        () => {},
+      );
+    }
+  }, [estop, estopGraceOver, realControl, channelStates]);
 
   /** จับคู่ค่าหน้าจอกับชื่อ key จริง — รวมความชื้นดินที่อยู่นอก `resolveClimate` */
   const matched = useMemo<Readonly<Partial<Record<LiveField, string>>>>(() => {
@@ -531,46 +624,73 @@ export function FarmStateProvider({
    */
   const pumpCutoffRef = useRef<number | null>(null);
   const pumpSettleRef = useRef<number | null>(null);
+  // อ่านโหมดตอน timer ยิง ไม่ใช่ตอนตั้ง — ผู้ใช้อาจล็อกอิน/หลุดระหว่าง 20 นาทีที่ปั๊มเดินอยู่
+  const realControlRef = useRef(realControl);
+  realControlRef.current = realControl;
   const pumpRunning = !!pump && pump.on && pump.pending == null;
 
   useEffect(() => {
-    if (pumpRunning) {
-      if (pumpCutoffRef.current == null) {
-        pumpCutoffRef.current = window.setTimeout(() => {
-          pumpCutoffRef.current = null;
-          // โหมดจริง: ต้องสั่งปิด relay ปั๊ม (ch2) จริงด้วย — ปั๊มย้ายมาต่อ relay จริงแล้ว
-          // ถ้าปิดแต่ local state เฉยๆ reconcile จะอ่าน led2=true กลับมาแล้วเปิดปั๊มใหม่วนไม่จบ
-          // (safety cutoff 20 นาทีจะใช้ไม่ได้จริง) · ยิงแบบ estop (fire-and-forget) นอก setState
-          const ctx = readHsContext();
-          if (ctx) {
-            const chPump = channelOf('pump');
-            if (chPump !== null)
-              void postHsCommand(
-                ctx,
-                { action: 'setSwitch', channel: chPump, on: false },
-                newReqId(),
-              ).catch(() => {});
-          }
-          // ปิดปั๊มแบบมีขั้น pending → settle เหมือนคำสั่งทั่วไป แล้วเขียน control log
-          setDevices((prev) => prev.map((d) => (d.id === 'pump' ? { ...d, pending: 'off' } : d)));
-          pumpSettleRef.current = window.setTimeout(() => {
-            pumpSettleRef.current = null;
-            setDevices((prev) =>
-              prev.map((d) => (d.id === 'pump' ? { ...d, pending: null, on: false } : d)),
-            );
-            setLog((prev) =>
-              [
-                { t: hhmm(new Date()), key: 'logPumpCutoff' as const, src: 'schedule' as const },
-                ...prev,
-              ].slice(0, LOG_LIMIT),
-            );
-          }, SEND_LATENCY_MS);
-        }, PUMP_CUTOFF_MS);
+    if (!pumpRunning) {
+      if (pumpCutoffRef.current != null) {
+        window.clearTimeout(pumpCutoffRef.current);
+        pumpCutoffRef.current = null;
       }
-    } else if (pumpCutoffRef.current != null) {
-      window.clearTimeout(pumpCutoffRef.current);
-      pumpCutoffRef.current = null;
+      return;
     }
+    if (pumpCutoffRef.current != null) return;
+
+    pumpCutoffRef.current = window.setTimeout(() => {
+      pumpCutoffRef.current = null;
+      const isReal = realControlRef.current;
+
+      // โหมดจริง: ต้องสั่งปิด relay ปั๊ม (ch2) จริงด้วย — ปั๊มย้ายมาต่อ relay จริงแล้ว
+      // ถ้าปิดแต่ local state เฉยๆ reconcile จะอ่าน led2=true กลับมาแล้วเปิดปั๊มใหม่วนไม่จบ
+      // (safety cutoff 20 นาทีจะใช้ไม่ได้จริง) · ยิงแบบ estop (fire-and-forget) นอก setState
+      if (isReal) {
+        const ctx = readHsContext();
+        const chPump = channelOf('pump');
+        if (ctx && chPump !== null)
+          void postHsCommand(
+            ctx,
+            { action: 'setSwitch', channel: chPump, on: false },
+            newReqId(),
+          ).catch(() => {});
+      }
+
+      // `pending: 'off'` ทำให้ `deviceRunning()` คืน false ทันที → `watering` ดับ · 8 แปลงเลิกโดนน้ำทันที
+      setDevices((prev) => prev.map((d) => (d.id === 'pump' ? { ...d, pending: 'off' } : d)));
+      // เขียน log ตอนสั่ง ไม่ใช่ตอนยืนยัน — เหตุการณ์คือ "ระบบตัดการทำงาน" ซึ่งเกิดขึ้นแล้ว ณ จุดนี้
+      setLog((prev) =>
+        [
+          { t: hhmm(new Date()), key: 'logPumpCutoff' as const, src: 'schedule' as const },
+          ...prev,
+        ].slice(0, LOG_LIMIT),
+      );
+
+      pumpSettleRef.current = window.setTimeout(
+        () => {
+          pumpSettleRef.current = null;
+          setDevices((prev) => {
+            const cur = prev.find((d) => d.id === 'pump');
+            if (!cur || cur.pending == null) return prev; // reconcile จัดการไปแล้ว
+            /*
+             * โหมดจริง: **ห้ามตั้ง `on:false` เอง** — `led2` จริงตามมาช้า ~8 วิ
+             * ถ้าตั้งเองตอนนี้ reconcile จะเห็น led=true vs on=false → ตีเป็น "led เปลี่ยน"
+             * แล้วเด้งปั๊มกลับเป็น "เปิด" พร้อมทั้ง 8 แปลงกลับไปเป็น "กำลังรดน้ำ"
+             * (ดูเหมือน safety cutoff ทำงานไม่สำเร็จ ทั้งที่สำเร็จ) ตัวนี้จึงแค่ปลด pending กันค้าง
+             */
+            return prev.map((d) =>
+              d.id === 'pump'
+                ? isReal
+                  ? { ...d, pending: null }
+                  : { ...d, pending: null, on: false }
+                : d,
+            );
+          });
+        },
+        isReal ? LED_CONFIRM_TIMEOUT_MS : SEND_LATENCY_MS,
+      );
+    }, PUMP_CUTOFF_MS);
   }, [pumpRunning]);
 
   // เก็บกวาด timer ตอน provider unmount (แทบไม่เกิดในแอปจริง แต่กัน leak ในเทส)
@@ -640,6 +760,24 @@ export function FarmStateProvider({
   };
   const ventStateRef = useRef<VentState>(INITIAL_VENT_STATE);
 
+  /**
+   * พัดลมที่ **ผู้ใช้สั่งเอง** ระหว่างรอบดูดนี้ — ตัวคุมความชื้นต้องไม่ทับ
+   *
+   * เดิมตัวคุมความชื้นยิง `setSwitch` ให้ทั้งสองใบทุกครั้งที่ stage เปลี่ยน ผู้ใช้เปิดใบ #2 ไว้เอง
+   * แล้วอยู่ดีๆ ระบบสั่งดับให้โดยไม่บอกว่าใครสั่ง (เจ้าของงานเลือก "ผู้ใช้ชนะชั่วคราว")
+   * ล้างทั้งชุดเมื่อ stage กลับเป็น 0 = จบรอบดูด → รอบหน้าระบบคุมได้ตามปกติ
+   */
+  const [ventOverride, setVentOverride] = useState<readonly DeviceId[]>(NO_DEVICES);
+  const ventOverrideRef = useRef(ventOverride);
+  ventOverrideRef.current = ventOverride;
+  const noteManualFanCommand = useCallback((id: DeviceId) => {
+    if (id !== 'big1' && id !== 'big2') return;
+    setVentOverride((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+
+  /** ตัวประเมินรอบล่าสุด — ให้เรียกนอกจังหวะ interval ได้ (ตอนผู้ใช้ปิดสวิตช์ความชื้นเอง) */
+  const tickRef = useRef<() => void>(() => undefined);
+
   useEffect(() => {
     const tick = () => {
       const { rh, temp, live, estop: es, cfg } = humInputsRef.current;
@@ -679,17 +817,19 @@ export function FarmStateProvider({
         // ยกเว้นตอน estop — หยุดฉุกเฉินต้องปิดหมดทุกตัว G2 ไม่มีผล (useEstop ปิด ch0-2 อยู่แล้ว)
         const humActive = cfg.enabled && cfg.onAt > cfg.offAt;
         if (humActive && !onBig1 && !onBig2 && temp > BIG_FAN_LOCK_TEMP && !es) onBig1 = true;
+        // พัดลมที่ผู้ใช้สั่งเองในรอบนี้ = ของผู้ใช้ ห้ามทับ (UI ติดป้ายบอกว่าใครคุมอยู่)
+        const mine = ventOverrideRef.current;
         const ctx = readHsContext();
         if (ctx) {
           const ch0 = channelOf('big1');
           const ch1 = channelOf('big2');
-          if (ch0 !== null)
+          if (ch0 !== null && !mine.includes('big1'))
             void postHsCommand(
               ctx,
               { action: 'setSwitch', channel: ch0, on: onBig1 },
               newReqId(),
             ).catch(() => {});
-          if (ch1 !== null)
+          if (ch1 !== null && !mine.includes('big2'))
             void postHsCommand(
               ctx,
               { action: 'setSwitch', channel: ch1, on: onBig2 },
@@ -697,6 +837,9 @@ export function FarmStateProvider({
             ).catch(() => {});
         }
       }
+
+      // จบรอบดูด → คืนสิทธิ์ให้ระบบคุมรอบหน้า (override เป็น "ชั่วคราว" จริงตามที่ตกลงไว้)
+      if (stage === 0) setVentOverride(NO_DEVICES);
 
       // เขียน control log เฉพาะตอน "เริ่มดูด"/"หยุดดูด" (ข้ามการสลับ stage 1↔2 กันรก)
       if ((prevStage === 0) !== (stage === 0)) {
@@ -709,9 +852,29 @@ export function FarmStateProvider({
         );
       }
     };
+    tickRef.current = tick;
     const id = window.setInterval(tick, HUM_TICK_MS);
     return () => window.clearInterval(id);
   }, []);
+
+  /**
+   * ปิดสวิตช์ความชื้นเอง → ต้องดับพัดลม **ทันที** ไม่ใช่รอ tick รอบถัดไป (นานสุด 20 วิ)
+   * กล่องยืนยันบอกผู้ใช้ว่า "จะดับพัดลม" ผู้ใช้จึงต้องเห็นมันดับจริงตอนนั้น ไม่ใช่ยืนงงอยู่ 20 วินาที
+   */
+  useEffect(() => {
+    if (!humidityAuto.enabled) tickRef.current();
+  }, [humidityAuto.enabled]);
+
+  /**
+   * พัดลมที่ตัวคุมความชื้นกำลังคุมอยู่จริง — ใช้ติดป้ายบนการ์ดว่า "ใครสั่งอยู่"
+   * ตัวที่ผู้ใช้แย่งไปแล้วจะหลุดจากรายการนี้ (UI ขึ้น "คุมด้วยมือ" แทน)
+   */
+  const ventOwned = useMemo<readonly DeviceId[]>(() => {
+    const out: DeviceId[] = [];
+    if (humidityVentStage >= 1 && !ventOverride.includes('big1')) out.push('big1');
+    if (humidityVentStage >= 2 && !ventOverride.includes('big2')) out.push('big2');
+    return out.length > 0 ? out : NO_DEVICES;
+  }, [humidityVentStage, ventOverride]);
 
   /**
    * ถ้าปั๊มเดิน ทุกแปลงกำลังโดนน้ำ — สถานะดินเดิมกลับมาเองตอนปิดปั๊ม
@@ -777,6 +940,7 @@ export function FarmStateProvider({
       setMode,
       estop,
       setEstop,
+      estopDefied,
       tank: INITIAL_TANK_PCT,
       log,
       setLog,
@@ -790,9 +954,13 @@ export function FarmStateProvider({
       setDeviceSchedule,
       wateringConfig,
       updateWatering,
+      zoneSettings,
+      setZoneSettings,
       humidityAuto,
       setHumidityAuto,
       humidityVentStage,
+      ventOwned,
+      noteManualFanCommand,
       activityLogs,
       addActivityLog,
       live,
@@ -807,6 +975,7 @@ export function FarmStateProvider({
       modes,
       setMode,
       estop,
+      estopDefied,
       log,
       thresholds,
       setThreshold,
@@ -818,9 +987,13 @@ export function FarmStateProvider({
       setDeviceSchedule,
       wateringConfig,
       updateWatering,
+      zoneSettings,
+      setZoneSettings,
       humidityAuto,
       setHumidityAuto,
       humidityVentStage,
+      ventOwned,
+      noteManualFanCommand,
       activityLogs,
       addActivityLog,
       live,

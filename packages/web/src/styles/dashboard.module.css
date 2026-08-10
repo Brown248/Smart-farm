@@ -24,18 +24,25 @@
   pointer-events: none;
 }
 
-@supports ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-  @media (min-width: 861px) {
-    .glass {
-      background: rgba(255, 255, 255, 0.72);
-      backdrop-filter: blur(18px) saturate(1.25);
-      -webkit-backdrop-filter: blur(18px) saturate(1.25);
-      border-color: rgba(255, 255, 255, 0.85);
-      box-shadow:
-        0 1px 2px rgba(28, 38, 33, 0.04),
-        0 18px 44px -26px rgba(28, 38, 33, 0.4),
-        inset 0 1px 0 rgba(255, 255, 255, 0.7);
-    }
+/*
+ * การ์ดโปร่งแสงบนพื้นไล่สี — **ไม่ใช้ `backdrop-filter` โดยตั้งใจ** (ดู DESIGN_SOURCE ข้อ 32)
+ *
+ * ต้นแบบใส่ `backdrop-filter: blur(18px)` ไว้ แต่สิ่งที่อยู่หลังการ์ดทุกใบคือ `--d-page-bg`
+ * ซึ่งเป็น radial/linear gradient นุ่มๆ ล้วน — **เบลอภาพที่นุ่มอยู่แล้วได้ผลลัพธ์เหมือนเดิม**
+ * ต่างกันคือ backdrop-filter บังคับให้ compositor อ่านพื้นหลังมาเบลอใหม่ทุกเฟรม
+ * ต่อการ์ดหนึ่งใบ และหน้าเดียวมีการ์ด 8-12 ใบ → เลื่อนหน้าแล้วหนืดชัดเจนบนแท็บเล็ต
+ *
+ * จ่ายด้วยสีขาวโปร่งแสงนิ่งๆ แทน ได้หน้าตาเดิมโดยไม่มีต้นทุนต่อเฟรม
+ * (สกริมของ modal/ลิ้นชักยัง **คง** blur ไว้ เพราะตรงนั้นเบลอ "เนื้อหาจริง" ซึ่งเห็นผลจริง)
+ */
+@media (min-width: 861px) {
+  .glass {
+    background: rgba(255, 255, 255, 0.72);
+    border-color: rgba(255, 255, 255, 0.85);
+    box-shadow:
+      0 1px 2px rgba(28, 38, 33, 0.04),
+      0 18px 44px -26px rgba(28, 38, 33, 0.4),
+      inset 0 1px 0 rgba(255, 255, 255, 0.7);
   }
 }
 

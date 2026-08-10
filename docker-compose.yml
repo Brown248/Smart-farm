@@ -15,6 +15,10 @@ services:
     environment:
       # ปลายทางที่ nginx reverse-proxy `/hs-proxy` ไปหา (คำสั่งจริง) — เลี่ยง CORS
       BACKEND_ORIGIN: ${BACKEND_ORIGIN:-https://backend-prod.synexta.ai}
+      # WebSocket ต่อ backend ตรง ไม่ผ่าน proxy → CSP ต้องอนุญาตแยก
+      BACKEND_WS_ORIGIN: ${BACKEND_WS_ORIGIN:-wss://backend-prod.synexta.ai}
+      # ตั้งให้ตรงกับ VITE_SUPABASE_URL ของ build นั้น ไม่งั้น CSP จะบล็อกหน้าล็อกอิน
+      SUPABASE_ORIGIN: ${SUPABASE_ORIGIN:-https://*.supabase.co}
     ports:
       - '${WEB_PORT:-8080}:80'
     restart: always

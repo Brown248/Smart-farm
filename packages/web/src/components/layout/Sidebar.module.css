@@ -18,6 +18,8 @@
   animation: fsSlideL 0.18s ease-out;
   box-shadow: 0 0 40px rgba(0, 0, 0, 0.4);
   overflow: auto;
+  /* เลื่อนสุดเมนูแล้วต้องไม่ไปลากฉาก/หน้าข้างหลังต่อ */
+  overscroll-behavior: contain;
 }
 
 .heading {

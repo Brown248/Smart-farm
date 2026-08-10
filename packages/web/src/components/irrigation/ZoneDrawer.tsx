@@ -23,12 +23,10 @@ import type { TextKey } from '@/i18n/keys';
 import g from '@/styles/dashboard.module.css';
 import s from './ZoneDrawer.module.css';
 
-export interface ZoneSettings {
-  readonly name: string;
-  readonly crop: string;
-  readonly area: string;
-  readonly target: string;
-}
+// นิยามย้ายไป `data/irrigation.ts` แล้ว (provider เป็นเจ้าของ state · ห้าม import จาก component)
+// re-export ไว้เพื่อให้ผู้เรียกเดิมไม่ต้องแก้ import
+import type { ZoneSettings } from '@/data/irrigation';
+export type { ZoneSettings };
 
 export interface ZoneDrawerProps {
   readonly zone: IrrZone;
@@ -364,6 +362,16 @@ export function ZoneDrawer(p: ZoneDrawerProps) {
               >
                 {t.saveSettings}
               </button>
+
+              {/*
+                บอกอายุของข้อมูลตรงๆ — บันทึกแล้วอยู่รอดข้ามหน้าจริง แต่รีเฟรชหน้าก็หาย
+                (กฎเหล็กข้อ 6 ห้ามใช้ browser storage · backend ยังไม่มี endpoint เก็บให้)
+                ต้องรู้ก่อนพิมพ์ ไม่ใช่รู้ตอนของหาย
+              */}
+              <div className={s.unsavedMsg} role="note">
+                <Icon name="info" size={14} strokeWidth={2} />
+                {t.tempDataNote}
+              </div>
             </div>
           ) : null}
         </div>

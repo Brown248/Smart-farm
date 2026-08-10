@@ -13,6 +13,31 @@ body {
   background: var(--scene-backdrop);
 }
 
+/**
+ * เลื่อนไปยัง anchor ในหน้า (เช่น ฉากเกม → `#gh-auto`) แบบไหลลื่นแทนการกระโดด
+ * เคารพ `prefers-reduced-motion` — คนที่เมารถ/ไวต่อการเคลื่อนไหวต้องได้แบบกระโดดทันที
+ */
+html {
+  scroll-behavior: smooth;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/**
+ * กันการเลื่อนเลยขอบไปดึงหน้าใหม่ (pull-to-refresh) และเด้งยาง
+ *
+ * บนแท็บเล็ตที่เกษตรกรใช้ปัดเร็วๆ ระหว่างดูค่า การเผลอดึงจนหน้ารีโหลด
+ * = เสียสถานะทั้งหมดที่อยู่ใน memory (ชื่อแปลง · สมุดบันทึก · เกณฑ์ที่เพิ่งตั้ง)
+ * ซึ่งเจ็บกว่าปกติเพราะแอปนี้ยังไม่มีที่เก็บถาวร
+ */
+body {
+  overscroll-behavior-y: none;
+}
+
 * {
   box-sizing: border-box;
 }

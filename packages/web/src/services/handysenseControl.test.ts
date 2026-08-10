@@ -1,5 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { createHsTracker, HsTrackError, newReqId, postHsCommand } from './handysenseControl';
+import {
+  createHsTracker,
+  HsPostTimeoutError,
+  HsTrackError,
+  newReqId,
+  postHsCommand,
+} from './handysenseControl';
 import type { CommandResult } from '@/config/commandResult';
 
 describe('newReqId', () => {
@@ -60,6 +66,39 @@ describe('postHsCommand', () => {
     await expect(
       postHsCommand(ctx, { action: 'setSwitch', channel: 0, on: false }, 'req-3'),
     ).rejects.toThrow('hs-post-failed:401');
+  });
+
+  /*
+   * เบราว์เซอร์ไม่มี timeout ให้ `fetch` — ถ้าไม่ส่ง signal คำขอค้างได้เป็นนาที
+   * แล้ว `pending` ของปุ่มไม่มีวันถูกปลด ผู้ใช้ต้องรีโหลดหน้าถึงจะสั่งได้อีก
+   */
+  it('ส่ง AbortSignal ที่มี timeout ไปกับ fetch เสมอ', async () => {
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 200 });
+    vi.stubGlobal('fetch', fetchMock);
+
+    await postHsCommand(ctx, { action: 'setSwitch', channel: 0, on: true }, 'req-4');
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    expect(init.signal?.aborted).toBe(false);
+  });
+
+  it('ครบเวลา (TimeoutError) → โยน HsPostTimeoutError ไม่ปนกับ network error', async () => {
+    const timeout = Object.assign(new Error('timed out'), { name: 'TimeoutError' });
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(timeout));
+
+    await expect(
+      postHsCommand(ctx, { action: 'setSwitch', channel: 0, on: true }, 'req-5'),
+    ).rejects.toBeInstanceOf(HsPostTimeoutError);
+  });
+
+  it('network/CORS error → โยน error เดิม (ไม่ใช่ HsPostTimeoutError)', async () => {
+    const netErr = new TypeError('Failed to fetch');
+    vi.stubGlobal('fetch', vi.fn().mockRejectedValue(netErr));
+
+    const p = postHsCommand(ctx, { action: 'setSwitch', channel: 0, on: true }, 'req-6');
+    await expect(p).rejects.toBe(netErr);
+    await expect(p).rejects.not.toBeInstanceOf(HsPostTimeoutError);
   });
 });
 

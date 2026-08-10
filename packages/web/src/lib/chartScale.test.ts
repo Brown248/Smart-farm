@@ -4,6 +4,8 @@ import {
   axisTicks,
   combinedExtent,
   seriesExtent,
+  stackedHeight,
+  stackedPanelPlot,
   targetBandBox,
   toPoints,
   xAt,
@@ -114,5 +116,46 @@ describe('axisTicks', () => {
     expect(ticks).toHaveLength(5);
     expect(ticks[0]?.value).toBe(100);
     expect(ticks[4]?.value).toBe(0);
+  });
+});
+
+/**
+ * กราฟแยกช่อง — คุณสมบัติที่ทำให้มัน "อ่านได้" คือ **ทุกช่องใช้แกนเวลาชุดเดียวกัน**
+ * ถ้าช่องไหน padLeft/padRight ไม่ตรงกัน จุดเวลาเดียวกันจะไม่อยู่ตรงคอลัมน์กัน
+ * แล้วการเลื่อนชี้ทีเดียวเพื่ออ่าน 4 ค่าพร้อมกันจะให้คำตอบผิด (คนละเวลาแต่ดูเหมือนเวลาเดียวกัน)
+ */
+describe('stackedPanelPlot — กราฟแยกช่อง', () => {
+  const W = 600;
+  const PANEL_H = 70;
+  const N = 4;
+  const H = stackedHeight(N, PANEL_H);
+  const panels = Array.from({ length: N }, (_, i) => stackedPanelPlot(W, H, i, PANEL_H, 42));
+
+  it('ทุกช่องใช้แกนเวลาชุดเดียวกัน (จุดเวลาเดียวกันตรงคอลัมน์กัน)', () => {
+    for (const p of panels) {
+      expect(p.padLeft).toBe(panels[0]!.padLeft);
+      expect(p.padRight).toBe(panels[0]!.padRight);
+      expect(p.width).toBe(W);
+    }
+    // ตำแหน่ง x ของจุดที่ 5 ต้องตรงกันทุกช่อง
+    const xs = panels.map((p) => xAt(5, 12, p));
+    expect(new Set(xs.map((x) => x.toFixed(4))).size).toBe(1);
+  });
+
+  it('ช่องเรียงลงล่างโดยไม่ทับกัน และอยู่ในความสูงรวม', () => {
+    for (let i = 0; i < N; i++) {
+      const p = panels[i]!;
+      expect(p.bottom).toBeGreaterThan(p.top);
+      if (i > 0) expect(p.top).toBeGreaterThan(panels[i - 1]!.bottom);
+    }
+    expect(panels[N - 1]!.bottom).toBeLessThanOrEqual(H);
+  });
+
+  it('แต่ละช่องมีแกนค่าเป็นของตัวเอง — ค่าเท่ากันในคนละช่วงได้ y คนละที่', () => {
+    const p = panels[0]!;
+    // 30 อยู่กลางช่วง 20–40 แต่อยู่ล่างสุดของช่วง 30–90
+    const mid = yAt(30, { min: 20, max: 40 }, p);
+    const low = yAt(30, { min: 30, max: 90 }, p);
+    expect(low).toBeGreaterThan(mid);
   });
 });

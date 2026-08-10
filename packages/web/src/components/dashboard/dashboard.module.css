@@ -2,10 +2,45 @@
 .shell {
   display: flex;
   min-height: 100vh;
-  background: var(--d-page-bg);
-  background-attachment: fixed;
   color: var(--d-ink);
   font-family: var(--font);
+  /*
+   * ตาข่ายกันพลาด — ถ้าชั้นตรึงด้านล่างไม่ทำงานด้วยเหตุใดก็ตาม หน้าต้องยังเป็นพื้นอ่อนเหมือนเดิม
+   * ห้ามปล่อยให้ตกไปเห็นพื้นเขียวเข้มของ body (ซึ่งเป็นสีของฉากเกม ไม่ใช่ของหน้าข้อมูล)
+   * ชั้น `::before` วาดทับตัวนี้อยู่แล้ว จึงไม่มีต้นทุนต่อเฟรมเพิ่ม
+   */
+  background: var(--d-page-bg);
+  /*
+   * 🔴 `isolation: isolate` **จำเป็น** — ห้ามลบ
+   *
+   * ชั้นพื้นหลังด้านล่างใช้ `z-index: -1` ซึ่งตามลำดับการวาดของ CSS จะไปอยู่
+   * **ใต้พื้นหลังของ `body`** (ที่เป็นสีเขียวเข้มของฉากเกม `--scene-backdrop`)
+   * ผลคือหน้าข้อมูลกลายเป็นสีเขียวเข้มทั้งหน้า — เคยพลาดมาแล้ว
+   *
+   * `isolate` ทำให้ `.shell` เป็น stacking context ของตัวเอง ชั้น -1 จึงอยู่ใต้เนื้อหา
+   * แต่ยังอยู่**เหนือ**พื้นหลังของ body ตามที่ต้องการ
+   * (ไม่กระทบ overlay ที่ position: fixed ข้างใน — isolation ไม่เปลี่ยน containing block)
+   */
+  isolation: isolate;
+}
+
+/*
+ * พื้นหลังไล่สีตรึงกับหน้าจอ — **ห้ามกลับไปใช้ `background-attachment: fixed`**
+ *
+ * `background-attachment: fixed` บังคับให้เบราว์เซอร์ **วาดพื้นหลังใหม่ทั้งหน้าจอทุกเฟรมที่เลื่อน**
+ * (เลื่อน layer เฉยๆ ไม่ได้ ต้องคำนวณ gradient ใหม่) เป็นสาเหตุอันดับต้นๆ ของอาการเลื่อนหนืด
+ * บนแท็บเล็ต ซึ่งเป็นเครื่องหลักของงานนี้
+ *
+ * ใช้ชั้นแยกที่ `position: fixed` แทน — ได้ภาพเหมือนเดิมเป๊ะ (ตรึงกับ viewport ไม่เลื่อนตามเนื้อหา)
+ * แต่ compositor เก็บเป็น layer นิ่งชั้นเดียว ไม่ต้องวาดใหม่ตอนเลื่อน
+ */
+.shell::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: var(--d-page-bg);
+  pointer-events: none;
 }
 
 .main {
@@ -1072,26 +1107,7 @@
   padding: 6px 4px;
 }
 
-.chartLegend {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-  padding: 2px 6px;
-}
-
-.legendLine {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: var(--fs-min);
-  color: var(--d-ink-3);
-}
-
-.legendStroke {
-  width: 14px;
-  height: 3px;
-  border-radius: 2px;
-}
+/* แถบคำอธิบายสีของกราฟรวมถูกถอดออกแล้ว — หัวช่องของกราฟแยกช่องบอกครบในตัว (ดู HistoryChart) */
 
 .chartFoot {
   display: flex;
@@ -1355,6 +1371,14 @@
   justify-content: space-between;
   gap: 8px;
   flex-wrap: wrap;
+}
+
+/* หมายเหตุว่าบันทึกอยู่แค่ในเครื่องนี้ — เป็นข้อมูล ไม่ใช่คำเตือน จึงใช้สีเทาไม่ใช่สีส้ม */
+.logTempNote {
+  margin-top: 6px;
+  font-size: 12.5px;
+  color: var(--d-muted);
+  line-height: 1.4;
 }
 
 .logAddBtn {

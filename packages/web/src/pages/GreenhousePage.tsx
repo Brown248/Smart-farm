@@ -1,8 +1,8 @@
-import { memo, useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { DeviceId } from '@shared/device';
 import type { HsChannel } from '@shared/handysense';
-import { Toast } from '@/components/common';
+import { EstopDefiedAlert, Toast } from '@/components/common';
 import { RingGauge } from '@/components/charts/RingGauge';
 import { CommandChannel } from '@/components/common/CommandChannel';
 import { CommandConfirm } from '@/components/common/CommandConfirm';
@@ -10,7 +10,7 @@ import { Icon } from '@/components/common/Icon';
 import { NumberField } from '@/components/common/NumberField';
 import { DataPage } from '@/components/layout/DataPage';
 import { HS_DAY_KEYS } from '@shared/handysense';
-import { BIG_FAN_LOCK_TEMP } from '@shared/thresholds';
+import { bigFanOffBlocked } from '@/lib/guards';
 import {
   GH_DEVICES,
   GH_DEVICE_NUMBER,
@@ -59,6 +59,11 @@ interface DeviceControlCardProps {
   readonly channelState: HsChannelState | undefined;
   readonly mode: GhMode;
   readonly deviceStale: boolean;
+  /**
+   * ใครสั่งพัดลมตัวนี้อยู่ — `'system'` = ระบบความชื้นคุม · `'manual'` = ผู้ใช้แย่งคุมไว้รอบนี้
+   * `null` = ไม่เกี่ยวกับระบบความชื้น (ปั๊ม หรือรอบดูดยังไม่ถึงตัวนี้)
+   */
+  readonly ventRole: 'system' | 'manual' | null;
   readonly t: Dict;
   readonly reduced: boolean;
   readonly onPress: (id: DeviceId) => void;
@@ -76,6 +81,7 @@ const DeviceControlCard = memo(function DeviceControlCard({
   channelState,
   mode,
   deviceStale,
+  ventRole,
   t,
   reduced,
   onPress,
@@ -174,6 +180,12 @@ const DeviceControlCard = memo(function DeviceControlCard({
         {offline ? <span className={s.offlineTag}>{t.offline}</span> : null}
         {/* อุปกรณ์ออฟไลน์ (shadow_ts เก่า) — ค่าที่เห็นเป็นค่าค้าง ไม่ใช่สถานะสด */}
         {deviceStale && !offline ? <span className={s.staleTag}>{t.staleTag}</span> : null}
+        {/* ใครกำลังสั่งพัดลมตัวนี้อยู่ — ไม่งั้นผู้ใช้จะงงว่าทำไมอยู่ๆ มันเปิด/ปิดเอง */}
+        {ventRole !== null ? (
+          <span className={s.ventTag}>
+            {ventRole === 'system' ? t.ventOwnedBadge : t.ventOverridden}
+          </span>
+        ) : null}
       </div>
 
       {/* ป้ายสถานะ: พ่วงตัวหลัก / ยังไม่ต่อ relay / automation ที่อาจทับการกดปุ่ม */}
@@ -447,13 +459,16 @@ const FanConditionCard = memo(function FanConditionCard({
               });
             };
             return (
-              <div key={i} className={s.slotCard}>
+              // key ต้องเป็น slot จริงไม่ใช่ index — ลบช่วงกลางทางแล้ว React จะจับคู่การ์ดผิดตัว
+              <div key={slot.slot} className={s.slotCard}>
                 <div className={s.slotHead}>
                   <span className={s.slotName}>{t.ghSchedSlot(slot.slot + 1)}</span>
                   <button
                     type="button"
                     className={s.schedRemove}
-                    aria-label={`${name} · ${t.ghSchedDelSlot} ${i + 1}`}
+                    // ต้องเป็นเลขเดียวกับที่ตาเห็นด้านซ้าย (`slot.slot + 1`) ไม่ใช่ลำดับในลิสต์
+                    // ลบช่วงกลางทางแล้วสองเลขจะไม่ตรงกัน — คนใช้ screen reader จะกดผิดช่วง
+                    aria-label={`${name} · ${t.ghSchedDelSlot} ${slot.slot + 1}`}
                     onClick={removeSlot}
                   >
                     <Icon name="close" size={14} strokeWidth={2.2} />
@@ -583,6 +598,8 @@ interface HumidityBannerProps {
   readonly rh: number;
   /** อุณหภูมิ (สำหรับกฎ G2 ตอนปิด — เตือนถ้าจะดับพัดลมใหญ่ตัวสุดท้ายขณะร้อน) */
   readonly temp: number;
+  /** ปิดระบบความชื้นแล้วจะยังมีพัดลมใหญ่เดินอยู่ไหม — ตัวแปรที่ G2 ต้องใช้ตัดสิน */
+  readonly bigFanStillRunningAfter: boolean;
   readonly emergency: boolean;
   readonly onConfirmAsk: ConfirmApi['ask'];
   readonly t: Dict;
@@ -595,6 +612,7 @@ export function HumidityBanner({
   rhReal,
   rh,
   temp,
+  bigFanStillRunningAfter,
   emergency,
   onConfirmAsk,
   t,
@@ -602,10 +620,16 @@ export function HumidityBanner({
   const validRange = humidityAuto.onAt > humidityAuto.offAt;
   const stageLabel =
     ventStage === 2 ? t.humStatusVent2 : ventStage === 1 ? t.humStatusVent1 : t.humStatusOff;
-  // ปิดสวิตช์ = สั่งดับพัดลมจริง (เหมือนปุ่มออโต้พัดลม) · ถ้ากำลังดูดอยู่ + ร้อน >33°C =
-  // จะดับพัดลมใหญ่ตัวสุดท้ายขณะร้อน → เตือน+ยืนยัน (reuse ข้อความ G2 ชุดเดียวกับ press/disableTempAuto)
+  /*
+   * ปิดสวิตช์ = สั่งดับพัดลมจริง (เหมือนปุ่มออโต้พัดลม) → ต้องผ่านกฎ G2 ชุดเดียวกับที่อื่น
+   *
+   * **ห้ามเขียนเงื่อนไข G2 เองตรงนี้** — ของเดิมเช็คแค่ `temp > BIG_FAN_LOCK_TEMP` โดยลืมว่า
+   * G2 จะติดก็ต่อเมื่อ "ไม่มีพัดลมใหญ่ตัวอื่นเดินอยู่" ทำให้เตือนผิดเมื่อผู้ใช้เปิดใบ #2 ไว้เอง
+   * เป็นบั๊กตระกูลเดียวกับที่ CLAUDE.md บันทึกไว้: หน้าเขียนกฎความปลอดภัยเอง แล้ว
+   * `safetyParity.test.ts` ผ่านตลอดเพราะทดสอบ `guards.ts` แยกส่วน ("ฟังก์ชันถูก แต่ไม่มีใครเรียก")
+   */
   const toggleHum = () => {
-    if (humidityAuto.enabled && ventStage >= 1 && temp > BIG_FAN_LOCK_TEMP) {
+    if (humidityAuto.enabled && ventStage >= 1 && bigFanOffBlocked(temp, bigFanStillRunningAfter)) {
       onConfirmAsk({
         title: t.guardWarnTitle,
         body: t.guardBigFan(temp.toFixed(1)),
@@ -786,14 +810,25 @@ export function GreenhousePage() {
     humidityAuto,
     setHumidityAuto,
     humidityVentStage,
+    ventOwned,
   } = useFarmState();
 
   /**
-   * โหมดจริง: seed ตัวแก้ (เกณฑ์อุณหภูมิ + ตารางเวลา) จาก **อุปกรณ์จริง** ครั้งเดียวเมื่อค่ามาแล้ว
+   * โหมดจริง: เติมตัวแก้ (เกณฑ์อุณหภูมิ + ตารางเวลา) จาก **อุปกรณ์จริง**
    * ไม่งั้นตัวแก้จะโชว์ค่า default ปลอม แล้วกด "บันทึก/ส่ง" ไปทับค่าจริงของอุปกรณ์ (ตั้ง automation ที่ไม่ได้ตั้งใจ)
-   * seed ครั้งเดียวต่ออุปกรณ์ (seededRef) เพื่อไม่ทับสิ่งที่ผู้ใช้กำลังแก้
+   *
+   * กติกา 3 ข้อ ที่มาจากบั๊กจริงคนละตัว:
+   *   1. ต้องมีค่าจริง **ของช่องนั้น** ก่อน (`led{ch}`) ไม่ผูกกับ led0 ตัวเดียว
+   *   2. ต้องมี **attribute เกณฑ์** มาถึงด้วย (`hasThresholdAttrs`) — attribute ไหลเข้ามาสะสมทีละก้อน
+   *      `led` มาก่อนเกณฑ์ได้ ถ้าเติมตอนนั้นจะได้ "ปิด / 30-35" ซึ่งเป็นค่าปลอม
+   *   3. หยุดเติมเมื่อ **ผู้ใช้เริ่มแก้ฟอร์มแล้ว** (`dirtyRef`) ไม่ใช่ "เติมไปแล้วครั้งหนึ่ง"
+   *      ของเดิมล็อกที่ "เติมแล้ว" ทำให้ค่าจริงที่มาช้ากว่าไม่มีวันเข้าถึงฟอร์มได้เลย
+   *      และถ้าเจ้าของระบบไปปรับเกณฑ์จากแอปมือถือ หน้าเราก็จะโกหกตลอดไป
+   *
+   * เขียนทับเฉพาะตอน**ค่าฝั่งอุปกรณ์เปลี่ยนจริง** (เทียบ signature) ไม่งั้นจะ setState ทุกรอบ attribute
    */
-  const seededRef = useRef<Set<DeviceId>>(new Set());
+  const dirtyRef = useRef<Set<DeviceId>>(new Set());
+  const seededSigRef = useRef<Partial<Record<DeviceId, string>>>({});
   useEffect(() => {
     if (!channelStates) return; // null = ไม่ใช่โหมดจริง
     const ALL: Record<string, boolean> = {
@@ -807,12 +842,12 @@ export function GreenhousePage() {
     };
     for (const dev of GH_DEVICES) {
       const ch = channelOf(dev.id);
-      if (ch === null || seededRef.current.has(dev.id)) continue;
+      if (ch === null || dirtyRef.current.has(dev.id)) continue;
       const state = channelStates[ch];
-      // seed เฉพาะเมื่อ "ช่องนั้น" มีค่าจริงของตัวเองแล้ว (led{ch} มาแล้ว) — ไม่ผูกกับ led0 ตัวเดียว
-      // ไม่งั้นช่องที่ค่ามาช้ากว่าจะถูก seed เป็น default แล้วล็อก (seededRef) ไม่รับค่าจริงอีก (Finding 5)
-      if (!state || state.on === null) continue;
-      seededRef.current.add(dev.id);
+      if (!state || state.on === null || !state.hasThreshold) continue;
+      const sig = JSON.stringify({ temp: state.temp, timers: state.timers });
+      if (seededSigRef.current[dev.id] === sig) continue;
+      seededSigRef.current[dev.id] = sig;
       // เกณฑ์อุณหภูมิจริง — ถ้าอุปกรณ์ไม่มีเกณฑ์ (0,0) โชว์ "ปิด" ไม่ใช่ default ปลอม
       const temp = state?.temp;
       setDeviceThreshold(
@@ -835,6 +870,26 @@ export function GreenhousePage() {
       );
     }
   }, [channelStates, setDeviceThreshold, setDeviceSchedule]);
+
+  /*
+   * ตัวแก้ที่ **ผู้ใช้** เป็นคนสั่ง — ทำเครื่องหมาย dirty ก่อนเสมอ เพื่อให้ effect ข้างบนหยุดเติมทับ
+   * (effect ใช้ setter ดิบ ตัวการ์ดใช้สองตัวนี้) แยกกันชัดเจน จะได้ไม่มีใครเผลอสลับ
+   */
+  const setThresholdByUser = useCallback(
+    (id: DeviceId, patch: Partial<FanTempThreshold>) => {
+      dirtyRef.current.add(id);
+      setDeviceThreshold(id, patch);
+    },
+    [setDeviceThreshold],
+  );
+  const setScheduleByUser = useCallback(
+    (id: DeviceId, slots: readonly DeviceScheduleSlot[]) => {
+      dirtyRef.current.add(id);
+      setDeviceSchedule(id, slots);
+    },
+    [setDeviceSchedule],
+  );
+
   /** ป้าย "อัปเดต … ที่แล้ว" รีเซ็ตตามค่าจริงล่าสุด (โชว์เฉพาะตอน live) */
   const secs = useElapsedSeconds(live.updatedAt);
   const confirm = useConfirm();
@@ -862,6 +917,21 @@ export function GreenhousePage() {
   // guard: พัดลมใบใหญ่ทำงานพร้อมกันทั้งสองตัว = กินไฟเกินจำเป็น
   const conflict = on.big1 && on.big2 && !emergency;
   const guardMsg = emergency ? t.guardEmerg : conflict ? t.guardConflict : null;
+  /**
+   * ปิดระบบความชื้นแล้วจะยังมีพัดลมใหญ่เดินอยู่ไหม — ตัวที่ระบบความชื้น "ไม่ได้คุม" จะไม่ถูกสั่งดับ
+   * ใช้เป็นอินพุตของ G2 (`bigFanOffBlocked`) แทนการเดาเอาเองในตัวแบนเนอร์
+   */
+  const bigFanStillRunningAfter = (['big1', 'big2'] as const).some(
+    (id) => on[id] && !ventOwned.includes(id),
+  );
+  /**
+   * ใครสั่งพัดลมตัวนี้อยู่ — ระบบความชื้นคุม (`system`) หรือผู้ใช้แย่งไว้แล้ว (`manual`)
+   * โชว์เฉพาะตอนรอบดูดกำลังทำงาน ไม่งั้นป้ายจะขึ้นตลอดจนกลายเป็นเสียงรบกวน
+   */
+  const ventRoleOf = (id: DeviceId): 'system' | 'manual' | null => {
+    if (humidityVentStage === 0 || (id !== 'big1' && id !== 'big2')) return null;
+    return ventOwned.includes(id) ? 'system' : 'manual';
+  };
 
   const climateCards = ghClimateCards(climate);
   const climateWarn = climateCards.some((c) => c.warn);
@@ -971,6 +1041,7 @@ export function GreenhousePage() {
                   channelState={channel !== null ? channelStates?.[channel] : undefined}
                   mode={mode[dev.id]}
                   deviceStale={deviceStale}
+                  ventRole={ventRoleOf(dev.id)}
                   t={t}
                   reduced={reduced}
                   onPress={command.press}
@@ -990,7 +1061,13 @@ export function GreenhousePage() {
           </div>
         ) : null}
 
-        {/* โหมดจริง + estop: เตือนว่า OR-logic ของฮาร์ดแวร์อาจเปิดอุปกรณ์กลับ (ผู้ใช้ต้องรู้ ไม่ใช่แค่โค้ด) */}
+        {/*
+          🔴 กดหยุดฉุกเฉินแล้วอุปกรณ์ยังรายงานว่าทำงานอยู่ — ต้องเห็นก่อนอย่างอื่นและต้องต่างจากกล่องเตือนทั่วไป
+          จังหวะนี้ผู้ใช้ต้องลุกไปตัดไฟหน้างาน ไม่ใช่รออยู่หน้าจอ
+        */}
+        <EstopDefiedAlert className={g.section} />
+
+        {/* โหมดจริง + estop: บอกว่าแอปปิดเกณฑ์อัตโนมัติในอุปกรณ์ให้แล้ว และจะยังปิดอยู่หลังปลดล็อก */}
         {emergency && realControl ? (
           <div className={`${s.guardBox} ${g.section}`} role="alert">
             <Icon name="alert" size={18} color="var(--d-warn)" strokeWidth={2} />
@@ -1021,6 +1098,7 @@ export function GreenhousePage() {
             rhReal={live.fields.has('rh')}
             rh={climate.rh}
             temp={climate.temp}
+            bigFanStillRunningAfter={bigFanStillRunningAfter}
             emergency={emergency}
             onConfirmAsk={confirm.ask}
             t={t}
@@ -1044,10 +1122,10 @@ export function GreenhousePage() {
                     offline={offlineOf(dev.id)}
                     emergency={emergency}
                     t={t}
-                    onSetThreshold={setDeviceThreshold}
+                    onSetThreshold={setThresholdByUser}
                     onSendThreshold={command.sendThreshold}
                     onDisableTempAuto={command.disableTempAuto}
-                    onSetSchedule={setDeviceSchedule}
+                    onSetSchedule={setScheduleByUser}
                     onScheduleToggle={command.sendScheduleToggle}
                     onScheduleSave={command.sendScheduleSave}
                     onScheduleDelete={command.sendScheduleDelete}

@@ -230,4 +230,44 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
 
     expect(soil().queryByText(TH.stWatch)).not.toBeInTheDocument();
   });
+
+  /**
+   * ชื่อแปลงเคยเก็บเป็น state ของหน้าชลประทานเอง — กดบันทึกแล้วขึ้นว่า "บันทึกเรียบร้อยแล้ว"
+   * แต่ไปหน้าอื่นแล้วกลับมาก็หายหมด (แอปโกหกผู้ใช้) ไฟล์นี้ไม่เคยมีเคสของ zone settings
+   * จึงไม่มีใครจับได้เลย — เพิ่มเข้ามาให้ครบตามกฎ "state ของฟาร์มอยู่ใน provider"
+   */
+  it('ตั้งชื่อแปลงที่หน้าชลประทานแล้วชื่ออยู่รอดตอนกลับมาใหม่', { timeout: 20000 }, async () => {
+    const user = userEvent.setup();
+    renderAppAt(ROUTES.irrigation);
+    await screen.findByRole('heading', { name: TH.irrTitle });
+    // ปุ่มโซนบนแผนที่มีชื่อยาว (พืช · ความชื้น · สถานะ) — จับด้วย prefix ก็พอ
+    const zoneAName = new RegExp(`^${TH.zoneLetterPrefix}A · `);
+
+    const openZoneA = async () => {
+      // มีทั้งหมุดบนแผนที่และรายการด้านล่างที่ชื่อขึ้นต้นเหมือนกัน — กดตัวแรกก็เปิดลิ้นชักเดียวกัน
+      await user.click(screen.getAllByRole('button', { name: zoneAName })[0]!);
+      return screen.findByRole('dialog', { name: `${TH.zoneLetterPrefix}A` });
+    };
+
+    const drawer = await openZoneA();
+    await user.click(within(drawer).getByRole('tab', { name: TH.tabSettings }));
+    const nameInput = within(drawer).getByLabelText(TH.setName);
+    await user.clear(nameInput);
+    await user.type(nameInput, 'ผักกาดแปลง 1');
+    await user.click(within(drawer).getByRole('button', { name: TH.saveSettings }));
+    expect(within(drawer).getByText(TH.settingsSavedMsg)).toBeInTheDocument();
+    await user.click(within(drawer).getByRole('button', { name: TH.close }));
+
+    // ออกไปหน้าอื่นแล้วกลับมา — ชื่อที่ตั้งไว้ต้องยังอยู่ (เดิมหายเพราะเก็บใน state ของหน้า)
+    await goVia(user, TH.navDashboard);
+    await screen.findByRole('heading', { name: TH.pageTitle });
+    await goVia(user, TH.navIrrigation);
+    await screen.findByRole('heading', { name: TH.irrTitle });
+
+    // ชื่อที่ตั้งเองไปโผล่บนหมุดแผนที่จริง (ปุ่มโซนใช้ `displayName`) — ของเดิมกลับเป็น "โซน A"
+    expect(
+      (await screen.findAllByRole('button', { name: /^ผักกาดแปลง 1 · / })).length,
+    ).toBeGreaterThan(0);
+    expect(screen.queryAllByRole('button', { name: zoneAName })).toHaveLength(0);
+  });
 });

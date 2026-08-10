@@ -144,10 +144,19 @@
   animation-delay: 0.29s;
 }
 
+/*
+ * เมนูที่เปิดอยู่ — **พื้นเขียวอ่อนโปร่ง + ตัวหนังสือเขียวเข้ม** ไม่ใช่ถมเขียวทึบทั้งแถบ
+ * (`Syntech Dashboard.dc.html:92-97`) น้ำหนักอยู่ที่ชิปไอคอนสีทึบตัวเล็กกับแถบซ้าย
+ * ก่อนหน้านี้โค้ดถมสีทั้งแถวจนดูหนักกว่าที่ออกแบบไว้มาก — ไม่มีบันทึกว่าเบี่ยงเพราะอะไร จึงคืนค่าเดิม
+ */
 .navItemOn {
-  background: var(--brand-green);
-  color: #fff;
-  box-shadow: 0 8px 18px -10px rgba(39, 113, 80, 0.9);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--brand-green) 14%, transparent),
+    color-mix(in srgb, var(--brand-green) 4%, transparent)
+  );
+  color: var(--d-green-dark);
+  box-shadow: 0 6px 14px -12px color-mix(in srgb, var(--brand-green) 55%, transparent);
 }
 
 .navItemOn::before {
@@ -155,9 +164,20 @@
   animation: sy-railglow 2.6s ease-in-out infinite;
 }
 
+/* ชิปไอคอนคือจุดที่รับน้ำหนักสีทึบ — ตัวเล็ก อ่านง่าย ไม่กลบตัวหนังสือเมนูอื่น */
+.navItemOn .navIcon {
+  background: var(--brand-green);
+  box-shadow: 0 6px 14px -8px color-mix(in srgb, var(--brand-green) 70%, transparent);
+}
+
 .navItem:not(.navItemOn):hover {
-  background: rgba(39, 113, 80, 0.07);
+  background: color-mix(in srgb, var(--brand-green) 7%, transparent);
   transform: translateX(5px);
+}
+
+/* ชี้ค้างแล้วไอคอนเปลี่ยนเป็นสีแบรนด์ — ต้นแบบมี แต่โค้ดเดิมตกไป */
+.navItem:not(.navItemOn):hover .navIcon {
+  color: var(--brand-green);
 }
 
 .navItem:active {

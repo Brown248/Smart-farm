@@ -129,7 +129,16 @@ export function useTelemetry(opts: UseTelemetryOptions): UseTelemetryResult {
   const orgId = cfg?.orgId ?? null;
 
   const enabled = opts.enabled ?? true;
-  const canConnect = enabled && wsUrl !== null && accessToken !== null;
+  /*
+   * effect ข้างล่างสนใจแค่ **"มี/ไม่มี" token** ไม่ใช่ "token ตัวไหน"
+   *
+   * การสลับตัว token ระหว่างที่ socket เปิดอยู่เป็นหน้าที่ของ `openTelemetrySocket`
+   * (มันฟัง `tokens.onChange` แล้ว teardown+connect ให้เอง) ถ้าเอาค่า token ดิบใส่ deps ด้วย
+   * ตอนต่ออายุ token จะเกิดสองรอบซ้อน: service ต่อใหม่ → effect รื้อทิ้งแล้วต่อใหม่อีก
+   * เปลืองการ handshake และทำให้ backend เปิด WS ไป ThingsBoard เกินชั่วขณะ
+   */
+  const hasToken = accessToken !== null;
+  const canConnect = enabled && wsUrl !== null && hasToken;
 
   /**
    * เก็บ option ไว้ใน ref เพื่อไม่ให้ effect ผูกกับ array/object ที่สร้างใหม่ทุก render
@@ -181,7 +190,7 @@ export function useTelemetry(opts: UseTelemetryOptions): UseTelemetryResult {
   }, [opts.subscribeAlarms, deviceId, orgId]);
 
   useEffect(() => {
-    if (!canConnect || wsUrl === null || !accessToken || !request) {
+    if (!canConnect || wsUrl === null || !hasToken || !request) {
       setStatus('mock');
       return;
     }
@@ -261,10 +270,11 @@ export function useTelemetry(opts: UseTelemetryOptions): UseTelemetryResult {
 
     return () => handle.close();
     /*
-     * `accessToken` อยู่ใน dependency เพราะต้องเปิด/ปิด socket ตามการมี-ไม่มี token
+     * ใช้ `hasToken` (boolean) ไม่ใช่ `accessToken` (ค่าดิบ) — เปิด/ปิด socket ตาม "มี/ไม่มี token"
      * ส่วนการ "เปลี่ยนตัว" token ระหว่างที่ socket เปิดอยู่ service จัดการเองผ่าน `onChange`
+     * ถ้าใส่ค่าดิบ ทุกครั้งที่ต่ออายุ token จะได้ connect → teardown → connect (ต่อซ้ำซ้อน)
      */
-  }, [canConnect, wsUrl, accessToken, request, alarmRequest]);
+  }, [canConnect, wsUrl, hasToken, request, alarmRequest]);
 
   /** บอกป้ายสถานะบน header ให้รู้ด้วย — มันอยู่เหนือตัวที่ subscribe จึงอ่าน state นี้ตรงๆ ไม่ได้ */
   const reportStatus = opts.reportStatus ?? true;

@@ -63,6 +63,20 @@ export const MODE_ICON: Readonly<Record<WateringMode, IconName>> = {
  * ยังไม่ actuate จนกว่าจะต่อระบบจริง — ป้าย `rulesNotLiveNote` บอกไว้แล้ว
  */
 
+/**
+ * ข้อมูลแปลงที่ผู้ใช้ตั้งเอง (ชื่อ · พืช · พื้นที่ · ความชื้นเป้าหมาย)
+ *
+ * อยู่ที่นี่ไม่ใช่ในไฟล์ component เพราะ `FarmStateProvider` เป็นเจ้าของ state นี้
+ * (provider ห้าม import จาก component — ผิดชั้น) เดิมเก็บเป็น state ของหน้าชลประทาน
+ * กดบันทึกแล้วขึ้นว่า "บันทึกแล้ว" แต่เปลี่ยนหน้ากลับมาก็หายหมด
+ */
+export interface ZoneSettings {
+  readonly name: string;
+  readonly crop: string;
+  readonly area: string;
+  readonly target: string;
+}
+
 /** โหมดตั้งเวลา = "รดน้ำเวลาไหนบ้าง" (เวลาเริ่ม ไม่ใช่ระยะเวลา — ปั๊มไม่มีตัวตั้งเวลา) */
 export const DEFAULT_SCHEDULE: readonly string[] = ['06:00', '17:30'];
 export const MAX_SCHEDULE_TIMES = 4;

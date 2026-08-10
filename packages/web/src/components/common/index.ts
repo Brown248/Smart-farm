@@ -1,6 +1,7 @@
 export { Button } from './Button';
 export type { ButtonProps, ButtonVariant } from './Button';
 export { ConfirmDialog } from './ConfirmDialog';
+export { EstopDefiedAlert } from './EstopDefiedAlert';
 export type { ConfirmDialogProps } from './ConfirmDialog';
 export { Card } from './Card';
 export type { CardProps, CardVariant } from './Card';

@@ -8,7 +8,12 @@
  *
  * ⚠️ POST 200 = "รับคำสั่งไว้แล้ว" ไม่ใช่ "สำเร็จ" — สถานะจริงต้องอ่านจาก led อีกที
  */
-import { buildAttributesBody, HS_RESULT_TIMEOUT_MS, type HsCommand } from '@shared/handysense';
+import {
+  buildAttributesBody,
+  HS_POST_TIMEOUT_MS,
+  HS_RESULT_TIMEOUT_MS,
+  type HsCommand,
+} from '@shared/handysense';
 import type { CommandResult } from '@/config/commandResult';
 import { apiBaseUrl, readLiveDataConfig } from '@/config/liveData';
 import { tokenProvider } from './tokenProvider';
@@ -43,6 +48,13 @@ export function readHsContext(): HsPostContext | null {
   return { apiBase, deviceId: cfg.deviceId, token };
 }
 
+/** POST หมดเวลารอ — แยกจาก network error เพื่อให้ UI บอกสาเหตุที่แก้ได้ ("เน็ตช้า ลองใหม่") */
+export class HsPostTimeoutError extends Error {
+  constructor() {
+    super('hs-post-timeout');
+  }
+}
+
 /** ยิงคำสั่งไป backend · โยน error ถ้า HTTP ไม่ใช่ 2xx (เช่น token หมดอายุ / route ผิด) */
 export async function postHsCommand(
   ctx: HsPostContext,
@@ -59,8 +71,16 @@ export async function postHsCommand(
         Authorization: `Bearer ${ctx.token}`,
       },
       body: JSON.stringify(buildAttributesBody(cmd, reqId)),
+      // ไม่มี signal = คำขอค้างได้เป็นนาที แล้ว pending ของปุ่มไม่มีวันถูกปลด (ดู HS_POST_TIMEOUT_MS)
+      signal: AbortSignal.timeout(HS_POST_TIMEOUT_MS),
     });
   } catch (e) {
+    // ครบเวลา → `TimeoutError` (บาง engine เก่าใช้ชื่อ AbortError) แยกออกมาให้ UI บอกสาเหตุถูก
+    const name = e instanceof Error ? e.name : '';
+    if (name === 'TimeoutError' || name === 'AbortError') {
+      console.warn('[HandySense] POST timeout →', url);
+      throw new HsPostTimeoutError();
+    }
     // fetch reject เอง = network/CORS (เบราว์เซอร์บล็อก) — Node ยิงผ่านแต่เบราว์เซอร์ไม่ผ่าน = CORS
     console.warn('[HandySense] POST network/CORS error →', url, e);
     throw e;

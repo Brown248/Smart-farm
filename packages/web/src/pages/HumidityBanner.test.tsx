@@ -24,6 +24,8 @@ function renderBanner(over: Partial<Props>) {
         rhReal
         rh={88}
         temp={28}
+        // ค่าเริ่มต้น = ไม่มีพัดลมใหญ่ตัวอื่นเดินอยู่ → G2 ตัดสินจากอุณหภูมิล้วน (เคสเดิมของเทสชุดนี้)
+        bigFanStillRunningAfter={false}
         emergency={false}
         onConfirmAsk={onConfirmAsk}
         t={TH}
@@ -58,6 +60,22 @@ describe('HumidityBanner — ปิดสวิตช์ = สั่งดับ
   it('ยังไม่ได้ดูด (stage 0) แม้ร้อน → ปิดทันที (ไม่มีพัดลมให้ดับ)', async () => {
     const user = userEvent.setup();
     const { setHumidityAuto, onConfirmAsk } = renderBanner({ ventStage: 0, temp: 36 });
+    await user.click(screen.getByRole('switch', { name: TH.humEnable }));
+    expect(onConfirmAsk).not.toHaveBeenCalled();
+    expect(setHumidityAuto).toHaveBeenCalledWith({ enabled: false });
+  });
+
+  /*
+   * G2 ที่ถูกต้องคือ "ห้ามดับพัดลมใหญ่ **ตัวสุดท้าย** ขณะร้อน" — ถ้ายังมีอีกตัวเดินอยู่ก็ไม่ต้องเตือน
+   * ของเดิมแบนเนอร์เช็คแค่อุณหภูมิ เลยเตือนทั้งที่ผู้ใช้เปิดใบ #2 ไว้เอง (เตือนพร่ำเพรื่อ = ไม่มีใครอ่าน)
+   */
+  it('ร้อนแต่ยังมีพัดลมใหญ่อีกตัวเดินอยู่ → ปิดทันที ไม่ต้องเตือน (G2 ไม่ติด)', async () => {
+    const user = userEvent.setup();
+    const { setHumidityAuto, onConfirmAsk } = renderBanner({
+      ventStage: 1,
+      temp: 36,
+      bigFanStillRunningAfter: true,
+    });
     await user.click(screen.getByRole('switch', { name: TH.humEnable }));
     expect(onConfirmAsk).not.toHaveBeenCalled();
     expect(setHumidityAuto).toHaveBeenCalledWith({ enabled: false });

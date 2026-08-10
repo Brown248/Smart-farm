@@ -29,6 +29,17 @@ FROM nginx:1.27-alpine AS serve
 # override ได้ตอน run: -e BACKEND_ORIGIN=https://...  (ดู docker-compose.yml)
 ENV BACKEND_ORIGIN=https://backend-prod.synexta.ai
 
+# WebSocket ต่อ backend **ตรง** ไม่ผ่าน /hs-proxy → CSP ต้องอนุญาต origin นี้แยกต่างหาก
+ENV BACKEND_WS_ORIGIN=wss://backend-prod.synexta.ai
+# Supabase (ผู้ใช้ล็อกอินเอง) — ตั้งให้ตรงกับ VITE_SUPABASE_URL ของ build นั้น
+ENV SUPABASE_ORIGIN=https://*.supabase.co
+
+# Content-Security-Policy — ประกอบเป็น env ตัวเดียวเพื่อไม่ต้องเขียนซ้ำ 5 ที่ใน template
+#   style-src 'unsafe-inline' **จำเป็น** — LineChart/Sparkline/SensorCard ใช้ inline style
+#   connect-src ต้องมีทั้ง https (REST/Supabase) · wss (telemetry) · Open-Meteo (พยากรณ์อากาศ)
+#   frame-ancestors 'self' = กัน clickjacking บนปุ่มสั่งอุปกรณ์จริง (คู่กับ X-Frame-Options)
+ENV CSP="default-src 'self'; connect-src 'self' ${BACKEND_ORIGIN} ${BACKEND_WS_ORIGIN} ${SUPABASE_ORIGIN} https://api.open-meteo.com; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; font-src 'self'; object-src 'none'; frame-ancestors 'self'; base-uri 'self'; form-action 'self'"
+
 # nginx:alpine จะรัน envsubst บนไฟล์ใน /etc/nginx/templates/*.template ตอน start
 COPY deploy/nginx.conf.template /etc/nginx/templates/default.conf.template
 COPY --from=build /app/packages/web/dist /usr/share/nginx/html

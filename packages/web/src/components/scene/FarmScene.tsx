@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { ROUTES } from '@/routePaths';
 import type { SceneZone, ZoneId, ZoneReading } from '@shared/zone';
-import { ConfirmDialog, Toast } from '@/components/common';
+import { ConfirmDialog, EstopDefiedAlert, Toast } from '@/components/common';
 import { StaleBanner } from '@/components/common/StaleBanner';
 import { Sidebar } from '@/components/layout/Sidebar';
 import { useI18n } from '@/i18n/useI18n';
@@ -228,6 +228,8 @@ export function FarmScene() {
       {/* อุปกรณ์ออฟไลน์ → ฉากโชว์ค่าค้าง (พัดลมยังหมุน/รดน้ำ ทั้งที่จริงหยุด) เตือนไม่ให้เข้าใจผิดว่าสด */}
       <div className={s.staleOverlay}>
         <StaleBanner />
+        {/* กดหยุดฉุกเฉินจาก FAB ของฉากแล้วอุปกรณ์ยังไม่หยุด — ต้องเตือนตรงนี้ด้วย ไม่ใช่เฉพาะหน้าโรงเรือน */}
+        <EstopDefiedAlert />
       </div>
 
       <div

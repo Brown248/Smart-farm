@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useRef, useState } from 'react';
-import { Toast } from '@/components/common';
+import { EstopDefiedAlert, Toast } from '@/components/common';
 import { CommandConfirm } from '@/components/common/CommandConfirm';
 import { CropIcon, Icon } from '@/components/common/Icon';
 import { NumberField } from '@/components/common/NumberField';
@@ -92,6 +92,8 @@ export function IrrigationPage() {
     toggleNotif,
     wateringConfig,
     updateWatering,
+    zoneSettings,
+    setZoneSettings,
   } = useFarmState();
   // แยกค่าตั้งออกมาให้อ่านง่าย · `strategy` (รวม 'manual') ใช้กับลิ้นชัก/การ์ด hover
   const { autoOn, mode, hybrid: rules, schedule, moisture } = wateringConfig;
@@ -125,12 +127,16 @@ export function IrrigationPage() {
     });
   }, [live.fields, zones]);
 
-  const [settings, setSettings] = useState<Readonly<Record<string, ZoneSettings>>>({});
+  /*
+   * ข้อมูลแปลงอยู่ใน provider (ของทั้งฟาร์ม) — เดิมเป็น state ของหน้านี้ กดบันทึกแล้วขึ้นว่า
+   * "บันทึกเรียบร้อย" แต่พอไปหน้าอื่นแล้วกลับมาก็หายหมด = แอปโกหกผู้ใช้
+   * `settingsSaved` ยังเป็นของหน้านี้ได้ เพราะเป็นแค่ feedback ชั่วคราวบนลิ้นชักที่เปิดอยู่
+   */
   const [settingsSaved, setSettingsSaved] = useState(false);
 
   /** ชื่อที่แสดง = ชื่อที่ผู้ใช้ตั้งไว้ในแท็บ "ตั้งค่า" (บันทึกแล้ว) ถ้ามี ไม่งั้น "โซน X" */
   const displayName = (letter: string): string =>
-    settings[letter]?.name?.trim() || zoneNameOf(letter, t);
+    zoneSettings[letter]?.name?.trim() || zoneNameOf(letter, t);
 
   const drawerZone = drawerLetter
     ? (zonesToShow.find((z) => z.letter === drawerLetter) ?? null)
@@ -174,7 +180,7 @@ export function IrrigationPage() {
   const hoverZone = hoverId ? (zonesToShow.find((z) => z.letter === hoverId) ?? null) : null;
 
   const drawerSettings = drawerZone
-    ? (settings[drawerZone.letter] ?? defaultSettings(drawerZone, t))
+    ? (zoneSettings[drawerZone.letter] ?? defaultSettings(drawerZone, t))
     : null;
 
   return (
@@ -186,6 +192,9 @@ export function IrrigationPage() {
         onSoon={() => flash(t.soonToast)}
         onFlash={flash}
       >
+        {/* กดหยุดฉุกเฉินแล้วอุปกรณ์ยังไม่หยุด — ต้องเห็นทุกหน้าที่แสดงสถานะ estop ไม่ใช่แค่หน้าโรงเรือน */}
+        <EstopDefiedAlert className={g.section} />
+
         {/* ── อากาศจริง (Open-Meteo) + หมายเหตุเรื่องฝน · ดึงไม่ได้ = empty state ── */}
         {weather ? (
           <div className={`${g.glass} ${s.wx}`}>
@@ -911,8 +920,8 @@ export function IrrigationPage() {
           onNotif={toggleNotif}
           settingsSaved={settingsSaved}
           onSaveSettings={(next) => {
-            // กด "บันทึก" ค่อย commit → ชื่อที่ตั้งไปโผล่บนหัวลิ้นชัก/แผนที่จริง
-            setSettings((prev) => ({ ...prev, [drawerZone.letter]: next }));
+            // กด "บันทึก" ค่อย commit เข้า provider → ชื่อที่ตั้งอยู่รอดข้ามหน้าจริง
+            setZoneSettings(drawerZone.letter, next);
             setSettingsSaved(true);
           }}
         />

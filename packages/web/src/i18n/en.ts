@@ -103,6 +103,7 @@ export const EN: Dict = {
   hsPartial: '⚠️ Incomplete — the device may be half-configured, please resend',
   hsFailed: 'Device rejected the command',
   hsSendError: 'Couldn’t send command (connection error)',
+  hsSendTimeout: 'Couldn’t send command — timed out. The network may be slow, please try again.',
   hsInvalid: 'Invalid command values',
   hsInvalidRange: 'Invalid — “below” must be less than “above”',
   hsPumpNotWired: 'Water pump isn’t connected to real hardware yet — cannot control',
@@ -670,6 +671,7 @@ export const EN: Dict = {
   ntOffline: 'Notify when a sensor goes offline or sticks',
   saveSettings: 'Save settings',
   settingsSavedMsg: 'Settings saved',
+  tempDataNote: 'Kept on this device only — closing or refreshing the page clears it',
   settingsUnsaved: 'You have unsaved changes',
   areaUnit: (n: number): string => n + ' rai',
 
@@ -734,7 +736,15 @@ export const EN: Dict = {
   guardEmerg:
     'Emergency stop is active — all device commands are suspended. Tap the button below to release.',
   estopAutoWarn:
-    'Switches turned off — but if an automation rule (temperature/schedule) still matches, the device may switch back on within seconds. Also disable that channel’s automation to stop it fully.',
+    'Switches are off and the device’s automation rules have been disabled for you. After you release the stop, automatic mode stays off — turn it back on yourself under “Automatic conditions” below.',
+  estopDefiedTitle: 'Devices have not stopped',
+  estopDefied: (names: string): string =>
+    `Emergency stop was sent, but ${names} still report as running — the command was resent once. If they still do not stop, cut power at the control panel on site immediately.`,
+  estopAutoDisabled:
+    'Released — automatic fan mode is still off. Turn it back on from the greenhouse control page.',
+  logEstopAutoOff: 'Emergency stop — disabled device automation on every channel',
+  ventOwnedBadge: 'Humidity control',
+  ventOverridden: 'Manual override',
   emergNote:
     'Immediately cuts the fans, misting, shade screen, cooling and grow lights, and suspends automation until released.',
   seedLog1: 'Turned on large blade fan #1',

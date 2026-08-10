@@ -25,28 +25,39 @@ export function useLightning(active: boolean, reduced: boolean): number {
       return;
     }
 
-    const timers: number[] = [];
+    const timers = new Set<number>();
     let stopped = false;
+
+    /**
+     * ตั้งเวลาแล้วลบตัวเองออกตอนยิง — `schedule()` เรียกตัวเองซ้ำไม่รู้จบ
+     * ของเดิมเป็น array ที่ push อย่างเดียว รอบละ 5 รายการทุก 15-40 วิ
+     * ฝนตกต่อเนื่องบนฉากเกมทั้งวันจึงสะสมเป็นหมื่นรายการที่ไม่มีใครใช้แล้ว
+     */
+    const after = (fn: () => void, ms: number) => {
+      const id = window.setTimeout(() => {
+        timers.delete(id);
+        fn();
+      }, ms);
+      timers.add(id);
+    };
 
     const schedule = () => {
       if (stopped) return;
-      const id = window.setTimeout(
+      after(
         () => {
-          for (const [at, value] of FLASH) {
-            timers.push(window.setTimeout(() => setOpacity(value), at));
-          }
+          for (const [at, value] of FLASH) after(() => setOpacity(value), at);
           schedule();
         },
         MIN_GAP_MS + Math.random() * RANDOM_GAP_MS,
       );
-      timers.push(id);
     };
 
     schedule();
 
     return () => {
       stopped = true;
-      timers.forEach(window.clearTimeout);
+      timers.forEach((id) => window.clearTimeout(id));
+      timers.clear();
       setOpacity(0);
     };
   }, [active, reduced]);

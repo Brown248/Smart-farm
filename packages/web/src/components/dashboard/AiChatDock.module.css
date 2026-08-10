@@ -141,6 +141,8 @@
 .messages {
   flex: 1;
   overflow-y: auto;
+  /* เลื่อนสุดรายการแชทแล้วต้องไม่ไปลากหน้าข้างหลังต่อ */
+  overscroll-behavior: contain;
   padding: 14px;
   display: flex;
   flex-direction: column;

@@ -30,6 +30,14 @@ export function ActivityLogCard({ entries, onQuickAdd }: ActivityLogCardProps) {
         </button>
       </div>
 
+      {/*
+        บอกอายุของข้อมูลก่อนที่ผู้ใช้จะลงแรงจด — กฎเหล็กข้อ 6 ห้ามใช้ browser storage
+        และ backend ยังไม่มี endpoint เก็บบันทึกให้ · รู้ก่อนดีกว่ารู้ตอนของหาย
+      */}
+      <div className={s.logTempNote} role="note">
+        {t.tempDataNote}
+      </div>
+
       <div className={`${s.tabRow} ${g.hscroll}`} role="group" aria-label={t.logTitle}>
         <button
           type="button"

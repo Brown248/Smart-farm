@@ -102,23 +102,10 @@ export function HistoryChart({ animate }: HistoryChartSectionProps) {
         )}
       </div>
 
-      {state.isAll ? (
-        <div className={s.chartLegend}>
-          {(['temp', 'hum', 'soil', 'light'] as const).map((k) => (
-            <span key={k} className={s.legendLine}>
-              <span
-                className={s.legendStroke}
-                aria-hidden="true"
-                style={{ background: METRIC_CFG[k].color }}
-              />
-              <b style={{ color: 'var(--d-ink)', fontWeight: 700 }}>{t[METRIC_CFG[k].labelKey]}</b>
-              <span className={g.num} style={{ color: 'var(--d-muted)' }}>
-                {fmtLatest(k)}
-              </span>
-            </span>
-          ))}
-        </div>
-      ) : null}
+      {/*
+        โหมด "ทุกค่า" ไม่มีแถบคำอธิบายสีอีกแล้ว — แต่ละช่องมีหัวช่องบอกชื่อค่า หน่วย และค่าล่าสุด
+        อยู่ในตัว การมีแถบสรุปซ้ำอีกชั้นคือข้อมูลเดียวกันสองที่ ซึ่งกินพื้นที่โดยไม่เพิ่มอะไร
+      */}
 
       <div className={s.chartFoot}>
         <RangeTabs state={state} />

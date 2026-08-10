@@ -41,6 +41,12 @@ export const QA_DEFAULT_KEY: Readonly<Record<LogCat, TextKey>> = {
 /** จำนวนรายการที่โชว์บนแดชบอร์ด — ที่เหลือดูได้ในหน้าบันทึกเต็ม */
 export const VISIBLE_LOGS = 3;
 
+/**
+ * เพดานจำนวนบันทึกที่เก็บไว้ใน memory — แท็บเล็ตเปิดค้างทั้งสัปดาห์แล้วจดทุกวัน
+ * ถ้าไม่จำกัด array จะโตไปเรื่อยๆ พร้อม re-render ทั้งลิสต์ (control log ก็จำกัดด้วย `LOG_LIMIT`)
+ */
+export const ACTIVITY_LOG_LIMIT = 200;
+
 export const filterLogs = (
   entries: readonly DashLogEntry[],
   cat: LogCat | 'all',

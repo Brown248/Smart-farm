@@ -39,6 +39,8 @@
   border: 4px solid var(--wood);
   color: var(--ink);
   overflow: auto;
+  /* เลื่อนสุดในกล่องแล้วต้องไม่ไปลากหน้าข้างหลังต่อ */
+  overscroll-behavior: contain;
 }
 
 /* กล่องยืนยันกลางจอ */

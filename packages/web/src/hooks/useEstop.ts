@@ -66,7 +66,8 @@ export function useEstop({ t, confirm, flash }: UseEstopOptions): EstopApi {
         run: () => {
           setEstop(false);
           addLog(tt.logUnlock);
-          flash(tt.unlockToast);
+          // โหมดจริง: เตือนว่า auto ยังปิดอยู่ (estop ปิดไว้) ไม่งั้นผู้ใช้จะรอให้พัดลมทำงานเองแล้วไม่เกิดขึ้น
+          flash(realControlRef.current ? tt.estopAutoDisabled : tt.unlockToast);
         },
       });
       return;
@@ -78,9 +79,18 @@ export function useEstop({ t, confirm, flash }: UseEstopOptions): EstopApi {
     addLog(tt.logEstop);
     flash(tt.estopToast);
 
-    // โหมดจริง: สั่งปิด relay จริงทุกช่องที่ต่ออยู่ (best-effort ไม่รอผล)
-    // provider ข้าม reconcile ตอน estop จึงคง "ปิดหมด" บนจอไว้จนกว่าจะปลดล็อก
-    // (ข้อจำกัด: automation แบบ OR ในอุปกรณ์อาจเปิดกลับรอบประเมินถัดไป — estop นี้ไม่แตะเกณฑ์)
+    /*
+     * โหมดจริง: **ปิดเกณฑ์อัตโนมัติในตัวอุปกรณ์ก่อน แล้วค่อยสั่งปิดสวิตช์**
+     *
+     * ของเดิมยิงแค่ `setSwitch off` → พัดลมที่ตั้ง `mode:'auto'` ไว้จะกลับมาหมุนเอง
+     * ทันทีที่อุณหภูมิเข้าเงื่อนไขในรอบประเมินถัดไป (~10 วิ) = หยุดฉุกเฉินไม่ได้หยุดจริง
+     *
+     * **ลำดับสำคัญ** — ถ้าสั่งปิดสวิตช์ก่อนแล้วค่อยปิดเกณฑ์ อุปกรณ์อาจเปิดกลับคั่นกลางสองคำสั่ง
+     * ยังเป็น fire-and-forget เพราะ estop ต้องติดทันที ห้ามรอ network (state ในเครื่องพลิกไปแล้ว)
+     *
+     * ผลข้างเคียงที่ตั้งใจ: ปลดล็อกแล้ว **auto จะยังปิดอยู่** ผู้ใช้ต้องเปิดเองที่หน้าควบคุมโรงเรือน
+     * (เจ้าของงานเลือกทางนี้ — ปลอดภัยกว่าให้ของกลับมาเดินเองโดยไม่ตั้งใจ)
+     */
     if (realControlRef.current) {
       const ctx = readHsContext();
       if (ctx) {
@@ -88,10 +98,15 @@ export function useEstop({ t, confirm, flash }: UseEstopOptions): EstopApi {
           if (ch === HS_TEST_CHANNEL) continue; // ช่อง test ไม่มีอุปกรณ์จริง
           void postHsCommand(
             ctx,
-            { action: 'setSwitch', channel: ch, on: false },
+            { action: 'setThreshold', channel: ch, mode: 'no-auto' },
             newReqId(),
-          ).catch(() => {});
+          )
+            .then(() =>
+              postHsCommand(ctx, { action: 'setSwitch', channel: ch, on: false }, newReqId()),
+            )
+            .catch(() => {});
         }
+        addLog(tt.logEstopAutoOff);
       }
     }
   }, [addLog, confirm, flash, setDevices, setEstop]);

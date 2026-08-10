@@ -101,6 +101,51 @@ export function pixelPlot(width: number, height: number, padRight: number): Plot
 export const chartHeightFor = (width: number): number =>
   Math.round(Math.min(300, Math.max(210, width * 0.36)));
 
+/* ── กราฟแยกช่อง (small multiples) ────────────────────────────────────
+ *
+ * ดู 4 ค่าพร้อมกันต้อง **แยกช่อง ไม่ใช่ซ้อนเส้นบนแกนเดียว**
+ * ของเดิมวาด 4 เส้นทับกันโดยที่แต่ละเส้นสเกลตามช่วงของตัวเอง แล้วติดแกนเป็น 0–1
+ * → เส้นที่อยู่สูงกว่า **ไม่ได้แปลว่าค่ามากกว่า** และตัวเลขบนแกนไม่มีความหมายเลย
+ * (กราฟสองแกนคือความผิดพลาดอันดับ 1 ของการทำ data visualization · อันนี้หนักกว่าคือสี่แกน)
+ *
+ * แยกช่องแล้วแต่ละค่าได้แกนจริงพร้อมหน่วยของตัวเอง ส่วนการเทียบ "เวลา" ยังทำได้
+ * เพราะทุกช่องใช้แกนเวลาชุดเดียวกันและเรียงตรงคอลัมน์กัน (เลื่อนชี้ทีเดียวเห็นครบ 4 ค่า)
+ */
+
+/** ระยะห่างระหว่างช่อง และความสูงหัวช่อง (ชื่อค่า + ค่าล่าสุด) */
+export const PANEL_GAP = 12;
+export const PANEL_HEAD = 18;
+
+/** ความสูงของช่องย่อยตามความกว้างที่มี — พอเห็นรูปคลื่นแต่ไม่กินพื้นที่จนต้องเลื่อนเยอะ */
+export const panelHeightFor = (width: number): number =>
+  Math.round(Math.min(96, Math.max(62, width * 0.1)));
+
+/**
+ * ผืนกราฟของช่องที่ `index` ในกองซ้อน
+ * `padLeft`/`padRight` เท่ากันทุกช่องโดยตั้งใจ — แกนเวลาจึงตรงคอลัมน์กันเป๊ะ
+ */
+export function stackedPanelPlot(
+  width: number,
+  svgHeight: number,
+  index: number,
+  panelHeight: number,
+  padRight: number,
+): Plot {
+  const top = index * (panelHeight + PANEL_GAP);
+  return {
+    width,
+    height: svgHeight,
+    padLeft: 14,
+    padRight,
+    top: top + PANEL_HEAD,
+    bottom: top + panelHeight,
+  };
+}
+
+/** ความสูงรวมของกราฟแยกช่อง (รวมแกนเวลาด้านล่าง) */
+export const stackedHeight = (panels: number, panelHeight: number, xAxisHeight = 20): number =>
+  panels * (panelHeight + PANEL_GAP) - PANEL_GAP + xAxisHeight;
+
 /**
  * ดัชนีจุดที่ใกล้ตำแหน่ง x ที่สุด — ใช้ตอนเลื่อนเมาส์เพื่อโชว์ค่า
  * คืน `null` เมื่อไม่มีข้อมูล จะได้ไม่ต้องเดาว่า 0 แปลว่าอะไร

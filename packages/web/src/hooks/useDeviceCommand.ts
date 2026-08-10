@@ -12,6 +12,7 @@ import { bondedTo, channelOf } from '@/config/deviceChannels';
 import { validateHsCommand } from '@/lib/handysenseValidate';
 import {
   createHsTracker,
+  HsPostTimeoutError,
   HsTrackError,
   newReqId,
   postHsCommand,
@@ -66,6 +67,22 @@ export interface DeviceCommandApi {
 }
 
 /**
+ * แปลง error ของคำสั่งจริงเป็นข้อความที่ผู้ใช้อ่านรู้เรื่อง — **ที่เดียว** ใช้ร่วมกันทั้ง 3 เส้นทางคำสั่ง
+ * (`sendReal` · `sendThreshold` · `sendConfigCommand`) ของเดิมคัดลอกบล็อกเดียวกันไว้ 3 ที่
+ * พอเพิ่มเหตุผิดพลาดใหม่ (POST หมดเวลา) จึงมีโอกาสเติมไม่ครบแล้วบางปุ่มบอกสาเหตุผิด
+ */
+function commandErrorMessage(e: unknown, tt: Dict): string {
+  if (e instanceof HsTrackError) {
+    if (e.failure.kind === 'timeout') return tt.hsUnknown;
+    const r = e.failure.result;
+    return r.partial ? tt.hsPartial : (r.error ?? tt.hsFailed);
+  }
+  // POST ค้างจนครบเวลา — บอกให้ชัดว่าเป็นเรื่องเครือข่าย ผู้ใช้จะได้ลองใหม่ ไม่ใช่คิดว่าอุปกรณ์พัง
+  if (e instanceof HsPostTimeoutError) return tt.hsSendTimeout;
+  return tt.hsSendError; // POST พลาดด้วยเหตุอื่น (token หมดอายุ / CORS / network)
+}
+
+/**
  * ห่วงโซ่ความปลอดภัยของคำสั่งอุปกรณ์ — พอร์ตตรงจากต้นแบบ ห้ามลดขั้นตอน (สเปกข้อ 7.3)
  *
  *   ออฟไลน์?  → บล็อก + บอกเหตุผล
@@ -85,8 +102,18 @@ export function useDeviceCommand({
   confirm,
   flash,
 }: UseDeviceCommandOptions): DeviceCommandApi {
-  const { devices, setDevices, estop, tank, log, setMode, watering, realControl, live } =
-    useFarmState();
+  const {
+    devices,
+    setDevices,
+    estop,
+    tank,
+    log,
+    setMode,
+    watering,
+    realControl,
+    live,
+    noteManualFanCommand,
+  } = useFarmState();
   // หยุดฉุกเฉิน + การเขียน log เป็นของ `useEstop` — ปุ่มในแถบเมนูใช้ตัวเดียวกันนี้
   const { estopPress, addLog } = useEstop({ t, confirm, flash });
   const [justDone, setJustDone] = useState<Partial<Record<DeviceId, boolean>>>({});
@@ -116,10 +143,17 @@ export function useDeviceCommand({
   const bannedRef = useRef(deviceBanned);
   bannedRef.current = deviceBanned;
 
-  const timers = useRef<number[]>([]);
+  /**
+   * ตั้งเวลาแล้ว **ลบตัวเองออกตอนยิง** — ของเดิมเป็น array ที่ push อย่างเดียว ไม่เคยลบ
+   * แท็บเล็ตเปิดค้างทั้งวันแล้วสั่งงานบ่อยๆ รายการจะสะสมไปเรื่อยๆ โดยไม่มีใครใช้แล้ว
+   */
+  const timers = useRef<Set<number>>(new Set());
   const later = useCallback((fn: () => void, ms: number) => {
-    const id = window.setTimeout(fn, ms);
-    timers.current.push(id);
+    const id = window.setTimeout(() => {
+      timers.current.delete(id);
+      fn();
+    }, ms);
+    timers.current.add(id);
   }, []);
 
   // ตัวจับคู่ reqId ↔ cmd_result (โหมดจริง) — ป้อนจาก live.command ที่ไหลเข้ามา
@@ -141,7 +175,8 @@ export function useDeviceCommand({
     const pending = timers.current;
     return () => {
       mountedRef.current = false;
-      pending.forEach(window.clearTimeout);
+      pending.forEach((id) => window.clearTimeout(id));
+      pending.clear();
       tracker.clear();
     };
   }, [tracker]);
@@ -188,6 +223,27 @@ export function useDeviceCommand({
       cmdGenRef.current[id] = gen;
       patch(id, { pending: target ? 'on' : 'off' });
       const reqId = newReqId();
+
+      /*
+       * ⏱ safety timer ต้องตั้ง **ก่อน** ยิงคำสั่ง ไม่ใช่ข้างใน `.then()`
+       *
+       * ของเดิมตั้งไว้ใน `.then()` หลัง cmd_result → ถ้า chain ไม่เดินเลย (POST ค้างเพราะเน็ตแขวน)
+       * timer ก็ไม่เคยถูกตั้ง → `pending` ค้างถาวร ปุ่มกดไม่ได้จนกว่าจะรีโหลดหน้า
+       * ตั้งตรงนี้แล้ว pending ถูกปลดเสมอ ไม่ว่าคำสั่งจะสำเร็จ ล้มเหลว หรือค้างกลางทาง
+       *
+       * เส้นทางอื่นที่ปลด pending ไปก่อน (สำเร็จ/พลาด) จะทำให้ `stillPending` เป็น false
+       * ตัวนี้จึงกลายเป็น no-op ไม่เด้ง toast ซ้ำ
+       */
+      later(() => {
+        if (cmdGenRef.current[id] !== gen) return;
+        // provider เคลียร์ pending ทันทีที่ led ยืนยัน → ถ้ายังค้าง แปลว่า led ไม่เปลี่ยนในเวลาที่กำหนด
+        // (automation ทับ / อุปกรณ์ไม่รายงาน) — อย่าเงียบ ต้องบอกผู้ใช้ ไม่งั้นดูเหมือน "กดแล้วเด้งกลับ"
+        const stillPending = devicesRef.current.find((x) => x.id === id)?.pending != null;
+        if (!stillPending) return;
+        patch(id, { pending: null });
+        if (mountedRef.current) flashRef.current(tRef.current.hsUnconfirmed);
+      }, LED_CONFIRM_TIMEOUT_MS);
+
       postHsCommand(ctx, cmd, reqId)
         .then(() => tracker.track(reqId))
         .then(() => {
@@ -200,15 +256,6 @@ export function useDeviceCommand({
                 ? logText(tt2)
                 : tt2.logManual(target ? tt2.actOn : tt2.actOff, deviceName(d, tt2)),
             );
-          // safety: led ไม่ยืนยันภายในเวลา → ปลด pending (เฉพาะถ้ายังเป็นคำสั่งรุ่นนี้ ไม่ทับคำสั่งใหม่)
-          later(() => {
-            if (cmdGenRef.current[id] !== gen) return;
-            // provider เคลียร์ pending ทันทีที่ led ยืนยัน → ถ้ายังค้าง แปลว่า led ไม่เปลี่ยนใน 16 วิ
-            // (automation ทับ / อุปกรณ์ไม่รายงาน) — อย่าเงียบ ต้องบอกผู้ใช้ ไม่งั้นดูเหมือน "กดแล้วเด้งกลับ"
-            const stillPending = devicesRef.current.find((x) => x.id === id)?.pending != null;
-            patch(id, { pending: null });
-            if (stillPending && mountedRef.current) flashRef.current(tRef.current.hsUnconfirmed);
-          }, LED_CONFIRM_TIMEOUT_MS);
         })
         .catch((e: unknown) => {
           // เคลียร์ pending/toast เฉพาะถ้ายังเป็นคำสั่งรุ่นนี้ (ตรงกับ success path :194)
@@ -217,13 +264,7 @@ export function useDeviceCommand({
           if (cmdGenRef.current[id] !== gen) return;
           patch(id, { pending: null });
           if (!mountedRef.current) return;
-          const tt2 = tRef.current;
-          if (e instanceof HsTrackError) {
-            if (e.failure.kind === 'timeout') return flashRef.current(tt2.hsUnknown);
-            const r = e.failure.result;
-            return flashRef.current(r.partial ? tt2.hsPartial : (r.error ?? tt2.hsFailed));
-          }
-          flashRef.current(tt2.hsSendError); // POST พลาด (เช่น token หมดอายุ / network)
+          flashRef.current(commandErrorMessage(e, tRef.current));
         });
     },
     [addLog, later, patch, tracker],
@@ -239,6 +280,8 @@ export function useDeviceCommand({
    */
   const send = useCallback(
     (id: DeviceId, target: boolean, logText?: (tt: Dict) => string) => {
+      // คำสั่งมือของผู้ใช้ — ตัวคุมความชื้นต้องไม่ทับพัดลมตัวนี้จนกว่ารอบดูดจะจบ
+      noteManualFanCommand(id);
       if (realControlRef.current) return sendReal(id, target, logText);
       // หลุดชั่วคราว (เคย live แล้วกำลังต่อใหม่): อย่าตกไป mock path ที่ fake สถานะในเครื่อง
       // แล้วเด้งกลับตอน led จริงไหลมาทีหลัง — บล็อกไว้ บอกให้รอ/ลองใหม่ (จุดพลาดที่ reviewer จับได้)
@@ -257,7 +300,7 @@ export function useDeviceCommand({
         later(() => setJustDone((prev) => ({ ...prev, [id]: false })), DONE_FLASH_MS);
       }, SEND_LATENCY_MS);
     },
-    [addLog, later, patch, sendReal],
+    [addLog, later, noteManualFanCommand, patch, sendReal],
   );
 
   const press = useCallback(
@@ -407,13 +450,7 @@ export function useDeviceCommand({
         })
         .catch((e: unknown) => {
           if (!mountedRef.current) return;
-          const tt2 = tRef.current;
-          if (e instanceof HsTrackError) {
-            if (e.failure.kind === 'timeout') return flashRef.current(tt2.hsUnknown);
-            const r = e.failure.result;
-            return flashRef.current(r.partial ? tt2.hsPartial : (r.error ?? tt2.hsFailed));
-          }
-          flashRef.current(tt2.hsSendError);
+          flashRef.current(commandErrorMessage(e, tRef.current));
         });
     },
     [addLog, bondedReject, tracker],
@@ -438,6 +475,8 @@ export function useDeviceCommand({
       if (staleRef.current) return flashRef.current(tt.hsDeviceOffline);
 
       const proceed = () => {
+        // ปิดออโต้เอง = คำสั่งมือเหมือนกัน — ตัวคุมความชื้นต้องไม่เปิดกลับให้ทันที
+        noteManualFanCommand(id);
         const ctx = readHsContext();
         if (ctx === null) return flashRef.current(tRef.current.hsSendError);
         // 1) ปิด auto ในอุปกรณ์ก่อน (fire-and-forget · กัน device re-open รีเลย์รอบถัดไป)
@@ -467,7 +506,7 @@ export function useDeviceCommand({
       }
       proceed();
     },
-    [confirm, bondedReject, sendReal, tank],
+    [confirm, bondedReject, noteManualFanCommand, sendReal, tank],
   );
 
   /** ยิงคำสั่ง config (setSchedule) + จับผล — ผู้เรียกต้อง validate + สร้าง cmd ให้ถูกมาก่อน */
@@ -484,13 +523,7 @@ export function useDeviceCommand({
         })
         .catch((e: unknown) => {
           if (!mountedRef.current) return;
-          const tt = tRef.current;
-          if (e instanceof HsTrackError) {
-            if (e.failure.kind === 'timeout') return flashRef.current(tt.hsUnknown);
-            const r = e.failure.result;
-            return flashRef.current(r.partial ? tt.hsPartial : (r.error ?? tt.hsFailed));
-          }
-          flashRef.current(tt.hsSendError);
+          flashRef.current(commandErrorMessage(e, tRef.current));
         });
     },
     [tracker],

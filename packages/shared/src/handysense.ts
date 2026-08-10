@@ -34,6 +34,15 @@ export const HS_SOIL_RANGE = { min: 0, max: 100 } as const;
 /** timeout ฝั่ง FE: ไม่มี cmd_result ที่ reqId ตรงภายใน 15 วิ → แสดง "ไม่ทราบผล" (ห้ามหมุนค้าง/ห้ามบอกว่าสำเร็จ) */
 export const HS_RESULT_TIMEOUT_MS = 15_000;
 
+/**
+ * timeout ของ **ตัว POST เอง** — คนละเรื่องกับ `HS_RESULT_TIMEOUT_MS` ที่รอ `cmd_result`
+ *
+ * `fetch` ของเบราว์เซอร์ไม่มี timeout ในตัว (รอจนกว่า TCP จะยอมแพ้ ซึ่งเป็นนาที)
+ * ปล่อยไว้ = คำขอค้าง → `pending` ของปุ่มไม่มีวันถูกปลด → ผู้ใช้ต้องรีโหลดหน้าถึงจะสั่งได้อีก
+ * ซึ่งเกิดง่ายมากบนแท็บเล็ตที่ใช้ wifi ในโรงเรือน
+ */
+export const HS_POST_TIMEOUT_MS = 10_000;
+
 export const HS_DAY_KEYS = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
 export type HsDay = (typeof HS_DAY_KEYS)[number];
 export type HsDays = Readonly<Record<HsDay, boolean>>;

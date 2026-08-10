@@ -21,7 +21,8 @@ vi.mock('@/services/handysenseControl', async (importOriginal) => {
 
 import { TH } from '@/i18n/th';
 import { FarmStateProvider } from '@/state/FarmStateProvider';
-import { postHsCommand } from '@/services/handysenseControl';
+import { HsPostTimeoutError, postHsCommand } from '@/services/handysenseControl';
+import { LED_CONFIRM_TIMEOUT_MS } from '@/lib/deviceTiming';
 import { useConfirm } from './useConfirm';
 import { useToast } from './useToast';
 import { useDeviceCommand } from './useDeviceCommand';
@@ -76,6 +77,57 @@ describe('useDeviceCommand — timeout ของคำสั่งจริง (
     });
     expect(result.current.toast).toBe(TH.hsUnknown);
     expect(pendingOf(result, 'big2')).toBeNull();
+  });
+});
+
+/**
+ * POST เองค้าง (ไม่ใช่ "ส่งแล้วไม่มีผลกลับ") — เคสที่เกิดจริงบนแท็บเล็ตที่ wifi ในโรงเรือนหลุดๆ ติดๆ
+ *
+ * ของเดิม safety timer ถูกตั้งไว้ **ข้างใน `.then()`** ของ POST → chain ไม่เดิน = timer ไม่เคยถูกตั้ง
+ * → `pending` ค้างถาวร ปุ่มกดไม่ได้จนกว่าจะรีโหลดหน้า เทสนี้จะ fail ทันทีถ้ามีคนย้ายมันกลับเข้าไป
+ */
+describe('useDeviceCommand — POST ค้าง ต้องไม่ทำให้ปุ่มค้างถาวร', () => {
+  beforeEach(() => vi.useFakeTimers());
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.mocked(postHsCommand).mockReset().mockResolvedValue(undefined);
+  });
+
+  it('POST ไม่ตอบเลย → ครบ LED_CONFIRM_TIMEOUT_MS ต้องปลด pending + บอกว่าไม่ทราบผล', async () => {
+    // Promise ที่ไม่ resolve และไม่ reject = คำขอแขวนค้าง (เบราว์เซอร์ไม่มี timeout ให้ fetch)
+    vi.mocked(postHsCommand)
+      .mockReset()
+      .mockReturnValue(new Promise<void>(() => {}));
+    const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
+
+    act(() => result.current.command.press('big2'));
+    await act(async () => {
+      result.current.confirm.accept();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(pendingOf(result, 'big2')).toBe('on');
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(LED_CONFIRM_TIMEOUT_MS);
+    });
+
+    expect(pendingOf(result, 'big2')).toBeNull();
+    expect(result.current.toast).toBe(TH.hsUnconfirmed);
+  });
+
+  it('POST หมดเวลา (HsPostTimeoutError) → ปลด pending ทันที + บอกว่าเครือข่ายช้า', async () => {
+    vi.mocked(postHsCommand).mockReset().mockRejectedValue(new HsPostTimeoutError());
+    const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
+
+    act(() => result.current.command.press('big2'));
+    await act(async () => {
+      result.current.confirm.accept();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+
+    expect(pendingOf(result, 'big2')).toBeNull();
+    // ต้องแยกจาก hsSendError — ผู้ใช้ต้องรู้ว่าเป็นเรื่องเน็ตช้า ไม่ใช่อุปกรณ์พัง
+    expect(result.current.toast).toBe(TH.hsSendTimeout);
   });
 });
 

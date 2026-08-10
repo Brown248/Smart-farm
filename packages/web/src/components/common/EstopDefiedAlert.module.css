@@ -1,0 +1,47 @@
+/*
+ * กล่องเตือนระดับ "อันตราย" — ใช้กับกรณีเดียวคือกดหยุดฉุกเฉินแล้วอุปกรณ์ยังรายงานว่าทำงานอยู่
+ * ต้องต่างจากกล่องเตือนสีส้มให้ชัด เพราะนี่คือจังหวะที่ผู้ใช้ต้องลุกไปตัดไฟที่ตู้ควบคุมหน้างาน
+ * อยู่เป็น component กลางเพราะทั้ง 3 หน้าที่แสดงสถานะ estop ต้องเห็นเหมือนกันเป๊ะ
+ */
+.box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  background: var(--d-crit-bg);
+  border: 1px solid var(--d-crit);
+  border-radius: 13px;
+  padding: 12px 13px;
+  /* เข้าแบบ transform/opacity เท่านั้น — property อื่น trigger layout (motion.test.ts บังคับ) */
+  animation: estopDefiedIn 0.28s var(--ease-out) both;
+}
+
+@keyframes estopDefiedIn {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .box {
+    animation-duration: 0.001s;
+  }
+}
+
+.text {
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--d-crit-ink);
+  line-height: 1.45;
+}
+
+.title {
+  display: block;
+  font-size: 14px;
+  font-weight: 800;
+  margin-bottom: 2px;
+}

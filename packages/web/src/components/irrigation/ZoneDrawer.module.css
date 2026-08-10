@@ -121,6 +121,8 @@
 .body {
   flex: 1;
   overflow-y: auto;
+  /* เลื่อนจนสุดในลิ้นชักแล้วต้องไม่ไปลากหน้าข้างหลังต่อ (scroll chaining) */
+  overscroll-behavior: contain;
   padding: 16px;
 }
 

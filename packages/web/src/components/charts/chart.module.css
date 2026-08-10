@@ -25,6 +25,34 @@
   font-feature-settings: 'tnum' 1;
 }
 
+/*
+ * ── หัวช่องของกราฟแยกช่อง ──
+ * ตัวหนังสือใช้ "สีหมึก" เสมอ ไม่ใช่สีของเส้น — จุดสีเล็กๆ ข้างหน้าเป็นตัวบอกว่าเป็นค่าไหน
+ * (ตัวเลขที่ระบายสีตามเส้นอ่านยากกว่า และทำให้ contrast ของตัวหนังสือคุมไม่ได้)
+ */
+.panelName {
+  font-family: var(--font);
+  font-size: var(--fs-min);
+  font-weight: 700;
+  fill: var(--d-ink);
+}
+
+.panelValue {
+  font-family: var(--font-num);
+  font-size: var(--fs-min);
+  font-weight: 700;
+  font-feature-settings: 'tnum' 1;
+  fill: var(--d-ink);
+}
+
+/* ตัวเลขสูงสุด/ต่ำสุดข้างแกน — ถอยให้จาง อ่านได้แต่ไม่แย่งสายตาไปจากเส้น */
+.panelTick {
+  font-family: var(--font-num);
+  font-size: var(--fs-min);
+  font-feature-settings: 'tnum' 1;
+  fill: var(--d-muted);
+}
+
 .bandText {
   font-family: var(--font);
   font-size: var(--fs-min);

@@ -8,8 +8,11 @@ import {
   chartHeightFor,
   combinedExtent,
   nearestIndex,
+  panelHeightFor,
   pixelPlot,
   seriesExtent,
+  stackedHeight,
+  stackedPanelPlot,
   targetBandBox,
   toPoints,
   xAt,
@@ -18,6 +21,9 @@ import type { Extent, Plot } from '@/lib/chartScale';
 import { ALL_SERIES_ORDER, allHistory, historyFor } from '@/data/mockSensorHistory';
 import { useElementWidth } from '@/hooks/useElementWidth';
 import s from './chart.module.css';
+
+/** ที่ว่างขวาของกราฟแยกช่อง — เผื่อเขียนตัวเลขสูงสุด/ต่ำสุดของแต่ละช่อง */
+const PANEL_PAD_RIGHT = 42;
 
 const GRID = '#e4eae6';
 const AXIS_INK = '#5f6b64';
@@ -311,10 +317,11 @@ export function MetricLineChart({
           />
         ) : null}
 
+        {/* เส้นข้อมูลหนา 2px — หนากว่านี้เส้นเริ่มกลบรายละเอียดของตัวมันเอง (ยอดแหลม/ร่องแคบหาย) */}
         <path
           d={smoothPath(pts)}
           fill="none"
-          strokeWidth={3}
+          strokeWidth={2}
           strokeLinecap="round"
           strokeLinejoin="round"
           style={{
@@ -417,8 +424,21 @@ export function AllMetricsChart({
   timeAt,
 }: AllMetricsChartProps) {
   const { ref, width } = useElementWidth<HTMLDivElement>();
-  const height = chartHeightFor(width);
-  const plot = pixelPlot(width, height, 14);
+  /*
+   * แยกช่อง (small multiples) ไม่ใช่ซ้อนเส้น — เหตุผลเต็มอยู่ที่ `lib/chartScale.ts`
+   * สรุป: 4 ค่าคนละหน่วยยัดลงแกนเดียวไม่ได้ ถ้าฝืนยัดต้องปลอมแกน แล้วกราฟก็อ่านไม่ได้จริง
+   */
+  const panelH = panelHeightFor(width);
+  const height = stackedHeight(ALL_SERIES_ORDER.length, panelH);
+  /** ช่องแรกใช้เป็นตัวอ้างอิงของแกนเวลา (ทุกช่องใช้แกนเวลาชุดเดียวกัน) */
+  const plot = stackedPanelPlot(width, height, 0, panelH, PANEL_PAD_RIGHT);
+  const lastPanel = stackedPanelPlot(
+    width,
+    height,
+    ALL_SERIES_ORDER.length - 1,
+    panelH,
+    PANEL_PAD_RIGHT,
+  );
   const mock = allHistory(range);
   /*
    * ค่าจริงถ้ามี (ต้องยาวพอ) ไม่งั้นใช้ข้อมูลจำลองราย metric — บาง metric อาจมีจริง
@@ -448,27 +468,18 @@ export function AllMetricsChart({
         onBlur={clear}
         onKeyDown={onKey}
       >
-        <Grid plot={plot} ticks={axisTicks({ min: 0, max: 1 })} />
-
-        {cursor ? (
-          <line
-            aria-hidden="true"
-            x1={cursor.x}
-            x2={cursor.x}
-            y1={plot.top}
-            y2={plot.bottom}
-            stroke="#8c988f"
-            strokeWidth={1}
-            strokeDasharray="3 3"
-          />
-        ) : null}
-
-        {ALL_SERIES_ORDER.map((k) => {
+        {ALL_SERIES_ORDER.map((k, i) => {
           const values = data[k];
-          const color = METRIC_CFG[k].color;
-          const pts = toPoints(values, seriesExtent(values), plot);
+          const cfg = METRIC_CFG[k];
+          const color = cfg.color;
+          const panel = stackedPanelPlot(width, height, i, panelH, PANEL_PAD_RIGHT);
+          // แกนจริงของค่านี้ (ไม่ใช่ 0–1 ปลอม) → ตัวเลขข้างแกนอ่านแล้วมีความหมาย
+          const extent = seriesExtent(values);
+          const pts = toPoints(values, extent, panel);
           const last = pts[pts.length - 1];
           const active = cursor ? pts[cursor.index] : null;
+          const band = targetBandBox(k, extent, panel);
+          const lastValue = values[values.length - 1];
           const gid = `ag-${k}`;
           return (
             <g key={k}>
@@ -478,15 +489,71 @@ export function AllMetricsChart({
                   <stop offset="100%" stopColor={color} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <path d={smoothPath(pts, true, plot.bottom)} fill={`url(#${gid})`} />
+
+              {/* หัวช่อง: จุดสีบอกตัวตน + ชื่อค่า/หน่วย (ตัวหนังสือใช้สีหมึก ไม่ใช่สีเส้น) */}
+              <circle cx={panel.padLeft + 3} cy={panel.top - 9} r={3.5} style={{ fill: color }} />
+              <text x={panel.padLeft + 12} y={panel.top - 5} className={s.panelName}>
+                {`${metricLabels[k]} · ${cfg.unit}`}
+              </text>
+              <text
+                x={panel.width - panel.padRight}
+                y={panel.top - 5}
+                textAnchor="end"
+                className={s.panelValue}
+              >
+                {lastValue === undefined ? '—' : `${fmt(lastValue)}${cfg.unit}`}
+              </text>
+
+              {/* ช่วงค่าเหมาะสมของค่านี้ — บอกว่า "เท่าไรถึงเรียกว่าปกติ" โดยไม่ต้องจำเกณฑ์เอง */}
+              {band.visible ? (
+                <rect
+                  x={panel.padLeft}
+                  y={band.y}
+                  width={panel.width - panel.padLeft - panel.padRight}
+                  height={band.height}
+                  fill={BAND}
+                  opacity={0.08}
+                  aria-hidden="true"
+                />
+              ) : null}
+
+              <Grid plot={panel} ticks={axisTicks(extent, [0, 1])} />
+              {/* ตัวเลขสูงสุด/ต่ำสุดของช่องนี้ — แกนมีหน่วยจริง ไม่ใช่ 0–1 */}
+              <text x={panel.width - panel.padRight + 6} y={panel.top + 4} className={s.panelTick}>
+                {fmt(extent.max)}
+              </text>
+              <text
+                x={panel.width - panel.padRight + 6}
+                y={panel.bottom + 4}
+                className={s.panelTick}
+              >
+                {fmt(extent.min)}
+              </text>
+
+              <path d={smoothPath(pts, true, panel.bottom)} fill={`url(#${gid})`} />
               <path
                 d={smoothPath(pts)}
                 fill="none"
-                strokeWidth={2.4}
+                strokeWidth={2}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                style={{ stroke: color, opacity: cursor ? 0.85 : 1 }}
+                style={{ stroke: color }}
               />
+
+              {/* เส้นชี้ตำแหน่งเวลา — ลากผ่านทุกช่องที่ตำแหน่งเดียวกัน จึงอ่านข้ามค่าได้ */}
+              {cursor ? (
+                <line
+                  aria-hidden="true"
+                  x1={cursor.x}
+                  x2={cursor.x}
+                  y1={panel.top}
+                  y2={panel.bottom}
+                  stroke="#8c988f"
+                  strokeWidth={1}
+                  strokeDasharray="3 3"
+                />
+              ) : null}
+
               {active ? (
                 <circle
                   cx={active[0]}
@@ -530,7 +597,7 @@ export function AllMetricsChart({
         />
       ) : null}
 
-      <XAxis plot={plot} count={count} timeAt={timeAt} />
+      <XAxis plot={lastPanel} count={count} timeAt={timeAt} />
     </div>
   );
 }

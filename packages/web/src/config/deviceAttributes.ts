@@ -61,6 +61,11 @@ export interface HsChannelState {
   readonly soil: HsBandState;
   /** derive: (tempOn || soilOn) ? 'auto' : 'no-auto' */
   readonly mode: 'auto' | 'no-auto';
+  /**
+   * attribute เกณฑ์ของช่องนี้มาถึงแล้วหรือยัง — **ไม่ใช่** "มีเกณฑ์ตั้งอยู่ไหม" (นั่นคือ `temp.on`)
+   * ใช้ตัดสินว่าค่าที่อ่านได้เชื่อถือได้พอจะเอาไปเติมฟอร์มหรือยัง (ดู `hasThresholdAttrs`)
+   */
+  readonly hasThreshold: boolean;
   readonly timers: readonly HsTimerState[];
   /** ค่าเดิมก่อนปิด automation — ใช้เติมฟอร์มตอนเปิดกลับ (FE แค่อ่าน) */
   readonly savedTemp: { readonly min: number | null; readonly max: number | null };
@@ -121,6 +126,7 @@ export function readChannelState(attrs: Attributes, channel: HsChannel): HsChann
     temp,
     soil,
     mode: temp.on || soil.on ? 'auto' : 'no-auto',
+    hasThreshold: hasThresholdAttrs(attrs, channel),
     timers,
     savedTemp: {
       min: num(attrs, `saved_min_temp${channel}`),
@@ -131,6 +137,20 @@ export function readChannelState(attrs: Attributes, channel: HsChannel): HsChann
       max: num(attrs, `saved_max_soil${channel}`),
     },
   };
+}
+
+/**
+ * attribute **เกณฑ์อุณหภูมิ** ของช่องนี้มาถึงจริงหรือยัง
+ *
+ * ต่างจาก "มาแล้วแต่เป็น 0" อย่างสิ้นเชิง — `readBand()` คืน `{on:false, min:null, max:null}`
+ * ทั้งกรณี "ยังไม่มาถึง" และ "อุปกรณ์ไม่ได้ตั้งเกณฑ์ไว้" แยกจากกันไม่ได้ถ้าดูแต่ค่าที่แปลงแล้ว
+ *
+ * จำเป็นเพราะ attribute ไหลเข้ามาสะสมทีละก้อน `led{c}` มาก่อน `min_temp{c}` ได้
+ * ถ้าเอาแค่ `led` เป็นสัญญาณว่า "ข้อมูลพร้อมแล้ว" ฟอร์มจะถูกเติมด้วยค่า default ปลอม
+ * แล้วถ้าผู้ใช้กดบันทึกต่อ = เขียนเกณฑ์ผิดลงอุปกรณ์จริง
+ */
+export function hasThresholdAttrs(attrs: Attributes, channel: HsChannel): boolean {
+  return attrs[`min_temp${channel}`] !== undefined && attrs[`max_temp${channel}`] !== undefined;
 }
 
 /** เวลาที่อุปกรณ์อัปเดตล่าสุด (ms epoch) — ใช้บอกความสด · `null` = ยังไม่มี */
