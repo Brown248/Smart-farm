@@ -32,6 +32,7 @@ import {
 } from '@/hooks/useDashboardData';
 import { useFarmAlerts } from '@/hooks/useFarmAlerts';
 import { useThresholds } from '@/hooks/useThresholds';
+import { usePumpCutoffToast } from '@/hooks/usePumpCutoff';
 import { useToast } from '@/hooks/useToast';
 import { useI18n } from '@/i18n/useI18n';
 import { buildRecommendations } from '@/lib/recommendations';
@@ -56,6 +57,8 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const reduced = useReducedMotion();
   const { toast, flash } = useToast();
+  // ปั๊มถูกตัดอัตโนมัติ = เหตุการณ์ที่ผู้ใช้ต้องรู้ทันที ไม่ใช่ไปเจอทีหลังในสมุดบันทึก
+  usePumpCutoffToast(flash, t.pumpCutoffToast);
   const { collapsed, toggle: toggleCollapse } = useRailState();
 
   const [notifOpen, setNotifOpen] = useState(false);

@@ -23,6 +23,7 @@ import { bondedTo, channelOf } from '@/config/deviceChannels';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useDeviceCommand } from '@/hooks/useDeviceCommand';
 import { useElapsedSeconds } from '@/hooks/useDashboardData';
+import { formatCutoffLeft, usePumpCutoffLeft, usePumpCutoffToast } from '@/hooks/usePumpCutoff';
 import { useToast } from '@/hooks/useToast';
 import { useI18n } from '@/i18n/useI18n';
 import type { Dict, TextKey } from '@/i18n/keys';
@@ -64,6 +65,12 @@ interface DeviceControlCardProps {
    * `null` = ไม่เกี่ยวกับระบบความชื้น (ปั๊ม หรือรอบดูดยังไม่ถึงตัวนี้)
    */
   readonly ventRole: 'system' | 'manual' | null;
+  /**
+   * เวลาที่เหลือก่อนระบบตัดปั๊มเอง ("12:34") — `null` = ไม่ได้นับอยู่ / ไม่ใช่ปั๊ม
+   *
+   * ต้องเห็นตั้งแต่ปั๊มเริ่มเดิน ไม่ใช่รู้ตอนมันดับไปแล้ว (ดู `usePumpCutoff`)
+   */
+  readonly cutoffLeft: string | null;
   readonly t: Dict;
   readonly reduced: boolean;
   readonly onPress: (id: DeviceId) => void;
@@ -82,6 +89,7 @@ const DeviceControlCard = memo(function DeviceControlCard({
   mode,
   deviceStale,
   ventRole,
+  cutoffLeft,
   t,
   reduced,
   onPress,
@@ -203,6 +211,19 @@ const DeviceControlCard = memo(function DeviceControlCard({
         <div className={s.notLiveNote} role="note">
           <Icon name="alert" size={14} color="var(--d-warn)" strokeWidth={1.9} />
           <span>{t.hsAutoOverride}</span>
+        </div>
+      ) : null}
+
+      {/*
+       * นับถอยหลังก่อนระบบตัดปั๊ม — `role="status"` เพราะเป็นค่าที่เปลี่ยนตลอด (ไม่ใช่ note คงที่)
+       * ถ้าไม่บอกล่วงหน้า ผู้ใช้จะเห็นแค่ "ปั๊มดับเอง" แล้วเข้าใจว่าอุปกรณ์เสีย
+       */}
+      {cutoffLeft !== null ? (
+        <div className={s.notLiveNote} role="status">
+          <Icon name="clock" size={14} color="var(--d-warn-ink)" strokeWidth={1.9} />
+          <span>
+            {t.pumpCutoffIn(cutoffLeft)} · {t.pumpCutoffWhy}
+          </span>
         </div>
       ) : null}
 
@@ -801,6 +822,10 @@ export function HumidityBanner({
 export function GreenhousePage() {
   const { t } = useI18n();
   const { toast, flash } = useToast();
+  // ปั๊มถูกตัดอัตโนมัติ = เหตุการณ์ที่ผู้ใช้ต้องรู้ทันที ไม่ใช่ไปเจอทีหลังในสมุดบันทึก
+  usePumpCutoffToast(flash, t.pumpCutoffToast);
+  const cutoffMs = usePumpCutoffLeft();
+  const cutoffLeft = cutoffMs === null ? null : formatCutoffLeft(cutoffMs);
   const reduced = useReducedMotion();
   const location = useLocation();
   // อุปกรณ์ออฟไลน์ (shadow_ts เก่า) → การ์ดขึ้นป้าย "ค่าค้าง" · อ่านจาก store เดียวกับ ConnectionPill
@@ -1084,6 +1109,7 @@ export function GreenhousePage() {
                   mode={mode[dev.id]}
                   deviceStale={deviceStale}
                   ventRole={ventRoleOf(dev.id)}
+                  cutoffLeft={dev.id === 'pump' ? cutoffLeft : null}
                   t={t}
                   reduced={reduced}
                   onPress={command.press}

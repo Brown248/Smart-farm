@@ -37,6 +37,7 @@ import { useWeather } from '@/hooks/useWeather';
 import { useElementSize } from '@/hooks/useViewport';
 import { usePointerParallax } from '@/hooks/usePointerParallax';
 import { useCountUp } from '@/hooks/useCountUp';
+import { usePumpCutoffToast } from '@/hooks/usePumpCutoff';
 import { useToast } from '@/hooks/useToast';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useDeviceCommand } from '@/hooks/useDeviceCommand';
@@ -95,6 +96,8 @@ export function FarmScene() {
   const [pressedId, setPressedId] = useState<ZoneId | null>(null);
 
   const { toast, flash } = useToast();
+  // ปั๊มถูกตัดอัตโนมัติ = เหตุการณ์ที่ผู้ใช้ต้องรู้ทันที ไม่ใช่ไปเจอทีหลังในสมุดบันทึก
+  usePumpCutoffToast(flash, t.pumpCutoffToast);
   const confirm = useConfirm();
 
   /*

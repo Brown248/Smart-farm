@@ -33,6 +33,7 @@ import { weatherLook } from '@/lib/weatherCode';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useDeviceCommand } from '@/hooks/useDeviceCommand';
 import { useElapsedSeconds } from '@/hooks/useDashboardData';
+import { usePumpCutoffToast } from '@/hooks/usePumpCutoff';
 import { useToast } from '@/hooks/useToast';
 import { useI18n } from '@/i18n/useI18n';
 import type { Dict, TextKey } from '@/i18n/keys';
@@ -63,6 +64,8 @@ function defaultSettings(z: IrrZone, t: Dict): ZoneSettings {
 export function IrrigationPage() {
   const { t, lang } = useI18n();
   const { toast, flash } = useToast();
+  // ปั๊มถูกตัดอัตโนมัติ = เหตุการณ์ที่ผู้ใช้ต้องรู้ทันที ไม่ใช่ไปเจอทีหลังในสมุดบันทึก
+  usePumpCutoffToast(flash, t.pumpCutoffToast);
   const reduced = useReducedMotion();
   const confirm = useConfirm();
 

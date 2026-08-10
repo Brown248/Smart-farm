@@ -80,6 +80,9 @@ export const EN: Dict = {
     'Confirm you have checked the tank water level before starting the pump · the pump auto-stops after 20 minutes.',
   pumpCutoffToast: 'Pump auto-stopped (20-minute limit)',
   logPumpCutoff: 'Pump auto-stopped — 20-minute run limit reached',
+  pumpCutoffIn: (left: string) => `Auto-stop in ${left} (20-minute run limit)`,
+  pumpCutoffWhy:
+    'Counted from when the device reports the pump running, no matter where it was switched on (this app, the HandySense app, or a schedule)',
   logHumOn: 'Humidity exhaust fan auto-started',
   logHumOff: 'Humidity exhaust fan stopped (humidity dropped)',
   actOn: 'Turn on',

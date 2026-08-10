@@ -164,6 +164,17 @@ export interface FarmState {
    */
   readonly estopDefied: readonly DeviceId[];
 
+  /**
+   * เวลาที่ระบบจะปิดปั๊มเอง (epoch ms) — `null` = ไม่ได้นับอยู่
+   *
+   * ตัวนับเริ่มจาก **`led` ที่อุปกรณ์รายงานว่าปั๊มเดิน** ไม่ใช่จาก "เว็บเราสั่งเปิด"
+   * เปิดจากแอป HandySense หรือจากตารางเวลาก็โดนตัดเหมือนกัน — จงใจให้เป็นแบบนี้
+   * แต่ **ต้องบอกผู้ใช้ล่วงหน้าเสมอ** ไม่งั้นปั๊มดับเองแล้วผู้ใช้หาสาเหตุไม่เจอ (เจ้าของงานเจอจริง 2026-08-10)
+   */
+  readonly pumpCutoffAt: number | null;
+  /** เพิ่มขึ้น 1 ทุกครั้งที่ระบบตัดปั๊มจริง — หน้าเพจใช้เป็นสัญญาณเด้ง toast (ดู `usePumpCutoffToast`) */
+  readonly pumpCutoffCount: number;
+
   readonly tank: number;
   readonly log: readonly LogEntry[];
   readonly setLog: Dispatch<SetStateAction<readonly LogEntry[]>>;
@@ -629,18 +640,26 @@ export function FarmStateProvider({
   realControlRef.current = realControl;
   const pumpRunning = !!pump && pump.on && pump.pending == null;
 
+  /** เวลาที่จะตัด + ตัวนับครั้งที่ตัด — เปิดให้หน้าจอบอกผู้ใช้ล่วงหน้าและเด้ง toast ตอนตัด */
+  const [pumpCutoffAt, setPumpCutoffAt] = useState<number | null>(null);
+  const [pumpCutoffCount, setPumpCutoffCount] = useState(0);
+
   useEffect(() => {
     if (!pumpRunning) {
       if (pumpCutoffRef.current != null) {
         window.clearTimeout(pumpCutoffRef.current);
         pumpCutoffRef.current = null;
       }
+      setPumpCutoffAt(null);
       return;
     }
     if (pumpCutoffRef.current != null) return;
 
+    setPumpCutoffAt(Date.now() + PUMP_CUTOFF_MS);
     pumpCutoffRef.current = window.setTimeout(() => {
       pumpCutoffRef.current = null;
+      setPumpCutoffAt(null);
+      setPumpCutoffCount((n) => n + 1);
       const isReal = realControlRef.current;
 
       // โหมดจริง: ต้องสั่งปิด relay ปั๊ม (ch2) จริงด้วย — ปั๊มย้ายมาต่อ relay จริงแล้ว
@@ -941,6 +960,8 @@ export function FarmStateProvider({
       estop,
       setEstop,
       estopDefied,
+      pumpCutoffAt,
+      pumpCutoffCount,
       tank: INITIAL_TANK_PCT,
       log,
       setLog,
@@ -976,6 +997,8 @@ export function FarmStateProvider({
       setMode,
       estop,
       estopDefied,
+      pumpCutoffAt,
+      pumpCutoffCount,
       log,
       thresholds,
       setThreshold,
