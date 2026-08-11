@@ -23,6 +23,13 @@ export interface LiveSnapshot {
   readonly liveCount: number;
   readonly totalCount: number;
   /**
+   * ค่าที่มาจากเซนเซอร์จริงแต่ **หยุดอัปเดตแล้ว** (ดู SENSOR_STALE_MS) — ไม่ถูกนับใน liveCount
+   *
+   * ต้องแยกออกมา ไม่งั้นเซนเซอร์ค้างหมดทุกตัวจะได้ liveCount 0 แล้วป้ายไปขึ้นว่า
+   * "ต่อติดแล้ว รอค่า…" ซึ่งผิด — ค่ามีอยู่ครบ แค่เป็นของเก่า คนละสถานการณ์กันคนละเรื่อง
+   */
+  readonly staleCount: number;
+  /**
    * เหตุผลที่ต่อไม่ติด ตามที่ server บอกมา — `null` เมื่อไม่มีปัญหา
    *
    * ต้องเห็นบนหน้าจอ ไม่ใช่อยู่แต่ใน console: "Invalid authentication token" บอกให้ล็อกอินใหม่
@@ -54,6 +61,7 @@ const INITIAL: LiveSnapshot = {
   status: 'mock',
   liveCount: 0,
   totalCount: 0,
+  staleCount: 0,
   errorMessage: null,
   deviceStale: false,
   deviceLastSeenMs: null,
@@ -68,6 +76,7 @@ function publish(next: LiveSnapshot): void {
   if (
     next.status === current.status &&
     next.liveCount === current.liveCount &&
+    next.staleCount === current.staleCount &&
     next.totalCount === current.totalCount &&
     next.errorMessage === current.errorMessage &&
     next.deviceStale === current.deviceStale &&
@@ -91,8 +100,8 @@ export function reportLiveStatus(status: ConnectionStatus, errorMessage: string 
  * แยกจาก `reportLiveStatus` เพราะคนละคนรู้ — socket รู้ว่าต่อติดไหม
  * ส่วน `FarmStateProvider` รู้ว่าค่าที่ไหลมาใช้ได้จริงกี่ตัว
  */
-export function reportLiveCoverage(liveCount: number, totalCount: number): void {
-  publish({ ...current, liveCount, totalCount });
+export function reportLiveCoverage(liveCount: number, totalCount: number, staleCount = 0): void {
+  publish({ ...current, liveCount, totalCount, staleCount });
 }
 
 /**

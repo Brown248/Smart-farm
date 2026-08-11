@@ -318,6 +318,8 @@ export const TH = {
   wxRainy: 'ฝนตก',
   wxStorm: 'พายุฝนฟ้าคะนอง',
   connNoData: 'ต่อติดแล้ว รอค่า…',
+  /** ต่างจาก connNoData: มีค่าอยู่ครบ แต่เซนเซอร์หยุดส่งหมดแล้ว ต้องไปดูหน้างาน ไม่ใช่รอเฉยๆ */
+  connAllStale: 'ค่าค้างทั้งหมด — เซนเซอร์หยุดส่ง',
   connPartial: 'ข้อมูลจริงบางส่วน',
   connCoverage: (live: number, total: number) => `ค่าจริง ${live}/${total}`,
   connStaleAgo: (mins: string) => `ไม่อัปเดต ${mins} นาที`,

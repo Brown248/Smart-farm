@@ -40,6 +40,7 @@ export function ConnectionPill({ ago }: ConnectionPillProps) {
     status,
     liveCount,
     totalCount,
+    staleCount,
     errorMessage,
     deviceStale,
     deviceLastSeenMs,
@@ -69,21 +70,28 @@ export function ConnectionPill({ ago }: ConnectionPillProps) {
   /*
    * ต่อติดไม่ได้แปลว่าได้ค่าครบ — device อาจยิงมาแค่บางค่า หรือยังไม่ยิงอะไรมาเลย
    * ป้ายที่เขียน "ข้อมูลสด" เฉยๆ จะทำให้เข้าใจว่าทุกเลขบนจอเป็นของจริง ซึ่งไม่จริง
-   * จึงแยก 3 กรณี: ครบ · บางส่วน (บอกสัดส่วน) · ต่อติดแต่ยังไม่มีค่า (นับเป็นสถานะรอ)
+   * จึงแยก 4 กรณี: ครบ · บางส่วน (บอกสัดส่วน) · ยังไม่มีค่าเลย (รอ) · **ค่าค้างหมดทุกตัว**
+   *
+   * 🔴 สองอันหลังห้ามรวมกัน — "รอค่า" คือยังไม่เคยได้อะไรมาเลย
+   * ส่วน "ค่าค้าง" คือได้มาแล้วแต่เซนเซอร์หยุดส่ง (ต้องไปดูหน้างาน ไม่ใช่นั่งรอ)
+   * ถ้ารวมกันแล้วขึ้น "ต่อติดแล้ว รอค่า…" ทั้งที่มีเลขเต็มจอ ผู้ใช้จะรอเก้อตลอดกาล
    */
-  const noData = status === 'live' && liveCount === 0;
+  const allStale = status === 'live' && liveCount === 0 && staleCount > 0;
+  const noData = status === 'live' && liveCount === 0 && staleCount === 0;
   const partial = status === 'live' && liveCount > 0 && liveCount < totalCount;
   const label = banned
     ? t.connDeviceBanned
     : stale
       ? t.connDeviceStale
-      : noData
-        ? t.connNoData
-        : partial
-          ? t.connPartial
-          : (t[look.labelKey] as string);
-  const cls = banned || stale ? 'offline' : noData ? 'busy' : look.cls;
-  const pulse = banned || stale ? false : look.pulse;
+      : allStale
+        ? t.connAllStale
+        : noData
+          ? t.connNoData
+          : partial
+            ? t.connPartial
+            : (t[look.labelKey] as string);
+  const cls = banned || stale || allStale ? 'offline' : noData ? 'busy' : look.cls;
+  const pulse = banned || stale || allStale ? false : look.pulse;
   const coverage =
     status === 'live' && totalCount > 0 ? t.connCoverage(liveCount, totalCount) : null;
   const detail = banned

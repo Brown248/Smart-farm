@@ -580,7 +580,7 @@ export function FarmStateProvider({
   /** บอกป้ายบน header ว่าได้ของจริงกี่ค่าจากที่ต้องใช้ทั้งหมด */
   useEffect(() => {
     // เซนเซอร์ที่ค่าค้างไม่นับเป็น "ค่าจริง" — ป้าย "ค่าจริง x/5" ต้องสะท้อนของที่ยังวัดอยู่จริง
-    reportLiveCoverage(liveFields.size - staleFields.size, LIVE_FIELDS.length);
+    reportLiveCoverage(liveFields.size - staleFields.size, LIVE_FIELDS.length, staleFields.size);
   }, [liveFields, staleFields]);
 
   /**

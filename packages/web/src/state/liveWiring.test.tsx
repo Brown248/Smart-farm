@@ -150,6 +150,21 @@ describe('ค่าจริงจาก telemetry → FarmStateProvider', () =>
       expect(getLiveSnapshot().liveCount).toBe(2);
     });
 
+    it('ค้างหมดทุกตัว ต้องไม่ไปขึ้นว่า "รอค่า" — มีค่าอยู่ครบ แค่เป็นของเก่า', () => {
+      mocks.status.value = 'live';
+      // ทุกค่าค้างเท่ากันหมด → ไม่มีตัวไหนใหม่กว่า จึงต้องอ้างอิง `lastUpdateAt` (= T0) ที่เดินต่อ
+      mocks.live.value = {
+        temperature: at('26.7', T0 - 30 * 60 * 1000),
+        humidity: at('68', T0 - 30 * 60 * 1000),
+      };
+      renderProbe();
+
+      expect(text('stale')).toBe('rh,temp');
+      expect(getLiveSnapshot().liveCount).toBe(0);
+      // นี่คือจุดที่เคยพูดผิด — "รอค่า" กับ "ค่าค้าง" คนละเรื่อง
+      expect(getLiveSnapshot().staleCount).toBe(2);
+    });
+
     it('นาฬิกาอุปกรณ์เหลื่อมจากแท็บเล็ต ต้องไม่ทำให้ทุกค่ากลายเป็นค่าค้าง', () => {
       mocks.status.value = 'live';
       // timestamp เก่ากว่านาฬิกาเบราว์เซอร์หลายปี แต่ทุกค่ามาพร้อมกัน = เซนเซอร์ปกติดีทั้งหมด
