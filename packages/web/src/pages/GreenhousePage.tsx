@@ -2,6 +2,7 @@ import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import type { DeviceId } from '@shared/device';
 import type { HsChannel } from '@shared/handysense';
+import { AiChatDock } from '@/components/common/AiChatDock';
 import { EstopDefiedAlert, Toast } from '@/components/common';
 import { RingGauge } from '@/components/charts/RingGauge';
 import { CommandChannel } from '@/components/common/CommandChannel';
@@ -1218,6 +1219,12 @@ export function GreenhousePage() {
           </div>
         </section>
       </DataPage>
+
+      {/*
+        ผู้ช่วย AI อยู่ทุกหน้าข้อมูล (ยกเว้นฉากเกม — ที่นั่นมีแผงควบคุมของตัวเองแล้ว จอจะรก)
+        อ่านสถานะฟาร์มจาก provider ตัวเดียวกัน คำตอบจึงตรงกันทุกหน้า
+      */}
+      <AiChatDock />
 
       <CommandConfirm
         request={confirm.request}

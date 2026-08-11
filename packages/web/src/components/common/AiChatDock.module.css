@@ -300,3 +300,54 @@
     0 0 0 2px var(--d-surface),
     0 0 0 4px color-mix(in srgb, var(--brand-green) 55%, transparent);
 }
+
+/* ── คำตอบ AI ที่จัดหน้าแล้ว (ดู `lib/aiFormat.ts`) ── */
+
+/*
+ * ย่อหน้าในฟองแชท — ตัวแรกไม่มีระยะบน ตัวสุดท้ายไม่มีระยะล่าง
+ * ไม่งั้นฟองจะดูบวมและระยะไม่เท่ากับฟองที่มีบรรทัดเดียว
+ */
+.ansPara {
+  margin: 0;
+}
+
+.ansPara + .ansPara,
+.ansPara + .ansList,
+.ansList + .ansPara {
+  margin-top: 7px;
+}
+
+/* จุดนำวาดเองด้วย ::before — `list-style` ของเบราว์เซอร์เยื้องไม่ตรงกับความกว้างฟอง */
+.ansList {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.ansItem {
+  position: relative;
+  padding-left: 15px;
+  /* ขั้นตอนที่ต้องลงมือทำ — ให้หนักกว่าบรรทัดสรุปนิดหนึ่ง อ่านไล่ได้เร็วขึ้น */
+  color: var(--d-ink);
+}
+
+.ansItem::before {
+  content: '';
+  position: absolute;
+  left: 3px;
+  /* กึ่งกลางของบรรทัดแรกพอดี (font-size 13.5 × line-height 1.5 ≈ 20px) */
+  top: 8px;
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--brand-green);
+}
+
+.ansItem b,
+.ansPara b {
+  font-weight: 700;
+  color: var(--brand-green-dark);
+}

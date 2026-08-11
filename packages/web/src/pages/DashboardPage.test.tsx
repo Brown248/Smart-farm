@@ -8,6 +8,7 @@ import { TH } from '@/i18n/th';
 import { EN } from '@/i18n/en';
 import { ROUTES } from '@/routePaths';
 import { AppRoutes } from '@/routes';
+import { routeReady } from '@/test/routeReady';
 import { DASH_ZONES } from '@/data/dashboard';
 import { DashboardPage } from './DashboardPage';
 
@@ -284,8 +285,9 @@ describe('DashboardPage', () => {
     expect(within(panel).getByText(TH.simTag)).toBeInTheDocument();
   });
 
-  function renderApp(at: string = ROUTES.dashboard) {
-    return render(
+  /** เรนเดอร์ทั้งแอปแล้วรอให้ก้อนของหน้านั้นโหลดเสร็จ (หน้าเพจถูก lazy แล้ว ดู routes.tsx) */
+  async function renderApp(at: string = ROUTES.dashboard) {
+    const r = render(
       <I18nProvider>
         <FarmStateProvider>
           <MemoryRouter initialEntries={[at]}>
@@ -294,11 +296,13 @@ describe('DashboardPage', () => {
         </FarmStateProvider>
       </I18nProvider>,
     );
+    await routeReady();
+    return r;
   }
 
   it('ทางลัดชลประทานพาไปหน้าชลประทานจริง', async () => {
     const user = userEvent.setup();
-    renderApp();
+    await renderApp();
     const quick = screen.getByRole('group', { name: TH.quickTitle });
     await user.click(within(quick).getByRole('button', { name: new RegExp(TH.irrigationTitle) }));
 
@@ -307,7 +311,7 @@ describe('DashboardPage', () => {
 
   it('ทางลัดโรงเรือนพาไปหน้าควบคุมโรงเรือนจริง', async () => {
     const user = userEvent.setup();
-    renderApp();
+    await renderApp();
     const quick = screen.getByRole('group', { name: TH.quickTitle });
     await user.click(within(quick).getByRole('button', { name: new RegExp(TH.climateTitle) }));
 
@@ -317,7 +321,7 @@ describe('DashboardPage', () => {
   /** การ์ดโซนกับ "สิ่งที่ควรทำตอนนี้" ต้องพาไปที่เดียวกัน คือหน้าชลประทาน */
   it('การ์ดใน "สิ่งที่ควรทำตอนนี้" พาไปหน้าชลประทาน', async () => {
     const user = userEvent.setup();
-    renderApp();
+    await renderApp();
     const actions = screen.getByRole('region', { name: TH.actTitle });
     await user.click(within(actions).getAllByRole('button')[0]!);
 
@@ -427,7 +431,7 @@ describe('DashboardPage', () => {
 
   it('เมนูชลประทาน/โรงเรือน พาไปหน้าจริงแล้ว', async () => {
     const user = userEvent.setup();
-    renderApp();
+    await renderApp();
     const nav = screen.getByRole('navigation');
 
     await user.click(within(nav).getByRole('button', { name: new RegExp(TH.navIrrigation) }));

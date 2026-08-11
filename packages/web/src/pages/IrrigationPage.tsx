@@ -3,6 +3,7 @@ import { EstopDefiedAlert, Toast } from '@/components/common';
 import { CommandConfirm } from '@/components/common/CommandConfirm';
 import { CropIcon, Icon } from '@/components/common/Icon';
 import { DataPage } from '@/components/layout/DataPage';
+import { AiChatDock } from '@/components/common/AiChatDock';
 import { ZoneDrawer } from '@/components/irrigation/ZoneDrawer';
 import type { ZoneSettings } from '@/components/irrigation/ZoneDrawer';
 import {
@@ -496,6 +497,12 @@ export function IrrigationPage() {
           </section>
         </div>
       </DataPage>
+
+      {/*
+        ผู้ช่วย AI อยู่ทุกหน้าข้อมูล (ยกเว้นฉากเกม — ที่นั่นมีแผงควบคุมของตัวเองแล้ว จอจะรก)
+        อ่านสถานะฟาร์มจาก provider ตัวเดียวกัน คำตอบจึงตรงกันทุกหน้า
+      */}
+      <AiChatDock />
 
       {/* ── ลิ้นชักข้อมูลรายแปลง — ไม่มีคำสั่งอยู่ในนี้แล้ว ── */}
       {drawerZone && drawerSettings ? (

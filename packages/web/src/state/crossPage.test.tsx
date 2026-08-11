@@ -8,6 +8,7 @@ import { FarmStateProvider } from '@/state/FarmStateProvider';
 import { TH } from '@/i18n/th';
 import { ROUTES } from '@/routePaths';
 import { AppRoutes } from '@/routes';
+import { routeReady } from '@/test/routeReady';
 
 /**
  * เทสชุดนี้คือหัวใจของการรวมสถานะ — พิสูจน์ว่า **4 หน้าคุยกันจริง**
@@ -16,8 +17,14 @@ import { AppRoutes } from '@/routes';
  * ปั๊มเปิดที่ฉากเกมแต่ปิดที่หน้าโรงเรือน · กด Emergency Stop ที่ชลประทานแล้วโรงเรือนไม่รู้เรื่อง ·
  * อุณหภูมิเป็นคนละค่า 3 ค่า ทำให้กฎความปลอดภัยตัดสินไม่เหมือนกันตามหน้าที่เปิดอยู่
  */
-function renderAppAt(path: string) {
-  return render(
+/**
+ * เรนเดอร์ทั้งแอปที่เส้นทางหนึ่ง แล้ว **รอให้หน้านั้นโหลดจริงก่อน**
+ *
+ * หน้าเพจถูกแยกก้อนด้วย lazy() แล้ว (ดู routes.tsx) เฟรมแรกจึงเป็นโครงหน้าเปล่า
+ * ถ้าไม่รอ เทสจะไปหาปุ่มบนหน้าที่ยังไม่ถูก mount แล้วแดงโดยที่แอปไม่ได้พัง
+ */
+async function renderAppAt(path: string) {
+  const r = render(
     <I18nProvider>
       <FarmStateProvider>
         <RailStateProvider>
@@ -28,12 +35,16 @@ function renderAppAt(path: string) {
       </FarmStateProvider>
     </I18nProvider>,
   );
+  await routeReady();
+  return r;
 }
 
 /** ไปหน้าอื่นผ่านเมนูจริง (ไม่ใช่ remount) เพื่อให้พิสูจน์ว่า state อยู่รอดข้ามหน้า */
 async function goVia(user: ReturnType<typeof userEvent.setup>, label: string) {
   const nav = screen.getByRole('navigation');
   await user.click(within(nav).getByRole('button', { name: new RegExp(label) }));
+  // หน้าใหม่เป็นก้อนแยก ต้องรอโหลดก่อนค่อยไปหาอะไรบนหน้านั้น
+  await routeReady();
 }
 
 /*
@@ -44,7 +55,7 @@ async function goVia(user: ReturnType<typeof userEvent.setup>, label: string) {
 describe('สถานะเชื่อมกันข้ามหน้า', { timeout: 30000 }, () => {
   it('อุปกรณ์ 4 ตัวมีสถานะชุดเดียว — ฉากเกมกับโรงเรือนตรงกันตั้งแต่เปิดมา', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.greenhouse);
+    await renderAppAt(ROUTES.greenhouse);
 
     // หน้าโรงเรือน: พัดลมใบใหญ่ #1 เปิดอยู่ (จาก INITIAL_DEVICES)
     // → ปั๊มคูลลิ่งแพดต้อง **เปิดตาม** ตั้งแต่เฟรมแรก (ค่าเริ่มต้นต้องสอดคล้องกันเอง)
@@ -66,7 +77,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
 
   it('สั่งเปิดอุปกรณ์ที่หน้าโรงเรือน แล้วฉากเกมเห็นว่าเปิดจริง', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.greenhouse);
+    await renderAppAt(ROUTES.greenhouse);
 
     // พัดลมใบใหญ่ #2 ปิดอยู่ → เปิดต้องยืนยันก่อน แล้วรออุปกรณ์ตอบ
     await user.click(screen.getByRole('switch', { name: `พัดลมใบใหญ่ #2 — ${TH.stateOff}` }));
@@ -94,7 +105,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
 
   it('กด Emergency Stop ที่ฉากเกม แล้วหน้าโรงเรือนถูกล็อกตาม', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.farm);
+    await renderAppAt(ROUTES.farm);
 
     await user.click(screen.getByRole('button', { name: TH.estopFab }));
     expect(await screen.findByText(TH.estopToast)).toBeInTheDocument();
@@ -112,7 +123,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
   /** หยุดฉุกเฉินอยู่ในแถบเมนู จึงกดจากหน้าไหนก็ปุ่มเดียวกัน และล็อกทั้งระบบเหมือนกัน */
   it('กด Emergency Stop จากแถบเมนู แล้วทุกหน้าถูกล็อกตาม', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.irrigation);
+    await renderAppAt(ROUTES.irrigation);
 
     await user.click(screen.getByRole('button', { name: TH.estopFab }));
 
@@ -134,7 +145,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
    */
   it('สั่งงานที่หน้าโรงเรือน แล้วประวัติในลิ้นชักหน้าชลประทานเห็นด้วย', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.greenhouse);
+    await renderAppAt(ROUTES.greenhouse);
 
     // หน้าโรงเรือนไม่มีส่วน "ประวัติการสั่งงาน" แล้ว — log กลางยังถูกเขียนและไปเห็นที่ลิ้นชักชลประทาน
     await user.click(screen.getByRole('button', { name: TH.estopFab }));
@@ -157,7 +168,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
   /** ระบบน้ำ (ถัง/แรงดัน/ปริมาณ) ถอดออกแล้วทั้งสองหน้า — เป็นค่าจำลองล้วน (เจ้าของงานสั่ง) */
   it('ไม่มีส่วนระบบน้ำทั้งหน้าโรงเรือนและหน้าชลประทาน', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.greenhouse);
+    await renderAppAt(ROUTES.greenhouse);
     expect(screen.queryByRole('region', { name: TH.infraTitle })).not.toBeInTheDocument();
 
     await goVia(user, TH.navIrrigation);
@@ -167,7 +178,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
 
   it('อุณหภูมิที่ทุกหน้าเห็นเป็นค่าเดียวกัน (กฎ G2 จึงตัดสินเหมือนกัน)', async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.greenhouse);
+    await renderAppAt(ROUTES.greenhouse);
 
     // หน้าโรงเรือนอ่านค่าจากส่วนกลาง → ค่าเริ่มต้น 33.4°C ไม่ใช่ 29°C แบบเดิม
     const ghTemp = screen.getByText('33.4');
@@ -182,7 +193,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
   /** เดินไปกลับสองหน้าและรอการ์ดเซนเซอร์โหลดสองรอบ ใช้เวลานานกว่าเทสอื่น */
   it('ตั้งเกณฑ์ที่แดชบอร์ดแล้วค่าอยู่รอดตอนกลับมาใหม่', { timeout: 20000 }, async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.dashboard);
+    await renderAppAt(ROUTES.dashboard);
     await screen.findByText(TH.senSoil, undefined, { timeout: 3000 });
 
     // ดิน 24% ต่ำกว่าเกณฑ์เตือน 30% → ขึ้นป้าย "ต่ำกว่าเกณฑ์"
@@ -214,7 +225,7 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
    */
   it('ตั้งชื่อแปลงที่หน้าชลประทานแล้วชื่ออยู่รอดตอนกลับมาใหม่', { timeout: 20000 }, async () => {
     const user = userEvent.setup();
-    renderAppAt(ROUTES.irrigation);
+    await renderAppAt(ROUTES.irrigation);
     await screen.findByRole('heading', { name: TH.irrTitle });
     // ปุ่มโซนบนแผนที่มีชื่อยาว (พืช · ความชื้น · สถานะ) — จับด้วย prefix ก็พอ
     const zoneAName = new RegExp(`^${TH.zoneLetterPrefix}A · `);

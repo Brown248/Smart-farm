@@ -5,7 +5,7 @@ import { StaleBanner } from '@/components/common/StaleBanner';
 import { AppRail } from '@/components/layout/AppRail';
 import { useRailState } from '@/components/layout/RailStateProvider';
 import { ActivityLogCard } from '@/components/dashboard/ActivityLogCard';
-import { AiChatDock } from '@/components/dashboard/AiChatDock';
+import { AiChatDock } from '@/components/common/AiChatDock';
 import { CriticalBanner } from '@/components/dashboard/CriticalBanner';
 import { DailySummary } from '@/components/dashboard/DailySummary';
 import { DashboardHeader } from '@/components/dashboard/DashboardHeader';

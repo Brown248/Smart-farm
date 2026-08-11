@@ -5,6 +5,7 @@ import type { Dict } from '@/i18n/keys';
 import { isAiConfigured } from '@/config/liveData';
 import { AiChatError, askFarmAi, type FarmSnapshot } from '@/services/aiChat';
 import { useFarmState } from '@/state/FarmStateProvider';
+import { formatAiReply } from '@/lib/aiFormat';
 import s from './AiChatDock.module.css';
 
 /** หน่วงก่อนตอบของคำตอบสำเร็จรูป ให้รู้สึกว่ากำลังคิด (โหมดจริงไม่ใช้ — ช้าอยู่แล้ว) */
@@ -30,6 +31,37 @@ function cannedReply(text: string, t: Dict): string {
   if (q === t.chip2) return t.chatA2;
   if (q === t.chip3) return t.chatA3;
   return t.chatFallback;
+}
+
+/**
+ * คำตอบ AI ที่จัดหน้าแล้ว — บรรทัดสรุปเป็นย่อหน้า · ขั้นตอนเป็นรายการมีจุด
+ *
+ * ไม่มี `dangerouslySetInnerHTML` เลย — `formatAiReply` คืนโครงข้อมูลล้วนแล้วให้ React วาด
+ * ข้อความจากโมเดลจึงกลายเป็น HTML ไม่ได้ ต่อให้มันพ่นแท็กมาก็ตาม
+ */
+function AiAnswer({ text }: { readonly text: string }) {
+  const blocks = formatAiReply(text);
+  if (blocks.length === 0) return <>{text}</>;
+
+  return (
+    <>
+      {blocks.map((b, i) =>
+        b.kind === 'para' ? (
+          <p key={i} className={s.ansPara}>
+            {b.spans.map((sp, j) => (sp.strong ? <b key={j}>{sp.text}</b> : sp.text))}
+          </p>
+        ) : (
+          <ul key={i} className={s.ansList}>
+            {b.items.map((item, j) => (
+              <li key={j} className={s.ansItem}>
+                {item.map((sp, k) => (sp.strong ? <b key={k}>{sp.text}</b> : sp.text))}
+              </li>
+            ))}
+          </ul>
+        ),
+      )}
+    </>
+  );
 }
 
 export function AiChatDock() {
@@ -173,7 +205,11 @@ export function AiChatDock() {
           {messages.map((msg, i) => (
             <div key={i} className={msg.from === 'user' ? s.rowUser : s.rowAi}>
               <div className={msg.from === 'user' ? s.bubbleUser : s.bubbleAi}>
-                {msg.text}
+                {/*
+                  คำถามของผู้ใช้แสดงดิบ · คำตอบ AI จัดหน้าให้อ่านง่าย (ย่อหน้า/รายการ/ตัวหนา)
+                  โมเดลพ่น "- " กับ "**" มาอยู่แล้ว ถ้าโชว์ดิบจะเห็นขีดกับดาวเต็มไปหมด
+                */}
+                {msg.from === 'user' ? msg.text : <AiAnswer text={msg.text} />}
                 {/* คำตอบสำเร็จรูปต้องแยกออกจากคำตอบของโมเดลจริงให้เห็น (กฎเดียวกับค่าเซนเซอร์จำลอง) */}
                 {msg.canned && aiOn ? <span className={s.cannedTag}>{t.chatCanned}</span> : null}
               </div>

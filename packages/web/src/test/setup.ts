@@ -1,6 +1,15 @@
 import '@testing-library/jest-dom/vitest';
 import { afterEach, vi } from 'vitest';
-import { cleanup } from '@testing-library/react';
+import { cleanup, configure } from '@testing-library/react';
+
+/**
+ * `findBy*` รอได้นานขึ้น — ดีฟอลต์ 1 วินาทีสั้นเกินไปหลังแยกก้อนตามหน้า (`routes.tsx`)
+ *
+ * หน้าเพจถูก `lazy()` แล้ว เทสที่เรนเดอร์ผ่าน `AppRoutes` จึงต้องรอ vite แปลงไฟล์ก้อนนั้นก่อน
+ * รันชุดเดียวทันใน ~400ms แต่ตอนรันทั้งโปรเจกต์พร้อมกันหลายชุด CPU แย่งกันจนเกิน 1 วิ
+ * → เทสแดงสลับไปมาโดยที่โค้ดไม่ได้ช้าลงเลย (แอปจริงโหลดก้อนที่ build แล้ว ไม่ต้องแปลง)
+ */
+configure({ asyncUtilTimeout: 5000 });
 
 /** jsdom ยังไม่มี matchMedia — ทดสอบ reduced-motion ต้องพึ่งตัวนี้ */
 if (!window.matchMedia) {

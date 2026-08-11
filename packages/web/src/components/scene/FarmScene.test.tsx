@@ -8,6 +8,7 @@ import { TH } from '@/i18n/th';
 import { EN } from '@/i18n/en';
 import { ROUTES } from '@/routePaths';
 import { AppRoutes } from '@/routes';
+import { routeReady } from '@/test/routeReady';
 import { FarmScene } from './FarmScene';
 
 /**
@@ -126,6 +127,8 @@ describe('FarmScene', () => {
         </FarmStateProvider>
       </I18nProvider>,
     );
+    // ฉากเกมเป็นก้อนแยกหลังทำ code splitting — ต้องรอโหลดก่อนถึงจะมีปุ่มเมนู
+    await routeReady();
 
     await user.click(screen.getByRole('button', { name: TH.menuTitle }));
     await user.click(await screen.findByRole('button', { name: new RegExp(TH.navDashboard) }));

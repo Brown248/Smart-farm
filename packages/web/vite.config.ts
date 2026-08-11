@@ -67,6 +67,26 @@ export default defineConfig(({ mode }) => {
      * ต้องมีโดเมนจริงหรือติดตั้ง CA เองลงทุกเครื่อง ซึ่งเกินความจำเป็นของ dev server
      */
     plugins: [react(), warnUnprefixedEnv()],
+    /**
+     * แยกไลบรารีภายนอกออกจากโค้ดแอป
+     *
+     * ไลบรารีแทบไม่เปลี่ยนระหว่าง deploy — แยกออกมาแล้วเบราว์เซอร์ใช้ของเดิมใน cache ต่อได้
+     * ส่วนโค้ดแอปที่แก้ทุกวันเป็นก้อนเล็กที่โหลดใหม่ · แท็บเล็ตติดผนังที่เปิดทุกวันได้ประโยชน์ตรงนี้
+     *
+     * แยกตามผู้ใช้งานจริง ไม่ใช่แยกเป็นชิ้นเล็กๆ ให้เยอะเข้าไว้ —
+     * ชิ้นเยอะเกินไปกลายเป็นคำขอ HTTP หลายรอบ ซึ่งช้ากว่าบนไวไฟโรงเรือน
+     */
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks: {
+            react: ['react', 'react-dom', 'react-router-dom'],
+            supabase: ['@supabase/supabase-js'],
+            socket: ['socket.io-client'],
+          },
+        },
+      },
+    },
     resolve: {
       alias: {
         '@shared': fileURLToPath(new URL('../shared/src', import.meta.url)),
