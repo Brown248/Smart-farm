@@ -15,8 +15,10 @@
   white-space: nowrap;
   /* รวม color/border-color ด้วย — ปุ่มที่สลับสีข้อความ/ขอบตามสถานะ (แท็บ · estop · ปุ่มอุปกรณ์)
      เดิม fade แค่พื้นหลัง แต่ตัวอักษร/ขอบดีดทันที ทำให้ดูไม่ลื่น */
+  /* transform ใช้สปริง — ตอนปล่อยนิ้วปุ่มจะเด้งเลยตำแหน่งเดิมนิดหนึ่งแล้วค่อยเข้าที่
+     ต่างจาก ease ที่ไหลกลับเรียบๆ จนรู้สึกเหมือนไม่ได้กดอะไร */
   transition:
-    transform 0.15s ease,
+    transform 0.18s var(--ease-spring),
     box-shadow 0.15s ease,
     background 0.3s ease,
     color var(--dur) ease,

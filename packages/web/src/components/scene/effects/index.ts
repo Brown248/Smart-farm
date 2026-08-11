@@ -1,5 +1,6 @@
 export { Birds } from './Birds';
 export { CloudShadows } from './CloudShadows';
+export { DeviceBurst } from './DeviceBurst';
 export { DeviceEffects } from './DeviceEffects';
 export { DustMotes } from './DustMotes';
 export { Fireflies } from './Fireflies';

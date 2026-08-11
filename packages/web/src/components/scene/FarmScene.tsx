@@ -20,6 +20,7 @@ import { RainChip } from './RainChip';
 import {
   Birds,
   CloudShadows,
+  DeviceBurst,
   DeviceEffects,
   DustMotes,
   Fireflies,
@@ -246,6 +247,8 @@ export function FarmScene() {
           <Vignette />
 
           <DeviceEffects devices={command.devices} />
+          {/* กดสั่งแล้วต้องเห็นโลกในฉากตอบ ไม่ใช่เห็นแค่ปุ่มในลิ้นชักเปลี่ยนสี */}
+          <DeviceBurst devices={command.devices} reduced={reduced} />
 
           <ZonePins zones={zones} pressedId={pressedId} onPick={openZone} zoneName={zoneName} />
         </div>

@@ -8,6 +8,14 @@
   align-items: flex-start;
   gap: 10px;
   z-index: 12;
+  /*
+   * ดันขึ้นมาจากขอบล่างหลัง HUD ไหลลงมาแล้ว — สายตาจะได้ไล่บนลงล่างเป็นลำดับ
+   *
+   * ใส่ที่กล่องรวม **ไม่ใช่ที่ปุ่มทีละตัว** เพราะปุ่มหยุดฉุกเฉินตั้ง `animation: fsEPulse`
+   * ผ่าน inline style อยู่แล้ว (ดู `ControlDock.tsx`) — inline ชนะ CSS class เสมอ
+   * ถ้าใส่ที่ปุ่ม ตัวหยุดฉุกเฉินจะไม่มีจังหวะเข้าเลยแล้วเข้าไม่พร้อมกับอีกปุ่ม
+   */
+  animation: fsRiseIn 0.44s var(--ease-spring) 0.32s both;
 }
 
 .estopFab {

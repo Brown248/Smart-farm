@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@/i18n/I18nProvider';
@@ -106,6 +106,49 @@ describe('FarmScene · prefers-reduced-motion', () => {
     // หยดน้ำบนกระจกกลับมาแล้ว · ฝนกระทบพื้น (impact) ยังเอาออก
     expect(container.querySelectorAll('[data-effect="drip"]').length).toBeGreaterThan(0);
     expect(container.querySelectorAll('[data-effect="impact"]')).toHaveLength(0);
+  });
+
+  /**
+   * วงกระเพื่อมตอนอุปกรณ์เริ่มทำงาน (`DeviceBurst`) — จับ "จังหวะที่เปลี่ยน" ไม่ใช่สถานะ
+   *
+   * เปิดหน้ามาแล้วพัดลมใหญ่ #1 กับปั๊มติดอยู่แล้ว (ค่าเริ่มต้นใน `data/devices.ts`)
+   * ตอนนั้น**ต้องไม่มี** burst เพราะไม่ใช่จังหวะที่ผู้ใช้ทำให้เกิด · ต้องโผล่ตอนกดเปิดเท่านั้น
+   */
+  it('เปิดอุปกรณ์แล้วมีวงกระเพื่อมตรงตัวมัน · ตอนเข้าหน้ายังไม่มี', async () => {
+    setReducedMotion(false);
+    const user = userEvent.setup();
+    const { container } = renderScene();
+
+    expect(container.querySelectorAll('[data-effect="burst"]')).toHaveLength(0);
+
+    await user.click(screen.getByRole('button', { name: TH.controlsFab }));
+    // พัดลมใบใหญ่ #2 เริ่มต้นปิดอยู่ → กดเปิดคือจังหวะที่ต้องเห็นวง
+    const power = await screen.findAllByRole('button', { name: TH.btnOn });
+    await user.click(power[0]!);
+    // ทุกคำสั่งต้องผ่านหน้าต่างยืนยันก่อนเสมอ (กฎเหล็กข้อ 2) — ข้ามไม่ได้
+    await user.click(await screen.findByRole('button', { name: TH.confirm }));
+
+    const bursts = await waitFor(() => {
+      const found = container.querySelectorAll('[data-effect="burst"]');
+      if (found.length === 0) throw new Error('ยังไม่มีวงกระเพื่อม');
+      return found;
+    });
+    expect(bursts).toHaveLength(1);
+  });
+
+  it('เมื่อลดการเคลื่อนไหว: ไม่สร้างวงกระเพื่อมตอนเปิดอุปกรณ์', async () => {
+    setReducedMotion(true);
+    const user = userEvent.setup();
+    const { container } = renderScene();
+
+    await user.click(screen.getByRole('button', { name: TH.controlsFab }));
+    const power = await screen.findAllByRole('button', { name: TH.btnOn });
+    await user.click(power[0]!);
+    await user.click(await screen.findByRole('button', { name: TH.confirm }));
+
+    // รอจนพัดลมขึ้นสถานะ "ปิด" (= เปิดสำเร็จแล้ว) แล้วค่อยยืนยันว่ายังไม่มีวง
+    await screen.findAllByRole('button', { name: TH.btnOff });
+    expect(container.querySelectorAll('[data-effect="burst"]')).toHaveLength(0);
   });
 
   it('เลเยอร์ตกแต่งทุกตัวต้อง aria-hidden', () => {

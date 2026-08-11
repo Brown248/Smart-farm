@@ -416,6 +416,21 @@
   animation: fsGlow 1.6s ease-in-out infinite;
 }
 
+/* วงกระเพื่อมตอนอุปกรณ์เพิ่งเริ่มทำงาน (ดู DeviceBurst.tsx) — เล่นรอบเดียวแล้วจาง
+   `forwards` ค้างที่เฟรมสุดท้าย (opacity 0) จึงไม่ต้องมี timer มาถอดออกจาก DOM */
+.burst {
+  position: absolute;
+  aspect-ratio: 1;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  border-radius: 50%;
+  mix-blend-mode: screen;
+  border: 2px solid rgba(214, 246, 255, 0.75);
+  box-shadow: 0 0 14px rgba(170, 230, 255, 0.55);
+  opacity: 0;
+  animation: fsBurst 0.85s cubic-bezier(0.16, 0.8, 0.3, 1) forwards;
+}
+
 .windStreak {
   position: absolute;
   height: 2px;

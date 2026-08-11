@@ -11,6 +11,33 @@
   z-index: 10;
 }
 
+/*
+ * จังหวะตอนเข้าฉาก — ของบนแถบทยอยไหลลงมาทีละชิ้น ไม่โผล่พร้อมกันทั้งแถบ
+ * `both` = ค้างที่เฟรมสุดท้าย เล่นรอบเดียวแล้วจบ จึงไม่ใช่การเคลื่อนไหวต่อเนื่อง
+ * (คนที่ตั้ง reduced-motion ถูกกฎรวมใน `keyframes.css` ปิดให้อยู่แล้ว)
+ *
+ * ⚠️ ดีเลย์ผูกกับ nth-child — เพิ่มของในแถบต้องเช็กว่ากฎ `n+6` ครอบตัวใหม่
+ *    ไม่งั้นตัวท้ายจะเด้งขึ้นก่อนตัวก่อนหน้า (กับดักเดียวกับ `riselist`/`AppRail`)
+ */
+.bar > * {
+  animation: fsDropIn 0.42s var(--ease-spring) both;
+}
+.bar > :nth-child(2) {
+  animation-delay: 0.05s;
+}
+.bar > :nth-child(3) {
+  animation-delay: 0.1s;
+}
+.bar > :nth-child(4) {
+  animation-delay: 0.15s;
+}
+.bar > :nth-child(5) {
+  animation-delay: 0.2s;
+}
+.bar > :nth-child(n + 6) {
+  animation-delay: 0.25s;
+}
+
 .menuBtn {
   pointer-events: auto;
   width: 44px;
