@@ -22,6 +22,11 @@ services:
       # เซิร์ฟเวอร์ผู้ช่วย AI (llama.cpp ในวง LAN) — nginx proxy `/ai-proxy` ไปหา
       # ไม่ต้องใส่ใน CSP เพราะหน้าเว็บเรียกผ่าน path เดียวกับตัวเอง (connect-src 'self')
       AI_ORIGIN: ${AI_ORIGIN:-http://172.16.7.60:8080}
+      # โหมด LAN: เซิร์ฟเวอร์ล็อกอินแทนผู้ใช้ (ไม่ตั้ง = ยังมีหน้าล็อกอินตามเดิม)
+      # ⚠️ เปิดแล้วใครเข้าถึงเว็บได้ก็สั่งอุปกรณ์ได้ — ใช้เฉพาะตอนเว็บอยู่ในวง LAN
+      FARM_USER: ${FARM_USER:-}
+      FARM_PASS: ${FARM_PASS:-}
+      SUPABASE_ANON_KEY: ${SUPABASE_ANON_KEY:-}
     ports:
       - '${WEB_PORT:-8080}:80'
     restart: always
@@ -34,8 +39,7 @@ services:
       # 🔴 endpoint/พอร์ตแก้ให้ตรงคอนเทนเนอร์นี้ — เว็บเป็น nginx เสิร์ฟ SPA บน :80 (ไม่ใช่ backend :3000)
       #    จึง check `/healthz` ที่ nginx คืน 200 (ดู deploy/nginx.conf.template) · 127.0.0.1 บังคับ IPv4
       #    (busybox/alpine resolve localhost เป็น ::1 ก่อน แต่ nginx `listen 80;` bind แค่ IPv4)
-      test:
-        ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1/healthz']
+      test: ['CMD', 'wget', '--no-verbose', '--tries=1', '--spider', 'http://127.0.0.1/healthz']
       interval: 30s
       timeout: 5s
       retries: 3

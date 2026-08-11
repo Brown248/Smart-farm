@@ -287,6 +287,8 @@ export const TH = {
   authSignIn: 'เข้าสู่ระบบ',
   authSignOut: 'ออกจากระบบ',
   authSignedIn: 'เข้าสู่ระบบแล้ว',
+  authServerTitle: 'เข้าระบบอัตโนมัติ',
+  authServerHint: 'เซิร์ฟเวอร์ล็อกอินให้ (โหมดใช้งานในวง LAN)',
   authOffTitle: 'ยังไม่ได้ตั้งค่าบัญชี',
   authOffHint: 'ดูข้อมูลจำลองได้ตามปกติ',
   connLive: 'ข้อมูลสด',

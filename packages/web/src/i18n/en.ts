@@ -287,6 +287,8 @@ export const EN: Dict = {
   authSignIn: 'Sign in',
   authSignOut: 'Sign out',
   authSignedIn: 'Signed in',
+  authServerTitle: 'Signed in automatically',
+  authServerHint: 'The server signs in for you (LAN-only mode)',
   authOffTitle: 'Account not configured',
   authOffHint: 'Simulated data still works',
   connLive: 'Live data',

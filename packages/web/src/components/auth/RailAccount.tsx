@@ -23,7 +23,9 @@ export function RailAccount({ collapsed }: RailAccountProps) {
   const { status, email } = useAuthAccount();
   const [loginOpen, setLoginOpen] = useState(false);
 
-  if (status === 'unconfigured') {
+  // เซิร์ฟเวอร์ล็อกอินให้เอง — ไม่มีอะไรให้ผู้ใช้กด บอกสถานะอย่างเดียว
+  const isServer = status === 'server';
+  if (isServer || status === 'unconfigured') {
     return (
       <div className={s.box}>
         <span className={s.avatarOff} aria-hidden="true">
@@ -31,8 +33,8 @@ export function RailAccount({ collapsed }: RailAccountProps) {
         </span>
         {collapsed ? null : (
           <span className={s.text}>
-            <span className={s.name}>{t.authOffTitle}</span>
-            <span className={s.role}>{t.authOffHint}</span>
+            <span className={s.name}>{isServer ? t.authServerTitle : t.authOffTitle}</span>
+            <span className={s.role}>{isServer ? t.authServerHint : t.authOffHint}</span>
           </span>
         )}
       </div>

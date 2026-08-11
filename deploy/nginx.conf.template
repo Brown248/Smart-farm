@@ -13,6 +13,9 @@
 # nginx ไม่มี macro และไฟล์ snippet แยกใช้ envsubst ไม่ได้ (entrypoint ประมวลผลเฉพาะ
 # /etc/nginx/templates/*.template แล้วเขียนลง conf.d) จึงต้องยอมซ้ำ — **ห้ามรวบให้เหลือที่เดียว**
 
+# ค่า env ต้องผ่านตัวแปร nginx ก่อนถึงจะเอาไปเทียบใน `if` ได้ (envsubst แทนค่าให้ตอน start)
+map $host $farm_user { default "${FARM_USER}"; }
+
 server {
   listen 80;
   server_name _;
@@ -59,6 +62,36 @@ server {
     # โมเดล 9B คิดนานกว่า API คลาวด์ — ดีฟอลต์ 60 วิของ nginx ตัดกลางคันได้
     proxy_read_timeout 120s;
     proxy_send_timeout 120s;
+
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    add_header Content-Security-Policy "${CSP}" always;
+  }
+
+  # ── ล็อกอินแทนผู้ใช้ที่ฝั่งเซิร์ฟเวอร์ (โหมด LAN ไม่ต้องมีหน้าล็อกอิน) ──
+  #
+  # 🔴 **รหัสผ่านไม่เคยออกจากเครื่องนี้** — nginx เป็นคนใส่ให้ตอน proxy ไป Supabase
+  # หน้าเว็บได้กลับไปแค่ access_token (อายุ 60 นาที) ซึ่งเดิมก็ได้อยู่แล้วตอนผู้ใช้ล็อกอินเอง
+  # ห้ามเอา FARM_USER/FARM_PASS ไปไว้ใน `VITE_*` เด็ดขาด — ค่าพวกนั้นถูกฝังลงไฟล์ JS
+  #
+  # ⚠️ ใครก็ตามที่เข้าถึงเว็บนี้ได้ = ขอ token ได้ = สั่งอุปกรณ์ได้
+  # ปลอดภัยเพราะเว็บอยู่ในวง LAN บริษัทเท่านั้น (เจ้าของงานยืนยัน 2026-08-11)
+  # **ถ้าวันหลังเปิดออกอินเทอร์เน็ต ต้องปิด endpoint นี้ก่อน** ไม่งั้นเท่ากับแจกกุญแจโรงเรือน
+  #
+  # ไม่ได้ตั้ง `FARM_USER` = คืน 404 → หน้าเว็บจะถอยไปใช้หน้าล็อกอินตามปกติเอง
+  location = /auth/token {
+    access_log off;
+    if ($farm_user = "") { return 404; }
+
+    proxy_method POST;
+    proxy_pass ${SUPABASE_ORIGIN}/auth/v1/token?grant_type=password;
+    proxy_http_version 1.1;
+    proxy_ssl_server_name on;
+    proxy_set_header Content-Type "application/json";
+    proxy_set_header apikey "${SUPABASE_ANON_KEY}";
+    proxy_set_header Authorization "";
+    proxy_set_body '{"email":"${FARM_USER}","password":"${FARM_PASS}"}';
 
     add_header X-Content-Type-Options "nosniff" always;
     add_header X-Frame-Options "SAMEORIGIN" always;

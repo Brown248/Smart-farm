@@ -7,6 +7,7 @@ import { DevTokenPanel } from '@/components/dev/DevTokenPanel';
 import { parentOrigin } from '@/config/liveData';
 import { startTokenProvider } from '@/services/tokenProvider';
 import { startSupabaseAuth } from '@/services/supabaseAuth';
+import { startAutoAuth } from '@/services/autoAuth';
 
 /**
  * เริ่มตรวจจับ access_token ก่อน render
@@ -21,6 +22,14 @@ startTokenProvider(parentOrigin());
  * เงียบไปเลยถ้ายังไม่ได้ตั้ง env ของ Supabase · ทางที่ 1–3 ยังทำงานได้ตามปกติ
  */
 startSupabaseAuth();
+
+/**
+ * แหล่งที่ 5 — เซิร์ฟเวอร์แจก token ให้เอง (โหมด LAN ไม่ต้องล็อกอิน)
+ *
+ * เงียบไปเลยถ้าเซิร์ฟเวอร์ไม่ได้เปิดโหมดนี้ (nginx คืน 404) → แอปถอยไปใช้หน้าล็อกอินตามเดิม
+ * ตั้ง `setTokenRefresher` ทับของ Supabase เฉพาะตอนที่ขอสำเร็จจริง จึงไม่ไปรบกวนทางที่ 4
+ */
+void startAutoAuth();
 
 export function App() {
   return (

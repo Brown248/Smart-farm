@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { isAuthConfigured } from '@/config/liveData';
+import { isAutoAuthActive, onAutoAuthChange } from '@/services/autoAuth';
 import { getSupabase } from '@/services/supabaseAuth';
 
 /**
@@ -9,7 +10,7 @@ import { getSupabase } from '@/services/supabaseAuth';
  * `signedOut`    = ตั้งแล้วแต่ยังไม่ได้เข้า → โชว์ปุ่มให้กด
  * `signedIn`     = มี session → โชว์อีเมลกับปุ่มออก
  */
-export type AccountStatus = 'unconfigured' | 'loading' | 'signedOut' | 'signedIn';
+export type AccountStatus = 'unconfigured' | 'loading' | 'signedOut' | 'signedIn' | 'server';
 
 export interface AuthAccount {
   readonly status: AccountStatus;
@@ -18,6 +19,9 @@ export interface AuthAccount {
 
 export function useAuthAccount(): AuthAccount {
   const configured = isAuthConfigured();
+  // เซิร์ฟเวอร์ล็อกอินให้แล้ว = ไม่ต้องถามผู้ใช้อีก (โหมด LAN · ดู `services/autoAuth`)
+  const [serverAuth, setServerAuth] = useState(isAutoAuthActive());
+  useEffect(() => onAutoAuthChange(setServerAuth), []);
   const [status, setStatus] = useState<AccountStatus>(configured ? 'loading' : 'unconfigured');
   const [email, setEmail] = useState<string | null>(null);
 
@@ -48,5 +52,6 @@ export function useAuthAccount(): AuthAccount {
     };
   }, [configured]);
 
+  if (serverAuth) return { status: 'server', email: null };
   return { status, email };
 }
