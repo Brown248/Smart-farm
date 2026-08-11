@@ -968,35 +968,56 @@ export function FarmStateProvider({
       channelStates?.[0]?.on !== undefined &&
       channelStates[1]?.on !== null &&
       channelStates[1]?.on !== undefined);
+  /** สถานะปั๊มจริง — อ่านแหล่งเดียวกับ `bigFanOn` เพื่อไม่ให้เทียบข้ามแหล่ง */
+  const pumpOn =
+    realControl && channelStates ? channelStates[2]?.on === true : !!pump && deviceRunning(pump);
+
+  /** เป้าหมายที่ "สั่งไปแล้วและกำลังรอ `led` ยืนยัน" · `null` = ไม่มีคำสั่งค้าง */
   const wantPumpRef = useRef<boolean | null>(null);
-  // อ่านค่าล่าสุดตอน effect ยิง — ถ้าใส่ใน deps ตรงๆ effect จะรันใหม่ทุกครั้งที่ attributes ไหลเข้ามา (ทุก ~10 วิ)
-  const channelStatesRef = useRef(channelStates);
-  channelStatesRef.current = channelStates;
-  const pumpRef = useRef(pump);
-  pumpRef.current = pump;
+  /** สถานะพัดลมรอบก่อน — ใช้ตัดสินว่า "เป้าหมายเปลี่ยน" (จบรอบที่ผู้ใช้แย่งคุม) */
+  const lastFanRef = useRef<boolean | null>(null);
 
   useEffect(() => {
     if (estop) {
       // หยุดฉุกเฉินปิด ch0-2 ให้อยู่แล้ว · ล้างความจำไว้ให้ตัวตามประเมินใหม่ตอนปลดล็อก
       wantPumpRef.current = null;
+      lastFanRef.current = null;
       setPumpManual(false);
       return;
     }
     if (!followReady) return;
+
+    /*
+     * 🔴 ต้องล้างความจำเมื่อ "เป้าหมายเปลี่ยน" ไม่ใช่จำข้ามยาว
+     *
+     * เคยพลาดมาแล้ว (เจ้าของงานจับได้จากหน้าจอจริง): ตอนเปิดหน้ายังไม่ล็อกอิน = โหมดจำลอง
+     * พัดลม #1 เปิด + ปั๊มเปิด (ค่าเริ่มต้น) → สถานะตรงกัน จึงจำว่า "เป้าหมาย = เปิด" แล้วไม่ทำอะไร
+     * พอ socket ต่อติดกลายเป็นโหมดจริง อุปกรณ์รายงาน `led2=false` (ปั๊มปิดจริง)
+     * แต่ `bigFanOn` ยังเป็น true เท่าเดิม → เงื่อนไข "สั่งไปแล้ว" ตัดจบทันที
+     * **ปั๊มเลยไม่มีวันถูกสั่งเปิดเลย** ทั้งที่พัดลมเดินอยู่
+     */
+    let manual = pumpManualRef.current;
+    if (lastFanRef.current !== bigFanOn) {
+      lastFanRef.current = bigFanOn;
+      wantPumpRef.current = null;
+      // เป้าหมายเปลี่ยน = จบรอบที่ผู้ใช้แย่งคุม คืนสิทธิ์ให้ตัวตาม
+      // (ถ้าไม่คืน ปั๊มที่ผู้ใช้เปิดไว้ล้างแผงจะค้างเดินต่อหลังพัดลมดับ = เปลืองน้ำโดยไม่มีใครดู)
+      if (manual) {
+        setPumpManual(false);
+        manual = false; // ใช้ค่าท้องถิ่นต่อในรอบนี้ — `pumpManualRef` เพิ่งอัปเดตตอน render ถัดไป
+      }
+    }
+    // ผู้ใช้กำลังคุมเอง (เปิดล้างแผง/ซ่อม) — ห้ามทับจนกว่าสถานะพัดลมจะเปลี่ยน
+    if (manual) return;
+
+    // ตรงกันอยู่แล้ว → ไม่ต้องสั่งและไม่ต้องเขียน log · ล้างคำสั่งค้างเพราะอุปกรณ์ยืนยันแล้ว
+    if (pumpOn === bigFanOn) {
+      wantPumpRef.current = null;
+      return;
+    }
     // สั่งไปแล้วรอบนี้ — อย่ายิงซ้ำระหว่างรอ `led2` ยืนยัน (มาช้า ~8 วิ)
     if (wantPumpRef.current === bigFanOn) return;
     wantPumpRef.current = bigFanOn;
-
-    // ปั๊มอยู่ในสถานะที่ต้องการอยู่แล้ว (เช่นตอนเพิ่งเปิดหน้า) → ไม่ต้องสั่งอะไรและไม่ต้องเขียน log
-    const pumpOn =
-      realControlRef.current && channelStatesRef.current
-        ? channelStatesRef.current[2]?.on === true
-        : !!pumpRef.current && deviceRunning(pumpRef.current);
-    if (pumpOn === bigFanOn) return;
-
-    // สถานะพัดลมเปลี่ยนจริง → จบรอบที่ผู้ใช้แย่งคุม คืนสิทธิ์ให้ตัวตาม
-    // (ถ้าไม่คืน ปั๊มที่ผู้ใช้เปิดไว้ล้างแผงจะค้างเดินต่อหลังพัดลมดับ = เปลืองน้ำโดยไม่มีใครดู)
-    if (pumpManualRef.current) setPumpManual(false);
 
     if (realControlRef.current) {
       const ctx = readHsContext();
@@ -1024,7 +1045,9 @@ export function FarmStateProvider({
         ...prevLog,
       ].slice(0, LOG_LIMIT),
     );
-  }, [bigFanOn, estop, followReady]);
+    // `pumpOn` ต้องอยู่ใน deps — ไม่งั้นตอนสถานะปั๊มจริงเปลี่ยน (led2 มาถึง / มีคนสับที่ตู้)
+    // ตัวตามจะไม่ได้ประเมินใหม่ แล้วปั๊มค้างไม่ตรงกับพัดลมอยู่อย่างนั้น
+  }, [bigFanOn, pumpOn, estop, followReady]);
 
   /**
    * พัดลมที่ตัวคุมความชื้นกำลังคุมอยู่จริง — ใช้ติดป้ายบนการ์ดว่า "ใครสั่งอยู่"

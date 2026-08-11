@@ -148,6 +148,47 @@ describe('ปั๊มคูลลิ่งแพด — เดินตาม�
     ).toHaveLength(0);
   });
 
+  /**
+   * 🔴 อาการที่เจ้าของงานจับได้จากหน้าจอจริง (2026-08-11)
+   *
+   * เปิดหน้าตอนยังไม่ล็อกอิน = โหมดจำลอง (พัดลม #1 เปิด + ปั๊มเปิด → สถานะตรงกัน ไม่ต้องสั่ง)
+   * พอ socket ต่อติดกลายเป็นโหมดจริง อุปกรณ์รายงาน `led2=false` (ปั๊มปิดจริง)
+   * แต่ `bigFanOn` ยังเป็น true เท่าเดิม → ความจำ "สั่งไปแล้ว" ตัดจบ **ปั๊มไม่มีวันถูกสั่งเปิด**
+   */
+  it('สลับจากโหมดจำลองเป็นโหมดจริงแล้วพบว่าปั๊มปิดอยู่ → ต้องสั่งเปิดตามพัดลม', async () => {
+    /*
+     * ต้องเป็น provider **ตัวเดิม** ที่เปลี่ยนโหมด ไม่ใช่สร้างใหม่
+     * ถ้าสร้างใหม่ ref ทุกตัวจะรีเซ็ต แล้วเทสจะผ่านทั้งที่บั๊กยังอยู่ (เป็นบั๊กของ "ความจำข้ามโหมด")
+     * `FarmStateProvider` เป็น component type เดิมที่ตำแหน่งเดิม React จึงคง instance ไว้
+     */
+    const mode = { real: false, attrs: {} as Record<string, string> };
+    const Switching = ({ children }: { children: ReactNode }) =>
+      mode.real ? (
+        <FarmStateProvider forceRealControl forceAttributes={mkAttrs(mode.attrs)}>
+          {children}
+        </FarmStateProvider>
+      ) : (
+        <FarmStateProvider>{children}</FarmStateProvider>
+      );
+    Switching.displayName = 'SwitchingWrapper';
+
+    // รอบแรก: โหมดจำลอง — พัดลม #1 เปิด + ปั๊มเปิด (ค่าเริ่มต้นสอดคล้องกัน) จึงไม่ต้องสั่งอะไร
+    const { rerender } = renderHook(() => useHarness(), { wrapper: Switching });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(pumpSwitches(), 'โหมดจำลองยังไม่ต้องยิงคำสั่งจริง').toHaveLength(0);
+
+    // รอบสอง: ล็อกอินแล้ว → โหมดจริง · อุปกรณ์บอกว่าพัดลม #1 เดิน แต่ปั๊มปิด
+    mode.real = true;
+    mode.attrs = { led0: 'true', led1: 'false', led2: 'false' };
+    await act(async () => {
+      rerender();
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(lastPump(), 'ต้องสั่งเปิดปั๊มให้ตรงกับพัดลมที่เดินอยู่').toBe(true);
+  });
+
   it('หยุดฉุกเฉิน → ตัวตามต้องไม่ปลุกปั๊มกลับ', async () => {
     const { result } = renderHook(() => useHarness(), {
       wrapper: wrapper({ led0: 'true', led1: 'false', led2: 'true' }),
