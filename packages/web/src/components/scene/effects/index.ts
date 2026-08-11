@@ -13,4 +13,3 @@ export { RainLayers } from './RainLayers';
 export { Steam } from './Steam';
 export { SunShafts } from './SunShafts';
 export { Vignette } from './Vignette';
-export { WaterEffects } from './WaterEffects';

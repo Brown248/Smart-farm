@@ -14,8 +14,19 @@ import {
 } from './useDeviceCommand';
 
 /** อุปกรณ์อยู่ใน store กลาง — เทสต้องครอบ provider เหมือนแอปจริง */
+/**
+ * อุปกรณ์ดับหมด — ปั๊มคูลลิ่งแพดเดินตามพัดลมใหญ่ ถ้าพัดลมเปิดอยู่ ปั๊มจะถูกตัวตามเปิดให้
+ * เทสที่ต้องการ "กดเปิดปั๊มเอง" จึงต้องเริ่มจากทุกอย่างดับ
+ */
+const idleDevices = INITIAL_DEVICES.map((d) => ({ ...d, on: false }));
+
 const wrapper = ({ children }: { children: ReactNode }) => (
   <FarmStateProvider>{children}</FarmStateProvider>
+);
+
+/** ใช้เฉพาะเทสปั๊ม — ต้องเริ่มจาก "พัดลมดับ + ปั๊มดับ" ถึงจะกดเปิดปั๊มเองได้ */
+const idleWrapper = ({ children }: { children: ReactNode }) => (
+  <FarmStateProvider initialDevices={idleDevices}>{children}</FarmStateProvider>
 );
 
 /**
@@ -81,7 +92,13 @@ describe('useDeviceCommand — ห่วงโซ่ความปลอดภ�
     expect(after?.on).toBe(false);
     expect(result.current.command.busy).toBe(false);
     expect(result.current.command.justDone['big1']).toBe(true);
-    expect(result.current.command.log.length).toBe(logBefore + 1);
+    /*
+     * +2 ไม่ใช่ +1 — ดับพัดลมใหญ่ตัวสุดท้ายแล้ว **ปั๊มคูลลิ่งแพดต้องดับตาม**
+     * จึงมีบันทึกของตัวตามเพิ่มมาอีกหนึ่งบรรทัด (ไม่มีลมผ่านแผงแล้ว = ปั๊มเดินต่อคือเปลืองน้ำ)
+     */
+    expect(result.current.command.log.length).toBe(logBefore + 2);
+    expect(result.current.command.log.some((e) => e.key === 'logPadPumpOff')).toBe(true);
+    expect(result.current.command.devices.find((d) => d.id === 'pump')?.on).toBe(false);
     expect(result.current.command.log[0]?.text).toBe(TH.logManual(TH.actOff, 'พัดลมใบใหญ่ #1'));
 
     act(() => void vi.advanceTimersByTime(DONE_FLASH_MS));
@@ -114,8 +131,12 @@ describe('useDeviceCommand — ห่วงโซ่ความปลอดภ�
     expect(result.current.command.devices.find((d) => d.id === 'sml1')?.auto).toBe(before);
   });
 
-  it('ปั๊ม: เปิดแล้วปิดเองอัตโนมัติเมื่อครบ 20 นาที (auto-cutoff แทน G1)', () => {
-    const { result } = renderHook(() => useHarness(), { wrapper });
+  /**
+   * auto-cutoff นับ **เฉพาะปั๊มที่ผู้ใช้กดเปิดเอง** (เช่นเปิดล้างแผงคูลลิ่ง)
+   * ปั๊มที่เดินตามพัดลมใหญ่ไม่ถูกตัด — ดู `state/padPump.test.tsx`
+   */
+  it('ปั๊ม: กดเปิดเองแล้วปิดเองอัตโนมัติเมื่อครบ 20 นาที', () => {
+    const { result } = renderHook(() => useHarness(), { wrapper: idleWrapper });
     const pumpOn = () => result.current.command.devices.find((d) => d.id === 'pump')?.on;
 
     // เปิดปั๊ม → ยืนยัน → settle เป็น on
@@ -137,7 +158,7 @@ describe('useDeviceCommand — ห่วงโซ่ความปลอดภ�
   });
 
   it('ปั๊ม: ปิดปั๊มเองก่อนครบเวลา → cutoff ถูกยกเลิก ไม่ปิดซ้ำ', () => {
-    const { result } = renderHook(() => useHarness(), { wrapper });
+    const { result } = renderHook(() => useHarness(), { wrapper: idleWrapper });
     const pump = () => result.current.command.devices.find((d) => d.id === 'pump');
 
     act(() => result.current.command.press('pump'));

@@ -16,18 +16,17 @@ import s from './dashboard.module.css';
  */
 export function DailySummary() {
   const { t, lang } = useI18n();
-  const { climate, zones, watering } = useFarmState();
+  const { climate, zones } = useFarmState();
   const now = useClock();
   const [range, setRange] = useState<'day' | 'week'>('day');
   const isDay = range === 'day';
 
   const total = zones.length;
-  const okCount = zones.filter((z) => z.status === 'ok' || z.status === 'watering').length;
+  const okCount = zones.filter((z) => z.status === 'ok').length;
   const watchCount = zones.filter((z) => z.status === 'low').length;
   const critCount = zones.filter((z) => z.status === 'critical').length;
-  const waterTxt = watering ? t.dailyWaterOn : t.dailyWaterOff;
   const body = isDay
-    ? t.dailyBody(Math.round(climate.temp), Math.round(climate.rh), waterTxt, okCount, total)
+    ? t.dailyBody(Math.round(climate.temp), Math.round(climate.rh), okCount, total)
     : t.dailyWeekEmpty;
 
   return (

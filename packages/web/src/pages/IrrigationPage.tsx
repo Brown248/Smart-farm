@@ -2,7 +2,6 @@ import { useCallback, useMemo, useRef, useState } from 'react';
 import { EstopDefiedAlert, Toast } from '@/components/common';
 import { CommandConfirm } from '@/components/common/CommandConfirm';
 import { CropIcon, Icon } from '@/components/common/Icon';
-import { NumberField } from '@/components/common/NumberField';
 import { DataPage } from '@/components/layout/DataPage';
 import { ZoneDrawer } from '@/components/irrigation/ZoneDrawer';
 import type { ZoneSettings } from '@/components/irrigation/ZoneDrawer';
@@ -11,23 +10,11 @@ import {
   IRR_ZONES,
   LAYER_LABEL,
   MAP_LAYERS,
-  MAX_SCHEDULE_TIMES,
-  MODE_COLOR,
-  MODE_DESC,
-  MODE_ICON,
   MODE_LABEL,
   layerColor,
   shade,
 } from '@/data/irrigation';
-import type {
-  DrawerTab,
-  HybridRules,
-  IrrStatus,
-  IrrZone,
-  MapLayer,
-  MoistureRule,
-  WateringMode,
-} from '@/data/irrigation';
+import type { DrawerTab, IrrStatus, IrrZone, MapLayer, WateringMode } from '@/data/irrigation';
 import { useWeather } from '@/hooks/useWeather';
 import { weatherLook } from '@/lib/weatherCode';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -46,7 +33,6 @@ import s from './IrrigationPage.module.css';
 const zoneNameOf = (letter: string, t: Dict): string => t.zoneLetterPrefix + letter;
 
 const STATUS_LABEL: Readonly<Record<IrrStatus, TextKey>> = {
-  watering: 'lgWatering',
   normal: 'lgNormal',
   warn: 'lgWatch',
   dry: 'lgDry',
@@ -85,8 +71,6 @@ export function IrrigationPage() {
    * ค่าตั้งรดน้ำ (`wateringConfig`) เก็บใน provider → อยู่รอดข้ามหน้า (ยังไม่ actuate — ป้าย not-live)
    */
   const {
-    estop: emergency,
-    watering,
     devices,
     climate,
     zones,
@@ -94,19 +78,12 @@ export function IrrigationPage() {
     notifPrefs,
     toggleNotif,
     wateringConfig,
-    updateWatering,
     zoneSettings,
     setZoneSettings,
   } = useFarmState();
   // แยกค่าตั้งออกมาให้อ่านง่าย · `strategy` (รวม 'manual') ใช้กับลิ้นชัก/การ์ด hover
-  const { autoOn, mode, hybrid: rules, schedule, moisture } = wateringConfig;
+  const { autoOn, mode } = wateringConfig;
   const strategy: WateringMode = autoOn ? mode : 'manual';
-  // helper ให้ตัวแก้กติกาเขียนกลับเข้า provider (คงหน้าตา JSX เดิม)
-  const setRules = (next: HybridRules) => updateWatering({ hybrid: next });
-  const setSchedule = (fn: (prev: readonly string[]) => readonly string[]) =>
-    updateWatering({ schedule: fn(schedule) });
-  const setMoisture = (fn: (prev: MoistureRule) => MoistureRule) =>
-    updateWatering({ moisture: fn(moisture) });
   // อากาศจริงของฟาร์ม (Open-Meteo) — ดึงไม่ได้ = แสดง empty state (ไม่โชว์ตัวเลขปลอม)
   const weather = useWeather();
   const command = useDeviceCommand({ t, temp: climate.temp, confirm, flash });
@@ -167,7 +144,6 @@ export function IrrigationPage() {
    */
   const pump = devices.find((d) => d.id === 'pump');
   const offline = !(pump?.online ?? true);
-  const pumpPending = pump?.pending != null;
 
   const openZone = useCallback((letter: string, tab: DrawerTab = 'overview') => {
     // เช็กแค่ว่าตัวอักษรโซนมีจริง — ใช้ `IRR_ZONES` (คงที่) ไม่ใช่ `zonesToShow` ที่เปลี่ยนตามค่าจริง
@@ -270,7 +246,7 @@ export function IrrigationPage() {
               </p>
             </div>
             <div className={s.mapLegend}>
-              {(['watering', 'normal', 'warn', 'dry'] as const).map((k) => (
+              {(['normal', 'warn', 'dry'] as const).map((k) => (
                 <span key={k} className={s.legendItem}>
                   <span className={s.legendSwatch} style={{ background: IRR_COLOR[k] }} />
                   {t[STATUS_LABEL[k]]}
@@ -312,12 +288,10 @@ export function IrrigationPage() {
               </div>
 
               {zonesToShow.map((z, zi) => {
-                const col = layerColor(z, watering, layer);
+                const col = layerColor(z, layer);
                 const closed = z.closed === true;
-                // ระหว่างรดน้ำไม่ต้องเตือนว่าแห้ง เพราะกำลังแก้อยู่แล้ว
-                const alert =
-                  layer === 'status' && !watering && (z.status === 'warn' || z.status === 'dry');
-                const dotStatus: IrrStatus = watering ? 'watering' : z.status;
+                const alert = layer === 'status' && (z.status === 'warn' || z.status === 'dry');
+                const dotStatus: IrrStatus = z.status;
                 const ink = closed ? '#f2f7f3' : '#12211a';
                 const subInk = closed ? 'rgba(240,247,242,.88)' : 'rgba(18,33,26,.72)';
                 const bg = closed
@@ -352,12 +326,6 @@ export function IrrigationPage() {
                       setHoverXY(null);
                     }}
                   >
-                    {watering && !reduced ? (
-                      <>
-                        <span className={s.waterSheen} aria-hidden="true" />
-                        <span className={s.waterWave} aria-hidden="true" />
-                      </>
-                    ) : null}
                     {closed ? <span className={s.closedHatch} aria-hidden="true" /> : null}
                     {alert && !reduced ? (
                       <span
@@ -456,18 +424,6 @@ export function IrrigationPage() {
                     <span className={`${s.hoverValue} ${g.num}`}>{Math.round(climate.temp)}°C</span>
                     <div className={s.hoverLabel}>{t.hTemp}</div>
                   </div>
-                  <div className={s.hoverStat}>
-                    <span
-                      style={{
-                        fontSize: 13.5,
-                        fontWeight: 700,
-                        color: watering ? 'var(--d-m-hum)' : 'var(--d-muted)',
-                      }}
-                    >
-                      {watering ? t.watering : t.idle}
-                    </span>
-                    <div className={s.hoverLabel}>{t.hWater}</div>
-                  </div>
                 </div>
                 <div className={s.hoverFoot}>
                   <div>
@@ -502,83 +458,6 @@ export function IrrigationPage() {
         */}
         <div className={s.dualRow}>
           {/* ── รดน้ำทั้งโรงเรือน — ปุ่มเดียวของทั้งฟาร์ม ── */}
-          <section className={`${g.glass} ${g.section}`} aria-label={t.waterAllTitle}>
-            <div>
-              <h2 className={g.h2}>{t.waterAllTitle}</h2>
-              <p className={g.sub} style={{ margin: '3px 0 0' }}>
-                {t.waterAllHint}
-              </p>
-            </div>
-
-            {offline ? (
-              <div className={s.blockMsg} role="alert">
-                <Icon name="alert" size={18} color="#9a5e0c" strokeWidth={2} />
-                <span>{t.ctrlOfflineMsg}</span>
-              </div>
-            ) : null}
-
-            {/* ปุ่มไม่ยืดเต็มความกว้าง 1,088px ของคอลัมน์ — จับคู่กับสถานะไว้ข้างๆ แทน */}
-            <div className={s.waterRow}>
-              <button
-                type="button"
-                disabled={offline || pumpPending || emergency}
-                className={[s.ctrlBtn, s.waterBtn, watering ? s.startRunning : s.startIdle].join(
-                  ' ',
-                )}
-                onClick={command.waterAll}
-              >
-                {pumpPending ? <span className={s.btnSpin} aria-hidden="true" /> : null}
-                <Icon name={watering ? 'stop' : 'drop'} size={18} strokeWidth={2} />
-                {pumpPending
-                  ? watering
-                    ? t.ctStopping
-                    : t.ctStarting
-                  : watering
-                    ? t.ctStop
-                    : t.ctStart}
-              </button>
-
-              <div className={s.waterFacts}>
-                {/* แยก "ส่งคำสั่งแล้ว" ออกจาก "อุปกรณ์ยืนยันแล้ว" */}
-                <div className={s.confirmState}>
-                  <span
-                    className={s.confirmDot}
-                    aria-hidden="true"
-                    style={{
-                      background: pumpPending
-                        ? 'var(--d-warn)'
-                        : watering
-                          ? 'var(--d-ok)'
-                          : '#8b9a92',
-                    }}
-                  />
-                  {pumpPending
-                    ? t.stateSending
-                    : watering
-                      ? t.stateConfirmedOn
-                      : t.stateConfirmedOff}
-                </div>
-
-                {/*
-                  เหลือแค่สถานะปั๊ม (เชื่อมต่อได้ไหม) — บอกว่าสั่งรดน้ำได้หรือไม่
-                  ระดับถัง/แรงดัน/ปริมาณน้ำ ถอดออกหมดแล้ว เพราะยังไม่มีเซนเซอร์จริง (เจ้าของงานสั่ง)
-                */}
-                <div className={s.factRow}>
-                  <span className={s.fact}>
-                    <Icon name="pump" size={15} color="var(--d-m-hum)" strokeWidth={1.8} />
-                    {t.infraPump}
-                    <b
-                      className={s.factValue}
-                      style={{ color: offline ? '#d16a52' : 'var(--d-ok-ink)' }}
-                    >
-                      {offline ? t.ctrlOffline : t.ctrlOnline}
-                    </b>
-                  </span>
-                </div>
-              </div>
-            </div>
-          </section>
-
           {/* ── ต้องดูแลด่วน — คำนวณจากสถานะดินจริง ไม่ใช่รายการฝังตายตัว ── */}
           <section className={`${g.glass} ${g.lift} ${g.section}`} aria-label={t.attnTitle}>
             <h2 className={g.h2}>{t.attnTitle}</h2>
@@ -616,294 +495,6 @@ export function IrrigationPage() {
             </div>
           </section>
         </div>
-
-        {/* ── อัตโนมัติ (ของทั้งฟาร์ม) ── */}
-        <section className={`${g.glass} ${g.section}`} aria-label={t.auStrategy}>
-          <div className={s.autoHead}>
-            <div>
-              <h2 className={g.h2}>{t.auStrategy}</h2>
-              <p className={g.sub} style={{ margin: '3px 0 0' }}>
-                {t.auFarmWideHint}
-              </p>
-            </div>
-            {/* กติกาพวกนี้ยังไม่มีตัวสั่งงานอ่านไปใช้ — ต้องบอกให้ชัด ไม่ใช่ปล่อยให้เข้าใจว่าทำงานแล้ว */}
-            <div className={s.notLiveNote} role="note">
-              <Icon name="info" size={15} color="var(--d-muted)" strokeWidth={1.9} />
-              <span>{t.rulesNotLiveNote}</span>
-            </div>
-          </div>
-
-          <div className={s.ctlStack}>
-            {/* สวิตช์หลัก: รดน้ำอัตโนมัติ เปิด/ปิด (ปิด = สั่งเองด้วยปุ่มรดน้ำ · ไม่มีโหมด "มือ" แยก) */}
-            <div className={s.autoMaster}>
-              <div className={s.autoMasterText}>
-                <b className={s.autoMasterTitle}>{t.auAutoTitle}</b>
-                <span className={s.autoMasterSub}>{autoOn ? t.auAutoOnSub : t.auAutoOffSub}</span>
-              </div>
-              <button
-                type="button"
-                role="switch"
-                aria-checked={autoOn}
-                aria-label={t.auAutoTitle}
-                className={[s.masterSwitch, autoOn ? s.masterSwitchOn : null]
-                  .filter(Boolean)
-                  .join(' ')}
-                onClick={() => updateWatering({ autoOn: !autoOn })}
-              >
-                <span
-                  className={[s.masterKnob, autoOn ? s.masterKnobOn : null]
-                    .filter(Boolean)
-                    .join(' ')}
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-
-            {autoOn ? (
-              <div className={s.stratGrid}>
-                {(['schedule', 'moisture', 'hybrid'] as const).map((k) => {
-                  const on = mode === k;
-                  const color = MODE_COLOR[k];
-                  return (
-                    <button
-                      key={k}
-                      type="button"
-                      aria-pressed={on}
-                      className={[s.stratBtn, on ? s.stratBtnOn : null].filter(Boolean).join(' ')}
-                      style={
-                        on
-                          ? {
-                              borderColor: color,
-                              background: `color-mix(in srgb, ${color} 8%, var(--d-surface))`,
-                            }
-                          : undefined
-                      }
-                      onClick={() => updateWatering({ mode: k })}
-                    >
-                      <span
-                        className={s.stratIcon}
-                        aria-hidden="true"
-                        style={{ background: `color-mix(in srgb, ${color} 16%, transparent)` }}
-                      >
-                        <Icon name={MODE_ICON[k]} size={17} color={color} strokeWidth={1.9} />
-                      </span>
-                      <span className={s.stratText}>
-                        <b className={s.stratLabel}>{t[MODE_LABEL[k]]}</b>
-                        <span className={s.stratDesc}>{t[MODE_DESC[k]]}</span>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ) : null}
-
-            {autoOn && mode === 'hybrid' ? (
-              /* จอกว้างวางสองการ์ดคู่กัน — "รดน้ำเมื่อ" กับ "ข้ามเมื่อ" อ่านเทียบกันง่ายกว่าเรียงลง */
-              <div className={s.ruleGrid}>
-                {/* รดน้ำเมื่อ — ทุกเงื่อนไขต้องจริง (AND) */}
-                <div className={s.ctlCard}>
-                  <div className={s.ruleGroupHead}>
-                    <span className={s.ruleGroupIcon} style={{ background: 'var(--d-ok-bg)' }}>
-                      <Icon name="tick" size={15} color="var(--brand-green)" strokeWidth={2} />
-                    </span>
-                    <span className={s.ruleGroupTitle} style={{ color: 'var(--d-ok-ink)' }}>
-                      {t.auRunTitle}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div className={`${s.ruleRow} ${s.ruleRowRun}`}>
-                      <Icon name="clock" size={16} color="var(--brand-green)" strokeWidth={1.8} />
-                      <label className={s.ruleName} htmlFor="rule-from">
-                        {t.auTimePre}
-                      </label>
-                      <input
-                        id="rule-from"
-                        type="time"
-                        className={`${s.ruleInput} ${s.ruleTime}`}
-                        aria-label={t.auTimeFromAria}
-                        value={rules.timeFrom}
-                        onChange={(e) => setRules({ ...rules, timeFrom: e.target.value })}
-                      />
-                      <span className={s.timeSep}>–</span>
-                      <input
-                        type="time"
-                        className={`${s.ruleInput} ${s.ruleTime}`}
-                        aria-label={t.auTimeToAria}
-                        value={rules.timeTo}
-                        onChange={(e) => setRules({ ...rules, timeTo: e.target.value })}
-                      />
-                    </div>
-                    <div className={s.opRow}>
-                      <span className={s.opAnd}>AND</span>
-                    </div>
-                    <div className={`${s.ruleRow} ${s.ruleRowRun}`}>
-                      <Icon name="soil" size={16} color="var(--brand-green)" strokeWidth={1.8} />
-                      <label className={s.ruleName} htmlFor="rule-low">
-                        {t.auMoistLowPre}
-                      </label>
-                      <NumberField
-                        id="rule-low"
-                        className={`${s.ruleInput} ${s.ruleNum}`}
-                        min={0}
-                        max={100}
-                        value={rules.moistLow}
-                        onCommit={(v) => setRules({ ...rules, moistLow: v })}
-                      />
-                      <span style={{ color: 'var(--d-muted)' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* ข้ามการรดน้ำเมื่อ — เงื่อนไขใดจริงก็ข้าม (OR) */}
-                <div className={s.ctlCard}>
-                  <div className={s.ruleGroupHead}>
-                    <span className={s.ruleGroupIcon} style={{ background: 'var(--d-warn-bg)' }}>
-                      <Icon name="close" size={15} color="var(--d-warn)" strokeWidth={2} />
-                    </span>
-                    <span className={s.ruleGroupTitle} style={{ color: 'var(--d-warn-ink-2)' }}>
-                      {t.auSkipTitle}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                    <div className={`${s.ruleRow} ${s.ruleRowSkip}`}>
-                      <Icon name="soil" size={16} color="var(--d-warn)" strokeWidth={1.8} />
-                      <label className={s.ruleName} htmlFor="rule-high">
-                        {t.auMoistHighPre}
-                      </label>
-                      <NumberField
-                        id="rule-high"
-                        className={`${s.ruleInput} ${s.ruleNum}`}
-                        min={0}
-                        max={100}
-                        value={rules.moistHigh}
-                        onCommit={(v) => setRules({ ...rules, moistHigh: v })}
-                      />
-                      <span style={{ color: 'var(--d-muted)' }}>%</span>
-                    </div>
-                    <div className={s.opRow}>
-                      <span className={s.opOr}>OR</span>
-                    </div>
-                    <div className={`${s.ruleRow} ${s.ruleRowSkip}`}>
-                      <Icon name="wxRain" size={16} color="var(--d-warn)" strokeWidth={1.8} />
-                      <label className={s.ruleName} htmlFor="rule-rain">
-                        {t.auRainPre}
-                      </label>
-                      <NumberField
-                        id="rule-rain"
-                        className={`${s.ruleInput} ${s.ruleNum}`}
-                        min={0}
-                        max={100}
-                        value={rules.rain}
-                        onCommit={(v) => setRules({ ...rules, rain: v })}
-                      />
-                      <span style={{ color: 'var(--d-muted)' }}>%</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className={s.hybridNote}>
-                  <Icon name="info" size={14} color="var(--d-muted)" strokeWidth={1.9} />
-                  <span>{t.auHybridNote}</span>
-                </div>
-              </div>
-            ) : null}
-
-            {autoOn && mode === 'schedule' ? (
-              <div className={s.ctlCard}>
-                <div className={s.ctlLabel}>{t.auSchedTitle}</div>
-                <div className={s.ctlHint}>
-                  <Icon name="info" size={14} color="var(--d-muted)" strokeWidth={1.9} />
-                  <span>{t.auSchedHint}</span>
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-                  {schedule.map((time, i) => (
-                    <div key={i} className={`${s.ruleRow} ${s.ruleRowRun}`}>
-                      <Icon name="clock" size={16} color="var(--d-warn)" strokeWidth={1.8} />
-                      <span className={s.ruleName}>{t.auSchedAt}</span>
-                      <input
-                        type="time"
-                        className={`${s.ruleInput} ${s.ruleTime}`}
-                        aria-label={`${t.auSchedAt} ${i + 1}`}
-                        value={time}
-                        onChange={(e) =>
-                          setSchedule((prev) => prev.map((x, j) => (j === i ? e.target.value : x)))
-                        }
-                      />
-                      {schedule.length > 1 ? (
-                        <button
-                          type="button"
-                          className={s.schedRemoveBtn}
-                          aria-label={t.auSchedRemove}
-                          onClick={() => setSchedule((prev) => prev.filter((_, j) => j !== i))}
-                        >
-                          <Icon name="close" size={15} strokeWidth={2.2} />
-                        </button>
-                      ) : null}
-                    </div>
-                  ))}
-                  {schedule.length < MAX_SCHEDULE_TIMES ? (
-                    <button
-                      type="button"
-                      className={s.schedAddBtn}
-                      onClick={() => setSchedule((prev) => [...prev, '12:00'])}
-                    >
-                      <Icon name="plus" size={14} strokeWidth={2.2} />
-                      {t.auSchedAdd}
-                    </button>
-                  ) : null}
-                </div>
-              </div>
-            ) : null}
-
-            {autoOn && mode === 'moisture' ? (
-              <div className={s.ctlCard}>
-                <div className={s.ctlLabel}>{t[MODE_LABEL.moisture]}</div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 4 }}>
-                  <div className={`${s.ruleRow} ${s.ruleRowRun}`}>
-                    <Icon name="soil" size={16} color="var(--d-m-hum)" strokeWidth={1.8} />
-                    <label className={s.ruleName} htmlFor="moist-low">
-                      {t.auMoistBelow}
-                    </label>
-                    <NumberField
-                      id="moist-low"
-                      className={`${s.ruleInput} ${s.ruleNum}`}
-                      min={0}
-                      max={100}
-                      value={moisture.low}
-                      onCommit={(v) => setMoisture((m) => ({ ...m, low: v }))}
-                    />
-                    <span style={{ color: 'var(--d-muted)' }}>%</span>
-                  </div>
-                  <div className={`${s.ruleRow} ${s.ruleRowSkip}`}>
-                    <Icon name="soil" size={16} color="var(--d-warn)" strokeWidth={1.8} />
-                    <label className={s.ruleName} htmlFor="moist-high">
-                      {t.auMoistAbove}
-                    </label>
-                    <NumberField
-                      id="moist-high"
-                      className={`${s.ruleInput} ${s.ruleNum}`}
-                      min={0}
-                      max={100}
-                      value={moisture.high}
-                      onCommit={(v) => setMoisture((m) => ({ ...m, high: v }))}
-                    />
-                    <span style={{ color: 'var(--d-muted)' }}>%</span>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-
-            {!autoOn ? (
-              <div className={s.ctlCard}>
-                <div className={s.ctlLabel}>{t.auManualTitle}</div>
-                <div className={s.ctlHint}>
-                  <Icon name="drop" size={14} color="var(--d-muted)" strokeWidth={1.9} />
-                  <span>{t.auManualHint}</span>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        </section>
       </DataPage>
 
       {/* ── ลิ้นชักข้อมูลรายแปลง — ไม่มีคำสั่งอยู่ในนี้แล้ว ── */}
@@ -915,7 +506,6 @@ export function IrrigationPage() {
           tab={drawerTab}
           onTab={setDrawerTab}
           onClose={() => setDrawerLetter(null)}
-          watering={watering}
           strategy={strategy}
           cmdLog={command.log}
           settings={drawerSettings}

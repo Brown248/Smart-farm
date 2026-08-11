@@ -33,7 +33,7 @@ interface RailItem {
  */
 const RAIL_ITEMS: readonly RailItem[] = [
   { key: 'navDashboard', icon: 'dashboard', to: ROUTES.dashboard, soon: false },
-  { key: 'navIrrigation', icon: 'drop', to: ROUTES.irrigation, soon: false },
+  { key: 'navIrrigation', icon: 'zones', to: ROUTES.irrigation, soon: false },
   { key: 'navGreenhouse', icon: 'house', to: ROUTES.greenhouse, soon: false },
   { key: 'navFarmGame', icon: 'leaf', to: ROUTES.farm, soon: false },
 ];

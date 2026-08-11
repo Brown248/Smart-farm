@@ -38,6 +38,14 @@ const zoneBtn = (letter: string) => {
   });
 };
 
+/**
+ * 🔴 เทสเรื่อง "รดน้ำ" ทั้งหมดถูกถอดออก 2026-08-11 (8 เคส)
+ *
+ * โรงเรือนนี้**ไม่มีระบบรดน้ำ** — ปั๊มที่มีคือปั๊มคูลลิ่งแพด ทำงานคู่พัดลมใหญ่
+ * เทสที่หายไป: ปุ่มรดน้ำทั้งฟาร์ม · 8 แปลงขึ้น "กำลังรดน้ำ" · estop ล็อกปุ่มรดน้ำ ·
+ * กลยุทธ์รดน้ำ (hybrid/ตั้งเวลา/ตามความชื้น) · ส่วนระบบน้ำ
+ * ตัวปั๊มมีเทสของตัวเองที่ `state/padPump.test.tsx` แทน (ดู DESIGN_SOURCE ข้อ 37)
+ */
 describe('IrrigationPage', () => {
   it('พยากรณ์อากาศดึงไม่ได้ในเทส (fetch ถูก stub) → แสดง empty state ไม่โชว์ตัวเลขปลอม', () => {
     renderPage();
@@ -68,34 +76,7 @@ describe('IrrigationPage', () => {
   });
 
   /** ระบบน้ำ (ถัง/แรงดัน/ปริมาณน้ำ) ถอดออกหมดแล้ว — ยังไม่มีเซนเซอร์จริง (เจ้าของงานสั่ง) */
-  it('ไม่มีส่วนระบบน้ำในหน้านี้แล้ว — ถอดออกเพราะเป็นค่าจำลองล้วน', () => {
-    renderPage();
-    expect(screen.queryByRole('region', { name: TH.infraTitle })).not.toBeInTheDocument();
-    // "ต้องดูแลด่วน" กับปุ่มรดน้ำยังอยู่
-    expect(screen.getByRole('region', { name: TH.attnTitle })).toBeInTheDocument();
-    expect(screen.getByRole('region', { name: TH.waterAllTitle })).toBeInTheDocument();
-  });
-
   /** สถานะปั๊มบนการ์ดรดน้ำต้องขยับตามการสั่งจริง — ปั๊มคุมด้วยปุ่ม "รดน้ำทั้งโรงเรือน" */
-  it('สั่งรดน้ำแล้วสถานะปั๊มบนการ์ดเปลี่ยนตาม ไม่ใช่ข้อความคงที่', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const card = screen.getByRole('region', { name: TH.waterAllTitle });
-    expect(within(card).getByText(TH.stateConfirmedOff)).toBeInTheDocument();
-
-    // ปุ่มรดน้ำ → ยืนยัน → รอปั๊มติด
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.ctStart) }));
-    await user.click(
-      within(await screen.findByRole('dialog', { name: TH.waterTitle })).getByRole('button', {
-        name: TH.confirmYes,
-      }),
-    );
-    await new Promise((r) => setTimeout(r, 2200));
-
-    const after = screen.getByRole('region', { name: TH.waterAllTitle });
-    expect(within(after).getByText(TH.stateConfirmedOn)).toBeInTheDocument();
-  });
-
   it('Needs Attention (คำนวณจากดินจริง) กดแล้วเปิดลิ้นชักของโซนนั้น', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -125,49 +106,10 @@ describe('IrrigationPage', () => {
   });
 
   /** ปั๊มตัวเดียว ไม่มีวาล์วแยกแปลง → สั่งรดน้ำได้ที่เดียวคือระดับทั้งโรงเรือน */
-  it('รดน้ำทั้งโรงเรือน: มีปุ่มเดียว ต้องยืนยันก่อน แล้วขึ้น "ส่งคำสั่งแล้ว"', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    expect(screen.getByRole('region', { name: TH.waterAllTitle })).toBeInTheDocument();
-    expect(screen.getByText(TH.stateConfirmedOff)).toBeInTheDocument();
-    expect(screen.getAllByRole('button', { name: new RegExp(TH.ctStart) })).toHaveLength(1);
-
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.ctStart) }));
-    const dialog = await screen.findByRole('dialog', { name: TH.waterTitle });
-    // เริ่มรดน้ำ = ยืนยันเช็คน้ำก่อน (แทน guard G1 ที่ถอดออก)
-    expect(within(dialog).getByText(TH.confirmPumpBody)).toBeInTheDocument();
-
-    await user.click(within(dialog).getByRole('button', { name: TH.confirmYes }));
-    expect(screen.getByText(TH.stateSending)).toBeInTheDocument();
-  });
-
   /**
    * หัวใจของการตัดรายแปลงออก — ปั๊มตัวเดียวจ่ายน้ำทั้งโรงเรือน
    * เปิดทีเดียวต้องขึ้น "กำลังรดน้ำ" ครบทั้ง 8 แปลง ไม่ใช่แปลงใดแปลงหนึ่ง
    */
-  it('เปิดปั๊มแล้วทั้ง 8 แปลงขึ้นว่ากำลังรดน้ำพร้อมกัน', { timeout: 20000 }, async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.ctStart) }));
-    await user.click(
-      within(await screen.findByRole('dialog', { name: TH.waterTitle })).getByRole('button', {
-        name: TH.confirmYes,
-      }),
-    );
-    await screen.findByRole('button', { name: new RegExp(TH.ctStop) }, { timeout: 6000 });
-
-    for (const z of IRR_ZONES) {
-      const crop = TH[z.cropKey] as string;
-      expect(
-        screen.getByRole('button', {
-          name: `${TH.zoneLetterPrefix}${z.letter} · ${crop} · ${z.moisture}% · ${TH.lgWatering}`,
-        }),
-      ).toBeInTheDocument();
-    }
-  });
-
   it('ไม่มีปุ่มสั่งงานในลิ้นชักรายแปลงแล้ว', async () => {
     const user = userEvent.setup();
     renderPage();
@@ -181,68 +123,6 @@ describe('IrrigationPage', () => {
   });
 
   /** ปุ่มหยุดฉุกเฉินอยู่ในแถบเมนู ปุ่มเดียวของทั้งระบบ ไม่ได้ซ้ำอยู่ในตัวหน้า */
-  it('Emergency Stop จากแถบเมนู กดแล้วปุ่มรดน้ำถูกล็อก', async () => {
-    const user = userEvent.setup();
-    renderPage();
-
-    await user.click(screen.getByRole('button', { name: TH.estopFab }));
-    expect(screen.getByRole('button', { name: TH.unlockFab })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: new RegExp(TH.ctStart) })).toBeDisabled();
-  });
-
-  it('อัตโนมัติ: Hybrid Rule Builder มี AND/OR และตัวเลขแก้ได้จริง', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    // เปิดสวิตช์รดน้ำอัตโนมัติก่อน (โหมดเริ่มต้น = ไฮบริด)
-    await user.click(screen.getByRole('switch', { name: TH.auAutoTitle }));
-
-    expect(screen.getByText(TH.auRunTitle)).toBeInTheDocument();
-    expect(screen.getByText(TH.auSkipTitle)).toBeInTheDocument();
-    expect(screen.getByText('AND')).toBeInTheDocument();
-    expect(screen.getByText('OR')).toBeInTheDocument();
-
-    const low = screen.getByLabelText(TH.auMoistLowPre);
-    expect(low).toHaveValue(35);
-    await user.clear(low);
-    await user.type(low, '42');
-    expect(low).toHaveValue(42);
-
-    expect(screen.getByLabelText(TH.auTimeFromAria)).toHaveValue('06:00');
-  });
-
-  it('อัตโนมัติ: เปลี่ยนกลยุทธ์เป็นตั้งเวลาแล้วมีช่องเวลาที่แก้ได้จริง', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByRole('switch', { name: TH.auAutoTitle }));
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.modeSchedule) }));
-
-    expect(screen.getByText(TH.auSchedTitle)).toBeInTheDocument();
-    // เวลาแรกเริ่มที่ 06:00 และแก้ได้จริง
-    const first = screen.getByLabelText(`${TH.auSchedAt} 1`);
-    expect(first).toHaveValue('06:00');
-    await user.clear(first);
-    await user.type(first, '07:15');
-    expect(first).toHaveValue('07:15');
-
-    // เพิ่มเวลาได้จริง
-    const before = screen.getAllByLabelText(new RegExp(TH.auSchedAt)).length;
-    await user.click(screen.getByRole('button', { name: TH.auSchedAdd }));
-    expect(screen.getAllByLabelText(new RegExp(TH.auSchedAt))).toHaveLength(before + 1);
-  });
-
-  it('อัตโนมัติ: โหมดตามความชื้นมีเกณฑ์ที่แก้ได้จริง', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    await user.click(screen.getByRole('switch', { name: TH.auAutoTitle }));
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.modeMoisture) }));
-
-    const low = screen.getByLabelText(TH.auMoistBelow);
-    expect(low).toHaveValue(35);
-    await user.clear(low);
-    await user.type(low, '28');
-    expect(low).toHaveValue(28);
-  });
-
   it('แท็บตั้งค่า: input แก้ได้จริงและกดบันทึกแล้วมีข้อความยืนยัน', async () => {
     const user = userEvent.setup();
     renderPage();

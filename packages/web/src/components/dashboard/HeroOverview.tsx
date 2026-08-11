@@ -14,16 +14,14 @@ export interface HeroOverviewProps {
 
 export function HeroOverview({ progress }: HeroOverviewProps) {
   const { t } = useI18n();
-  // รดน้ำเป็นสถานะของทั้งโรงเรือน — เปิดปั๊มทีเดียวจุดทั้ง 8 เปลี่ยนพร้อมกัน
-  const { watering, zones, devices } = useFarmState();
-  const dots = useMemo(() => heroDots(watering), [watering]);
-  const donut = useMemo(() => heroDonut(watering), [watering]);
+  const { zones, devices } = useFarmState();
+  const dots = useMemo(() => heroDots(), []);
+  const donut = useMemo(() => heroDonut(), []);
   // ตัวเลขทั้งหมด derive จากสถานะจริง — เลิกใช้ HERO_STATS ที่ฝังเลขปลอม (สุขภาพ 92% · ใช้น้ำ 1240L)
   const total = zones.length;
-  const okCount = zones.filter((z) => z.status === 'ok' || z.status === 'watering').length;
+  const okCount = zones.filter((z) => z.status === 'ok').length;
   const attention = zones.filter((z) => z.status === 'low' || z.status === 'critical').length;
   const health = total ? Math.round((okCount / total) * 100) : 0;
-  const wateringCount = watering ? total : 0;
   const devicesOn = devices.filter(deviceRunning).length;
   const at = (n: number) => Math.round(n * progress);
 
@@ -62,8 +60,8 @@ export function HeroOverview({ progress }: HeroOverviewProps) {
           />
           <div className={s.heroStats}>
             <div>
-              <div className={`${s.heroStatNum} ${g.num}`}>{at(wateringCount)}</div>
-              <div className={s.heroStatLabel}>{t.sZonesWatering}</div>
+              <div className={`${s.heroStatNum} ${g.num}`}>{at(okCount)}</div>
+              <div className={s.heroStatLabel}>{t.sZonesOk}</div>
             </div>
             <div>
               <div className={`${s.heroStatNum} ${g.num}`} style={{ color: '#f2c879' }}>

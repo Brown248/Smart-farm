@@ -74,7 +74,6 @@ export function pickAgent(ctx: AgentContext): AgentState {
 
   const badZone =
     ctx.zones.find((z) => z.status === 'critical') ?? ctx.zones.find((z) => z.status === 'low');
-  const wateringZone = ctx.zones.find((z) => z.status === 'watering');
 
   if (badZone && badZone.status === 'critical') {
     return {
@@ -94,9 +93,6 @@ export function pickAgent(ctx: AgentContext): AgentState {
       message: t.aLow(zoneName(badZone), Math.round(badZone.soil)),
       sleeping: false,
     };
-  }
-  if (wateringZone) {
-    return { pose: 'watering', message: t.aWater(zoneName(wateringZone)), sleeping: false };
   }
   if (ctx.night) return { pose: 'happy', message: t.aNight, sleeping: true };
   // ทุกอย่างปกติ = หมีโบกมือทักทาย (นวลกว่าท่ากระโดดฉลอง · celebration เก็บไว้ตอนโหมดนำเสนอ)

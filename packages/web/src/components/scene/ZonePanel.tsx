@@ -1,6 +1,6 @@
 import type { SceneZone } from '@shared/zone';
 import { SOIL } from '@shared/thresholds';
-import { Button, Card, Modal } from '@/components/common';
+import { Card, Modal } from '@/components/common';
 import { ZONE_LABELS } from '@/data/zones';
 import { useI18n } from '@/i18n/useI18n';
 import { STATUS_COLOR, zoneColor, zoneStatusText } from '@/lib/status';
@@ -11,28 +11,20 @@ export interface ZonePanelProps {
   readonly zone: SceneZone | null;
   readonly now: Date;
   readonly onClose: () => void;
-  /**
-   * รดน้ำทั้งโรงเรือน — ไม่รับโซนเข้ามาแล้ว เพราะปั๊มมีตัวเดียวและไม่มีวาล์วแยกแปลง
-   * ปุ่มยังอยู่ตรงนี้เพราะผู้ใช้มักเห็นแปลงแห้งก่อนแล้วค่อยอยากรด — แต่ถ้อยคำบอกชัดว่ารดทั้งโรง
-   */
-  readonly onWater: () => void;
   readonly zoneName: (id: SceneZone['id']) => string;
   readonly reduced: boolean;
 }
 
 /** แผ่นรายละเอียดโซน เลื่อนขึ้นจากด้านล่าง */
-export function ZonePanel({ zone, now, onClose, onWater, zoneName, reduced }: ZonePanelProps) {
+export function ZonePanel({ zone, now, onClose, zoneName, reduced }: ZonePanelProps) {
   const { t } = useI18n();
   if (!zone) return null;
 
-  const watering = zone.status === 'watering';
   const soil = Math.round(zone.soil);
 
   /*
-   * แสดงเฉพาะค่าที่รู้จริง: ความชื้นดิน (จริง/จำลองตามระบบกลาง) · ช่วงเหมาะสม (ค่าอ้างอิง) ·
-   * สถานะรดน้ำของทั้งฟาร์ม (ปั๊มเดินอยู่ไหม)
-   * เลิกโชว์ "รดน้ำล่าสุด 06:40" กับประวัติรายโซนที่ฝังไว้ตายตัว — ฟาร์มมีปั๊มตัวเดียว
-   * ไม่มีวาล์ว/ตัวจับเวลารายแปลง จึงไม่มีเวลารดน้ำรายโซนจริง (ห้ามโชว์เลขปลอมเป็นของจริง)
+   * แสดงเฉพาะค่าที่รู้จริง: ความชื้นดิน (จริง/จำลองตามระบบกลาง) · ช่วงเหมาะสม (ค่าอ้างอิง)
+   * **โรงเรือนนี้ไม่มีระบบรดน้ำ** (ปั๊มที่มีคือปั๊มคูลลิ่งแพด) จึงไม่มีปุ่มรดน้ำและไม่มีเวลารดน้ำ
    */
   const metrics = [
     {
@@ -46,7 +38,6 @@ export function ZonePanel({ zone, now, onClose, onWater, zoneName, reduced }: Zo
             : 'var(--ink)',
     },
     { label: t.mOptimal, value: `${SOIL.optimalLo}–${SOIL.optimalHi}%`, color: 'var(--ink)' },
-    { label: t.mMode, value: watering ? t.mAutoWater : t.mAuto, color: 'var(--ink)' },
   ];
 
   // ประวัติมีได้แค่จุดเดียวที่เป็นของจริง = สถานะตอนนี้ (เวลาไทย) ไม่กุเหตุการณ์ย้อนหลัง
@@ -94,10 +85,6 @@ export function ZonePanel({ zone, now, onClose, onWater, zoneName, reduced }: Zo
           </div>
         ))}
       </div>
-
-      <Button variant="primary" className={s.waterBtn} block onClick={onWater}>
-        {watering ? t.stopWaterBtn : t.waterBtn}
-      </Button>
     </Modal>
   );
 }

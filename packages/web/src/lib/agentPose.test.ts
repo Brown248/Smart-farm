@@ -97,18 +97,11 @@ describe('ลำดับความสำคัญของข้อควา�
     expect(r.pose).toBe('warning');
   });
 
-  it('7 · โซนความชื้นต่ำ มาก่อนโซนที่กำลังรดน้ำ', () => {
-    const r = pickAgent(
-      base({ zones: [zone('tomato', 'low', 39.2), zone('lettuce', 'watering', 66)] }),
-    );
+  // เดิมมีเคสเทียบกับ 'กำลังรดน้ำ' — ถอดออกแล้ว โรงเรือนนี้ไม่มีระบบรดน้ำ (DESIGN_SOURCE ข้อ 37)
+  it('7 · โซนความชื้นต่ำ มาก่อนกลางคืน', () => {
+    const r = pickAgent(base({ zones: [zone('tomato', 'low', 39.2)], night: true }));
     expect(r.pose).toBe('curious');
     expect(r.message).toBe(TH.aLow('โซนtomato', 39));
-  });
-
-  it('8 · กำลังรดน้ำ มาก่อนกลางคืน', () => {
-    const r = pickAgent(base({ zones: [zone('lettuce', 'watering', 66)], night: true }));
-    expect(r.pose).toBe('watering');
-    expect(r.message).toBe(TH.aWater('โซนlettuce'));
   });
 
   it('9 · กลางคืนแล้วทุกอย่างปกติ → งีบ', () => {

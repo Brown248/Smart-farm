@@ -84,22 +84,9 @@ describe('FarmScene', () => {
     expect(within(dialog).getByText(TH.zonePrefix + TH.zStrawberry)).toBeInTheDocument();
     expect(within(dialog).getByText(TH.mSoil)).toBeInTheDocument();
     expect(within(dialog).getByText(TH.historyTitle)).toBeInTheDocument();
-    expect(within(dialog).getByRole('button', { name: TH.waterBtn })).toBeInTheDocument();
   });
 
-  /** ไม่มีวาล์วแยกแปลง — ปุ่มในแผงโซนสั่งรดทั้งโรงเรือน และถ้อยคำต้องบอกให้ชัด */
-  it('สั่งรดน้ำต้องผ่านกล่องยืนยันก่อน และบอกว่ารดทั้งโรงเรือน', async () => {
-    const user = userEvent.setup();
-    renderScene();
-    await user.click(screen.getByRole('button', { name: TH.zonePrefix + TH.zStrawberry }));
-    await user.click(await screen.findByRole('button', { name: TH.waterBtn }));
-
-    expect(screen.getByText(TH.waterTitle)).toBeInTheDocument();
-    // เริ่มรดน้ำ = ยืนยันเช็คน้ำก่อน (แทน guard G1 ที่ถอดออก)
-    expect(screen.getByText(TH.confirmPumpBody)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: TH.cancel })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: TH.confirm })).toBeInTheDocument();
-  });
+  // เดิมมีเทสปุ่มรดน้ำในแผงโซน — ถอดแล้ว โรงเรือนนี้ไม่มีระบบรดน้ำ (DESIGN_SOURCE ข้อ 37)
 
   it('เปิดแผงควบคุมแล้วเห็นอุปกรณ์จริง 4 ตัว (พัดลมเล็กเหลือ 1)', async () => {
     const user = userEvent.setup();

@@ -43,79 +43,27 @@ const BIG1 = 'พัดลมใบใหญ่ #1';
 const SML1 = 'พัดลมตัวเล็ก #1';
 
 /**
- * ปั๊มน้ำอยู่ในส่วน "เงื่อนไขอัตโนมัติ" ได้ **แต่มีแค่ตารางเวลา**
+ * 🔴 ปั๊มน้ำ **ไม่อยู่**ในส่วน "เงื่อนไขอัตโนมัติ" แล้ว
  *
- * ห้ามผูกปั๊มกับอุณหภูมิ — อากาศร้อนไม่ได้แปลว่าดินแห้ง สั่งรดน้ำตามอุณหภูมิคือรดผิดเหตุ
- * และแท็บเดียวที่กดแล้วไม่ไปไหนก็คือปุ่มหลอก จึงไม่แสดงแถบแท็บให้ปั๊มเลย
+ * มันคือปั๊มคูลลิ่งแพด ทำงานตามพัดลมใหญ่อย่างเดียว (เจ้าของงานยืนยัน 2026-08-11)
+ * ไม่มีเกณฑ์เซนเซอร์และไม่มีตารางเวลาของตัวเอง — ดู `state/padPump.test.tsx` แทน
+ *
+ * เทสชุดเดิมที่นี่ตั้งอยู่บนสมมติฐานว่าปั๊มคือระบบรดน้ำ ซึ่งผิดทั้งหมด จึงถอดออก
  */
-describe('GreenhousePage — ปั๊มน้ำในเงื่อนไขอัตโนมัติ', () => {
+describe('GreenhousePage — เงื่อนไขอัตโนมัติมีเฉพาะพัดลมใหญ่', () => {
   const autoSection = () => screen.getByRole('region', { name: TH.ghAutoTitle });
 
-  it('ปั๊มมีการ์ดเงื่อนไข โครงเหมือนพัดลมใหญ่ (2 แท็บ)', () => {
+  it('ไม่มีการ์ดเงื่อนไขของปั๊ม', () => {
     renderPage();
-    const auto = autoSection();
-    expect(within(auto).getByText(TH.pump)).toBeInTheDocument();
-    expect(
-      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghTabSoil}` }),
-    ).toBeInTheDocument();
-    expect(
-      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }),
-    ).toBeInTheDocument();
+    expect(within(autoSection()).queryByText(TH.pump)).not.toBeInTheDocument();
   });
 
-  /** ปั๊มดูความชื้นดิน ไม่ใช่อุณหภูมิ — อากาศร้อนไม่ได้แปลว่าดินแห้ง */
-  it('ปั๊มไม่มีแท็บอุณหภูมิ — แท็บอุณหภูมิมีเฉพาะพัดลมใหญ่ 2 ตัว', () => {
+  it('มีการ์ดเงื่อนไข 2 ใบ = พัดลมใหญ่ 2 ตัว (เล็กพ่วงอยู่ ไม่มีใบของตัวเอง)', () => {
     renderPage();
     const tempTabs = within(autoSection()).getAllByRole('button', {
       name: new RegExp(TH.ghTabTemp),
     });
     expect(tempTabs).toHaveLength(2);
-    for (const tab of tempTabs) {
-      expect(tab.getAttribute('aria-label')).not.toContain(TH.pump);
-    }
-  });
-
-  /**
-   * 🔴 เซนเซอร์ความชื้นดินถูกถอดออก (2026-08-11) → **เปิดอัตโนมัติของปั๊มไม่ได้**
-   * ถ้าเปิดได้: อินพุตที่ไม่มีสายอ่านได้ 0% ซึ่งต่ำกว่าเกณฑ์เสมอ → ปั๊มเปิดค้างไม่มีวันหยุด
-   * และ automation อยู่ในอุปกรณ์ เดินแม้ปิดเว็บ ส่วน cutoff 20 นาทีทำงานเฉพาะตอนเปิดแท็บ
-   */
-  it('สวิตช์อัตโนมัติของปั๊มถูกล็อกไว้ พร้อมบอกเหตุผลบนจอ', () => {
-    renderPage();
-    const auto = autoSection();
-    const sw = within(auto).getByRole('switch', { name: `${TH.pump} — ${TH.ghSoilAutoTitle}` });
-    expect(sw).toBeDisabled();
-    expect(within(auto).getByText(TH.ghPumpNoSoilSensor)).toBeInTheDocument();
-  });
-
-  it('กดแท็บตารางเวลาแล้วตั้งช่วงเวลาได้ พร้อมเตือนเรื่องตัด 20 นาที', async () => {
-    const user = userEvent.setup();
-    renderPage();
-    const auto = autoSection();
-    await user.click(within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }));
-
-    expect(within(auto).getByText(TH.ghPumpSchedOnly)).toBeInTheDocument();
-    expect(
-      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedAddSlot}` }),
-    ).toBeInTheDocument();
-  });
-});
-
-/**
- * เกณฑ์ความชื้นดินที่ตั้งค้างไว้ในอุปกรณ์ (จากตอนที่เซนเซอร์ยังอยู่ หรือจากแอป HandySense)
- * ต้องเห็นบนจอ **และปิดได้จากที่นี่** — ไม่งั้นปั๊มเปิดเองแล้วผู้ใช้หาสาเหตุไม่เจอ
- * และต้องเดินไปเปิดแอปอื่นเพื่อปิด ซึ่งขัดกับเป้าหมายใช้เว็บนี้เป็นตัวหลัก
- */
-describe('GreenhousePage — เกณฑ์ดินที่ค้างในอุปกรณ์', () => {
-  it('อุปกรณ์มีเกณฑ์ดินอยู่ → โชว์ค่าจริง และสวิตช์ปิดกดได้', () => {
-    renderLive({ led2: 'false', min_soil2: '45', max_soil2: '70' });
-    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
-
-    expect(within(auto).getByText(TH.ghDeviceSoilNow('45', '70'))).toBeInTheDocument();
-    // สวิตช์สะท้อนว่าอุปกรณ์เปิดอัตโนมัติอยู่ และต้อง "ปิดได้" (ตรงข้ามกับตอนไม่มีเกณฑ์)
-    const sw = within(auto).getByRole('switch', { name: `${TH.pump} — ${TH.ghSoilAutoTitle}` });
-    expect(sw).toHaveAttribute('aria-checked', 'true');
-    expect(sw).toBeEnabled();
   });
 });
 
@@ -168,11 +116,11 @@ describe('GreenhousePage — เติมเกณฑ์จากอุปกร
   /**
    * ตารางเวลาไม่ได้เกี่ยวกับ attribute เกณฑ์อุณหภูมิเลย — ห้ามให้ `hasThreshold` มาคุม
    *
-   * ปั๊มเป็นช่องที่จงใจไม่ผูกกับอุณหภูมิ ถ้าอุปกรณ์ไม่ส่ง `min_temp2`/`max_temp2` มา
+   * ช่องที่อุปกรณ์ยังไม่ส่ง `min_temp`/`max_temp` มา (มาช้า หรือไม่เคยตั้งเกณฑ์เลย)
    * ตารางจริงจะไม่มีวันขึ้นบนฟอร์ม → ผู้ใช้เห็นว่าง แล้วกด "เพิ่มช่วงเวลา" ทับของจริง
+   * (เดิมเทสนี้ใช้ปั๊มเป็นตัวอย่าง แต่ปั๊มไม่มีตารางเวลาแล้ว จึงย้ายมาใช้พัดลมใหญ่ #1)
    */
-  // ตารางเวลาย้ายไปอยู่หลังแท็บแล้ว (ปั๊มมี 2 แท็บเหมือนพัดลมใหญ่) จึงต้องกดเข้าไปก่อน
-  it('ตารางเวลาของปั๊มต้องเติมได้ แม้ไม่มี attribute เกณฑ์อุณหภูมิของช่องนั้นเลย', async () => {
+  it('ตารางเวลาต้องเติมได้ แม้ไม่มี attribute เกณฑ์อุณหภูมิของช่องนั้นเลย', async () => {
     const user = userEvent.setup();
     const timer = JSON.stringify({
       enable: true,
@@ -180,11 +128,11 @@ describe('GreenhousePage — เติมเกณฑ์จากอุปกร
       startTime: '06:00:00',
       endTime: '06:15:00',
     });
-    render(live({ led2: 'false', timer20: timer }));
-    await user.click(screen.getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }));
+    render(live({ led0: 'false', timer00: timer }));
+    await user.click(screen.getByRole('button', { name: `${BIG1} · ${TH.ghSchedTitle}` }));
 
-    const start = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedAt}`);
-    const end = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedEnd}`);
+    const start = screen.getByLabelText(`${BIG1} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedAt}`);
+    const end = screen.getByLabelText(`${BIG1} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedEnd}`);
     expect(start).toHaveValue('06:00');
     expect(end).toHaveValue('06:15');
   });
@@ -201,8 +149,10 @@ describe('GreenhousePage', () => {
   // ── โหมดควบคุมจริง (HandySense) · smoke-test ข้อ 1.4 + ปั๊ม disable ──
   it('โหมดจริง: ช่องที่มี automation โชว์ป้าย "อาจถูกทับ" · ปั๊มคุมได้ · พัดลมเล็กพ่วงใหญ่#2 disable', () => {
     // ch0 (big1) ตั้งเกณฑ์อุณหภูมิ 30/35 → mode auto · ch1/ch2 ไม่มีเกณฑ์ → no-auto
+    // led2 ระบุให้ชัดว่าปั๊มดับ — ค่าเริ่มต้นจำลองตั้งปั๊มเปิด (ตามพัดลมใหญ่ #1)
     renderLive({
       led0: 'false',
+      led2: 'false',
       min_temp0: '30',
       max_temp0: '35',
       min_soil0: '0',
@@ -226,7 +176,7 @@ describe('GreenhousePage', () => {
 
   // ── อุปกรณ์ถูกระงับ (netpie_banned) → กันปุ่มทุกตัว (กดตอนอุปกรณ์ดับ ระบบตอบ ok:true หลอกว่าสำเร็จ) ──
   it('โหมดจริง: netpie_banned=true → สวิตช์ทุกตัวถูก disable (รวมปั๊มที่ปกติกดได้)', () => {
-    renderLive({ netpie_banned: 'true', led1: 'true' });
+    renderLive({ netpie_banned: 'true', led1: 'true', led2: 'false' });
     // พัดลมใหญ่ #2 (led1=true → เปิดอยู่) ต้องถูกปิดปุ่ม
     expect(screen.getByRole('switch', { name: `พัดลมใบใหญ่ #2 — ${TH.stateOn}` })).toBeDisabled();
     // ปั๊ม (ปกติโหมดจริงกดได้) ก็ต้องถูกปิดปุ่มเมื่อถูกระงับ

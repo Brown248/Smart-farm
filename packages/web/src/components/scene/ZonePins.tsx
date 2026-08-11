@@ -43,7 +43,7 @@ export function ZonePins({ zones, pressedId, onPick, zoneName }: ZonePinsProps) 
       {zones.map((z, i) => {
         const color = zoneColor(z.status);
         const showChip = zoneNeedsChip(z.status);
-        const ripple = z.status === 'critical' || z.status === 'watering';
+        const ripple = z.status === 'critical';
         return (
           <div
             key={`pin-${z.id}`}

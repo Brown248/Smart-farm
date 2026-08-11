@@ -29,7 +29,6 @@ import {
   Steam,
   SunShafts,
   Vignette,
-  WaterEffects,
 } from './effects';
 import { isNight, nextLightMode, useClock } from '@/hooks/useClock';
 import type { LightMode, RainMode } from '@/hooks/useClock';
@@ -52,13 +51,9 @@ import { hhmmBangkok } from '@/lib/format';
 import { CLIMATE_RANGE } from '@shared/thresholds';
 import s from './FarmScene.module.css';
 
-/** โซนในโหมดนำเสนอ: ทุกโซนที่ไม่ได้รดน้ำถือว่าปกติ และดินไม่ต่ำกว่า 52% */
+/** โซนในโหมดนำเสนอ: ทุกโซนถือว่าปกติ และดินไม่ต่ำกว่า 52% */
 function presentationZones(zones: readonly SceneZone[]): readonly SceneZone[] {
-  return zones.map((z) => ({
-    ...z,
-    status: z.status === 'watering' ? 'watering' : 'ok',
-    soil: Math.max(52, z.soil),
-  }));
+  return zones.map((z) => ({ ...z, status: 'ok' as const, soil: Math.max(52, z.soil) }));
 }
 
 export function FarmScene() {
@@ -193,15 +188,6 @@ export function FarmScene() {
     }, 150);
   }, []);
 
-  /**
-   * รดน้ำเป็นคำสั่งของทั้งโรงเรือน — ไม่มีวาล์วรายโซน จึงสั่งเฉพาะแปลงเดียวไม่ได้
-   * ส่งต่อให้ `command.waterAll()` เพื่อใช้ห่วงโซ่ความปลอดภัยเดียวกับปุ่มปั๊มในแผงควบคุม
-   */
-  const onWaterAll = useCallback(() => {
-    setZoneId(null);
-    command.waterAll();
-  }, [command]);
-
   // เงื่อนไขอัตโนมัติ single source อยู่หน้าควบคุมโรงเรือน — แผงขั้นสูงในฉากลิงก์ไปที่นั่น
   const goToConditions = useCallback(() => navigate(ROUTES.greenhouse + '#gh-auto'), [navigate]);
 
@@ -260,7 +246,6 @@ export function FarmScene() {
           <Vignette />
 
           <DeviceEffects devices={command.devices} />
-          <WaterEffects zones={zones} />
 
           <ZonePins zones={zones} pressedId={pressedId} onPick={openZone} zoneName={zoneName} />
         </div>
@@ -316,7 +301,6 @@ export function FarmScene() {
         zone={selectedZone}
         now={now}
         onClose={() => setZoneId(null)}
-        onWater={onWaterAll}
         zoneName={zoneName}
         reduced={reduced}
       />

@@ -145,17 +145,7 @@ export interface FarmState {
    * ดูว่าตัวไหนเป็นของจริงได้จาก `live.fields`
    */
   readonly climate: ClimateValues;
-  /** สถานะ `'watering'` ของทุกโซนมาจาก `watering` ไม่ได้ตั้งรายโซน */
   readonly zones: readonly SceneZone[];
-
-  /**
-   * กำลังรดน้ำอยู่ไหม — **ของทั้งโรงเรือน ไม่ใช่รายโซน**
-   *
-   * ฟาร์มมีปั๊มตัวเดียวและไม่มีวาล์วแยกแปลง เปิดปั๊มทีเดียวน้ำไปทุกแปลง
-   * ค่านี้จึงอ่านจากปั๊มตรงๆ ไม่ได้เก็บเป็น state แยก — ไม่งั้นจะเพี้ยนกันได้อีก
-   * สั่งเปิด/ปิดผ่าน `useDeviceCommand().waterAll()` เพื่อให้ผ่าน guard G1 ครบทุกครั้ง
-   */
-  readonly watering: boolean;
 
   /** อุปกรณ์จริง 5 ตัว */
   readonly devices: readonly Device[];
@@ -226,10 +216,15 @@ export interface FarmState {
    */
   readonly ventOwned: readonly DeviceId[];
   /**
+   * ผู้ใช้กดปั๊มเองอยู่ตอนนี้ไหม — ตัวตามพัดลมหยุดคุมชั่วคราว
+   * ใช้ติดป้ายบนการ์ดว่า "คุมด้วยมือ" และเป็นเงื่อนไขเดียวที่ auto-cutoff จะเริ่มนับ
+   */
+  readonly pumpManual: boolean;
+  /**
    * แจ้งว่า "ผู้ใช้สั่งพัดลมตัวนี้เอง" — `useDeviceCommand` เรียกให้ทุกครั้งที่มีคำสั่งมือ
    * ตัวคุมความชื้นจะไม่ทับพัดลมตัวนั้นจนกว่ารอบดูดปัจจุบันจะจบ
    */
-  readonly noteManualFanCommand: (id: DeviceId) => void;
+  readonly noteManualCommand: (id: DeviceId) => void;
 
   /** สมุดบันทึกกิจกรรม (แดชบอร์ด) — เริ่มว่าง · เพิ่มแล้วอยู่รอดข้ามหน้า */
   readonly activityLogs: readonly DashLogEntry[];
@@ -658,13 +653,7 @@ export function FarmStateProvider({
     );
   }, [unmatched]);
 
-  /** รดน้ำ = ปั๊มเดิน (นับ pending ด้วย เพื่อให้เห็นผลทันทีที่กดสั่ง เหมือนเอฟเฟกต์อื่นในฉาก) */
   const pump = devices.find((d) => d.id === 'pump');
-  const watering = pump ? deviceRunning(pump) : false;
-
-  /** อ่านค่าล่าสุดตอน interval ยิง — ไม่งั้นได้ค่าตอนที่ตั้ง interval ไว้รอบแรก */
-  const wateringRef = useRef(watering);
-  wateringRef.current = watering;
 
   /**
    * auto-cutoff ปั๊ม (safety · แทน guard G1) — **เป็นเจ้าของที่ provider ระดับแอปโดยตั้งใจ**
@@ -680,7 +669,23 @@ export function FarmStateProvider({
   // อ่านโหมดตอน timer ยิง ไม่ใช่ตอนตั้ง — ผู้ใช้อาจล็อกอิน/หลุดระหว่าง 20 นาทีที่ปั๊มเดินอยู่
   const realControlRef = useRef(realControl);
   realControlRef.current = realControl;
-  const pumpRunning = !!pump && pump.on && pump.pending == null;
+  /**
+   * ผู้ใช้กดปั๊มเอง — ตัวตามพัดลมต้องไม่ทับจนกว่าสถานะพัดลมจะเปลี่ยน
+   * (เจ้าของงานสั่งให้ยังกดเองได้ เผื่อล้างแผงคูลลิ่ง/ซ่อม)
+   */
+  const [pumpManual, setPumpManual] = useState(false);
+  const pumpManualRef = useRef(pumpManual);
+  pumpManualRef.current = pumpManual;
+
+  /**
+   * 🔴 auto-cutoff นับ **เฉพาะตอนผู้ใช้กดปั๊มเอง**
+   *
+   * ตัวตัดนี้เกิดมาเพื่อกัน "เปิดค้างลืมปิด" ตอนที่ยังเข้าใจผิดว่าปั๊มคือระบบรดน้ำ
+   * ปั๊มที่เดินตามพัดลมใหญ่ (คูลลิ่งแพด) **ห้ามถูกตัด** — พัดลมอาจต้องเดินยาวหลายชั่วโมง
+   * กลางบ่ายที่ร้อนที่สุด ถ้าตัดปั๊มไปแผงจะแห้งแล้วหมดผลการลดอุณหภูมิทันที
+   * และมันหยุดเองอยู่แล้วเมื่อพัดลมหยุด จึงไม่มีเคส "ลืมปิด"
+   */
+  const pumpRunning = !!pump && pump.on && pump.pending == null && pumpManual;
 
   /** เวลาที่จะตัด + ตัวนับครั้งที่ตัด — เปิดให้หน้าจอบอกผู้ใช้ล่วงหน้าและเด้ง toast ตอนตัด */
   const [pumpCutoffAt, setPumpCutoffAt] = useState<number | null>(null);
@@ -718,7 +723,7 @@ export function FarmStateProvider({
           ).catch(() => {});
       }
 
-      // `pending: 'off'` ทำให้ `deviceRunning()` คืน false ทันที → `watering` ดับ · 8 แปลงเลิกโดนน้ำทันที
+      // `pending: 'off'` ทำให้ `deviceRunning()` คืน false ทันที → การ์ดปั๊มดับทันทีไม่ต้องรอ led
       setDevices((prev) => prev.map((d) => (d.id === 'pump' ? { ...d, pending: 'off' } : d)));
       // เขียน log ตอนสั่ง ไม่ใช่ตอนยืนยัน — เหตุการณ์คือ "ระบบตัดการทำงาน" ซึ่งเกิดขึ้นแล้ว ณ จุดนี้
       setLog((prev) =>
@@ -786,8 +791,8 @@ export function FarmStateProvider({
         ),
       }));
 
-      // ปั๊มจ่ายน้ำทั้งโรงเรือน ดินจึงขึ้นพร้อมกันทุกแปลง ไม่ใช่ทีละโซนเหมือนเดิม
-      const delta = wateringRef.current ? SOIL_DRIFT.watering : SOIL_DRIFT.idle;
+      // ไม่มีระบบรดน้ำในโรงเรือนนี้ — ดินแห้งลงเรื่อยๆ ตามการระเหย (ปั๊มเป็นคูลลิ่งแพด ไม่รดแปลง)
+      const delta = SOIL_DRIFT.idle;
       setBaseZones((prev) =>
         prev.map((z) => {
           const noise = (Math.random() - 0.5) * SOIL_DRIFT.noise;
@@ -831,7 +836,11 @@ export function FarmStateProvider({
   const [ventOverride, setVentOverride] = useState<readonly DeviceId[]>(NO_DEVICES);
   const ventOverrideRef = useRef(ventOverride);
   ventOverrideRef.current = ventOverride;
-  const noteManualFanCommand = useCallback((id: DeviceId) => {
+  const noteManualCommand = useCallback((id: DeviceId) => {
+    if (id === 'pump') {
+      setPumpManual(true);
+      return;
+    }
     if (id !== 'big1' && id !== 'big2') return;
     setVentOverride((prev) => (prev.includes(id) ? prev : [...prev, id]));
   }, []);
@@ -927,6 +936,97 @@ export function FarmStateProvider({
   }, [humidityAuto.enabled]);
 
   /**
+   * ── ปั๊มคูลลิ่งแพดตามพัดลมใหญ่ ──
+   *
+   * ปั๊มตัวนี้ **ไม่ได้มีไว้รดน้ำ** — มันป้อนน้ำเข้าแผงคูลลิ่งแพด พัดลมใหญ่ดูดอากาศผ่านแผงเปียก
+   * แล้วอุณหภูมิในโรงเรือนลดลง (evaporative cooling) เจ้าของงานยืนยัน 2026-08-11
+   *
+   * แผงต้องเปียกทุกครั้งที่มีลมผ่าน → **พัดลมใหญ่ตัวใดตัวหนึ่งเดินก็พอ**
+   * และห้ามปล่อยให้ปั๊มเดินตอนไม่มีลม เพราะนั่นคือเปลืองน้ำเปล่าล้วนๆ
+   *
+   * ทำที่ provider ระดับแอป (ไม่ใช่ต่อหน้า) เพราะสลับหน้าแล้วต้องยังตามกันอยู่
+   * และยิงเฉพาะตอน "ต้องการเปลี่ยนค่า" ไม่ยิงซ้ำทุก render
+   */
+  /**
+   * 🔴 โหมดจริงอ่านจาก `led` ไม่ใช่ `devices` — สำคัญ
+   *
+   * `devices` เริ่มจากค่าจำลอง (`INITIAL_DEVICES` ตั้ง big1 เปิดไว้) แล้วค่อยถูก reconcile
+   * ให้ตรงกับ `led` ใน effect รอบถัดไป ถ้าตัวตามอ่าน `devices` มันจะเห็น "พัดลมเดิน" ชั่วขณะ
+   * ตอนเปิดหน้า แล้วยิงคำสั่งเปิดปั๊มใส่อุปกรณ์จริงทันที ตามด้วยสั่งปิดอีกรอบเมื่อ reconcile เสร็จ
+   */
+  const bigFanOn =
+    realControl && channelStates
+      ? channelStates[0]?.on === true || channelStates[1]?.on === true
+      : devices.some((d) => (d.id === 'big1' || d.id === 'big2') && deviceRunning(d));
+  /**
+   * พร้อมตัดสินหรือยัง — โหมดจริงต้องรอ `led` ของพัดลมมาถึงก่อน
+   * ไม่งั้นตอนเปิดหน้าจะตัดสินจากค่าเริ่มต้นจำลอง แล้วยิงคำสั่งผิดใส่อุปกรณ์จริงทันที
+   */
+  const followReady =
+    !realControl ||
+    (channelStates?.[0]?.on !== null &&
+      channelStates?.[0]?.on !== undefined &&
+      channelStates[1]?.on !== null &&
+      channelStates[1]?.on !== undefined);
+  const wantPumpRef = useRef<boolean | null>(null);
+  // อ่านค่าล่าสุดตอน effect ยิง — ถ้าใส่ใน deps ตรงๆ effect จะรันใหม่ทุกครั้งที่ attributes ไหลเข้ามา (ทุก ~10 วิ)
+  const channelStatesRef = useRef(channelStates);
+  channelStatesRef.current = channelStates;
+  const pumpRef = useRef(pump);
+  pumpRef.current = pump;
+
+  useEffect(() => {
+    if (estop) {
+      // หยุดฉุกเฉินปิด ch0-2 ให้อยู่แล้ว · ล้างความจำไว้ให้ตัวตามประเมินใหม่ตอนปลดล็อก
+      wantPumpRef.current = null;
+      setPumpManual(false);
+      return;
+    }
+    if (!followReady) return;
+    // สั่งไปแล้วรอบนี้ — อย่ายิงซ้ำระหว่างรอ `led2` ยืนยัน (มาช้า ~8 วิ)
+    if (wantPumpRef.current === bigFanOn) return;
+    wantPumpRef.current = bigFanOn;
+
+    // ปั๊มอยู่ในสถานะที่ต้องการอยู่แล้ว (เช่นตอนเพิ่งเปิดหน้า) → ไม่ต้องสั่งอะไรและไม่ต้องเขียน log
+    const pumpOn =
+      realControlRef.current && channelStatesRef.current
+        ? channelStatesRef.current[2]?.on === true
+        : !!pumpRef.current && deviceRunning(pumpRef.current);
+    if (pumpOn === bigFanOn) return;
+
+    // สถานะพัดลมเปลี่ยนจริง → จบรอบที่ผู้ใช้แย่งคุม คืนสิทธิ์ให้ตัวตาม
+    // (ถ้าไม่คืน ปั๊มที่ผู้ใช้เปิดไว้ล้างแผงจะค้างเดินต่อหลังพัดลมดับ = เปลืองน้ำโดยไม่มีใครดู)
+    if (pumpManualRef.current) setPumpManual(false);
+
+    if (realControlRef.current) {
+      const ctx = readHsContext();
+      const ch = channelOf('pump');
+      if (ctx && ch !== null)
+        void postHsCommand(
+          ctx,
+          { action: 'setSwitch', channel: ch, on: bigFanOn },
+          newReqId(),
+        ).catch(() => {});
+      // ไม่ตั้ง `pending` — สถานะจริงมาจาก `led2` ผ่าน reconcile (แพตเทิร์นเดียวกับตัวคุมความชื้น)
+    } else {
+      setDevices((prev2) =>
+        prev2.map((d) => (d.id === 'pump' ? { ...d, on: bigFanOn, pending: null } : d)),
+      );
+    }
+
+    setLog((prevLog) =>
+      [
+        {
+          t: hhmm(new Date()),
+          key: bigFanOn ? ('logPadPumpOn' as const) : ('logPadPumpOff' as const),
+          src: 'schedule' as const,
+        },
+        ...prevLog,
+      ].slice(0, LOG_LIMIT),
+    );
+  }, [bigFanOn, estop, followReady]);
+
+  /**
    * พัดลมที่ตัวคุมความชื้นกำลังคุมอยู่จริง — ใช้ติดป้ายบนการ์ดว่า "ใครสั่งอยู่"
    * ตัวที่ผู้ใช้แย่งไปแล้วจะหลุดจากรายการนี้ (UI ขึ้น "คุมด้วยมือ" แทน)
    */
@@ -952,8 +1052,8 @@ export function FarmStateProvider({
       liveSoil === null
         ? baseZones
         : baseZones.map((z) => ({ ...z, soil: liveSoil, status: soilToZoneStatus(liveSoil) }));
-    return watering ? withSoil.map((z) => ({ ...z, status: 'watering' as const })) : withSoil;
-  }, [baseZones, watering, liveSoil]);
+    return withSoil;
+  }, [baseZones, liveSoil]);
 
   /** โหมดกับ `Device.auto` ต้องไปด้วยกันเสมอ ไม่งั้นสองหน้าจะบอกคนละอย่าง */
   const setMode = useCallback((id: DeviceId, mode: GhMode) => {
@@ -996,7 +1096,6 @@ export function FarmStateProvider({
     () => ({
       climate,
       zones,
-      watering,
       devices,
       setDevices,
       modes,
@@ -1025,7 +1124,8 @@ export function FarmStateProvider({
       setHumidityAuto,
       humidityVentStage,
       ventOwned,
-      noteManualFanCommand,
+      pumpManual,
+      noteManualCommand,
       activityLogs,
       addActivityLog,
       live,
@@ -1035,7 +1135,6 @@ export function FarmStateProvider({
     [
       climate,
       zones,
-      watering,
       devices,
       modes,
       setMode,
@@ -1060,7 +1159,8 @@ export function FarmStateProvider({
       setHumidityAuto,
       humidityVentStage,
       ventOwned,
-      noteManualFanCommand,
+      pumpManual,
+      noteManualCommand,
       activityLogs,
       addActivityLog,
       live,

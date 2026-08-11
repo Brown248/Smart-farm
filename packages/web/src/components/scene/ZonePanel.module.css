@@ -88,12 +88,6 @@
   flex: 0 0 70px;
 }
 
-.waterBtn {
-  min-height: 56px;
-  font-size: 17px;
-  font-weight: 600;
-}
-
 /* วงโฟกัสสำหรับคนใช้คีย์บอร์ด — ต้องมีทุกที่ที่กดได้ (styles/motion.test.ts บังคับ) */
 .close:focus-visible {
   outline: none;

@@ -14,12 +14,9 @@ export interface QuickAccessProps {
 export function QuickAccess({ onOpenIrrigation, onOpenGreenhouse }: QuickAccessProps) {
   const { t } = useI18n();
 
-  /*
-   * ตัวเลขบนการ์ดต้องมาจากสถานะจริงส่วนกลาง ไม่ใช่เลขฝังตายตัว
-   * ปั๊มมีตัวเดียว ไม่มีวาล์วแยกแปลง → รดน้ำทีเดียวครบทุกแปลง (0 หรือครบ 8) ไม่ใช่ "3 แปลง"
-   */
-  const { zones, devices, watering } = useFarmState();
-  const zonesWatering = watering ? zones.length : 0;
+  /* ตัวเลขบนการ์ดต้องมาจากสถานะจริงส่วนกลาง ไม่ใช่เลขฝังตายตัว */
+  const { zones, devices } = useFarmState();
+  const zonesAttention = zones.filter((z) => z.status !== 'ok').length;
   const devicesRunning = devices.filter(deviceRunning).length;
 
   return (
@@ -47,8 +44,8 @@ export function QuickAccess({ onOpenIrrigation, onOpenGreenhouse }: QuickAccessP
           </span>
           <span className={s.quickStats}>
             <span className={s.quickStat}>
-              <span className={`${s.quickStatNum} ${g.num}`}>{zonesWatering}</span>
-              <span className={s.quickStatLabel}>{t.zonesWatering}</span>
+              <span className={`${s.quickStatNum} ${g.num}`}>{zonesAttention}</span>
+              <span className={s.quickStatLabel}>{t.sNeedAttention}</span>
             </span>
             <span className={s.quickDivider} aria-hidden="true" />
             <span className={s.quickStat}>

@@ -20,7 +20,6 @@ const ZONE_STATUS_KEY: Readonly<Record<ZoneStatus, TextKey>> = {
   ok: 'zsOk',
   low: 'zsLow',
   critical: 'zsCrit',
-  watering: 'zsWater',
 };
 
 export const zoneStatusText = (s: ZoneStatus, t: Dict): string => t[ZONE_STATUS_KEY[s]];

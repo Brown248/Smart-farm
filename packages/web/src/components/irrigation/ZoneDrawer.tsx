@@ -35,7 +35,6 @@ export interface ZoneDrawerProps {
   readonly onClose: () => void;
 
   /** ทั้งโรงเรือนกำลังโดนน้ำอยู่ไหม — ไม่ใช่สถานะเฉพาะแปลงนี้ */
-  readonly watering: boolean;
   /** กลยุทธ์รดน้ำของทั้งฟาร์ม (ตั้งที่ส่วน "อัตโนมัติ" บนหน้าชลประทาน) */
   readonly strategy: WateringMode;
 
@@ -60,8 +59,7 @@ function isDirty(a: ZoneSettings, b: ZoneSettings): boolean {
 export function ZoneDrawer(p: ZoneDrawerProps) {
   const { t } = useI18n();
   const z = p.zone;
-  // ปั๊มเดิน = ทุกแปลงกำลังโดนน้ำ สถานะที่โชว์จึงทับสภาพดินไว้ชั่วคราว
-  const shown: IrrStatus = p.watering ? 'watering' : z.status;
+  const shown: IrrStatus = z.status;
   const color = IRR_COLOR[shown];
   const bg = IRR_BG[shown];
   // ชื่อที่แสดง = ชื่อที่ผู้ใช้ตั้งไว้ (บันทึกแล้ว) ถ้ามี ไม่งั้นใช้ "โซน X"
@@ -72,7 +70,6 @@ export function ZoneDrawer(p: ZoneDrawerProps) {
   const dirty = isDirty(draft, p.settings);
 
   const statusLabelKey: Readonly<Record<IrrStatus, TextKey>> = {
-    watering: 'lgWatering',
     normal: 'lgNormal',
     warn: 'lgWatch',
     dry: 'lgDry',
@@ -155,18 +152,6 @@ export function ZoneDrawer(p: ZoneDrawerProps) {
                   <div className={s.statMode}>
                     <span className={s.modeDot} style={{ background: MODE_COLOR[p.strategy] }} />
                     <span className={s.modeText}>{t[MODE_LABEL[p.strategy]]}</span>
-                  </div>
-                </div>
-                <div className={s.card}>
-                  <div className={s.labelSm}>{t.ovState}</div>
-                  <div
-                    className={s.modeText}
-                    style={{
-                      marginTop: 6,
-                      color: p.watering ? 'var(--d-m-hum)' : 'var(--d-muted)',
-                    }}
-                  >
-                    {p.watering ? t.watering : t.idle}
                   </div>
                 </div>
                 {/* ไม่มีมิเตอร์วัดการไหล → empty state แทนตัวเลขลิตรปลอม (เดิม 320/1,850 ล.) */}

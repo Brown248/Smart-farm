@@ -103,7 +103,6 @@ export const DASH_ZONES: readonly DashZone[] = [
 
 /** สีจุดสถานะย่อในการ์ดภาพรวม (คนละชุดกับสถานะหลัก — โทนอ่อนบนพื้นเขียวเข้ม) */
 export const HERO_DOT_COLOR = {
-  watering: '#4fb9b3',
   normal: '#7cc79a',
   warn: '#e6b45a',
   dry: '#e08a72',
@@ -120,14 +119,13 @@ const DOT_OF_LEVEL: Readonly<Record<DashLevel, HeroDotKind>> = {
 
 /**
  * จุดสถานะ 8 แปลง — ต้นแบบตั้งไว้ตายตัวว่าแปลง A/C/D กำลังรดน้ำ
- * ซึ่งเป็นไปไม่ได้กับปั๊มตัวเดียวที่ไม่มีวาล์วแยกแปลง: รดก็รดหมด ไม่รดก็ไม่รดเลย
+ * โรงเรือนนี้ไม่มีระบบรดน้ำเลย (ดู DESIGN_SOURCE ข้อ 37) จุดจึงบอกแค่สภาพดิน
  */
-export function heroDots(watering: boolean): readonly (readonly [string, HeroDotKind])[] {
-  return DASH_ZONES.map((z) => [z.letter, watering ? 'watering' : DOT_OF_LEVEL[z.level]] as const);
+export function heroDots(): readonly (readonly [string, HeroDotKind])[] {
+  return DASH_ZONES.map((z) => [z.letter, DOT_OF_LEVEL[z.level]] as const);
 }
 
-export function heroDonut(watering: boolean): readonly { value: number; color: string }[] {
-  if (watering) return [{ value: DASH_ZONES.length, color: HERO_DOT_COLOR.watering }];
+export function heroDonut(): readonly { value: number; color: string }[] {
   const count = (lvl: DashLevel) => DASH_ZONES.filter((z) => z.level === lvl).length;
   return [
     { value: count('normal'), color: HERO_DOT_COLOR.normal },

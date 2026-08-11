@@ -10,7 +10,11 @@ export const ZONE_IDS = [
 ] as const;
 export type ZoneId = (typeof ZONE_IDS)[number];
 
-export type ZoneStatus = 'ok' | 'low' | 'critical' | 'watering';
+/**
+ * 🔴 เคยมี `'watering'` อยู่ด้วย — **ถอดออกแล้ว 2026-08-11**
+ * โรงเรือนนี้ไม่มีระบบรดน้ำ ปั๊มที่มีคือปั๊มคูลลิ่งแพด (ดู DESIGN_SOURCE ข้อ 37)
+ */
+export type ZoneStatus = 'ok' | 'low' | 'critical';
 export type ZoneMode = 'manual' | 'schedule' | 'moisture' | 'hybrid';
 
 /** [x, y, w, h] เป็น % ของภาพฉาก — คาลิเบรตกับภาพจริงแล้ว */

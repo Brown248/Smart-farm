@@ -31,12 +31,6 @@ describe('useDeviceCommand — โหมดควบคุมจริง', () =
     expect(result.current.confirm.request).not.toBeNull();
   });
 
-  it('รดน้ำทั้งโรงเรือนในโหมดจริง → ขึ้นกล่องยืนยัน (ปั๊มต่อ ch2 แล้ว ไม่บล็อก)', () => {
-    const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
-    act(() => result.current.command.waterAll());
-    expect(result.current.confirm.request).not.toBeNull();
-  });
-
   it('กดพัดลม (มี channel) → ยืนยันได้ แต่ยังส่งจริงไม่ได้ (ไม่มี token/env) → แจ้ง hsSendError', () => {
     const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
     // big2 เริ่มปิด → กด = เปิด (ไม่ติด guard G2 ที่บล็อกเฉพาะตอน "ปิด")
@@ -118,14 +112,6 @@ describe('useDeviceCommand — โหมดควบคุมจริง', () =
       const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
       act(() => reportDeviceFreshness(false, Date.now(), true, 0));
       act(() => result.current.command.press('big2'));
-      expect(result.current.toast).toBe(TH.hsDeviceBanned);
-      expect(result.current.confirm.request).toBeNull();
-    });
-
-    it('รดน้ำทั้งโรงเรือน → บล็อก · แจ้ง hsDeviceBanned', () => {
-      const { result } = renderHook(() => useHarness(), { wrapper: liveWrapper });
-      act(() => reportDeviceFreshness(false, Date.now(), true, 0));
-      act(() => result.current.command.waterAll());
       expect(result.current.toast).toBe(TH.hsDeviceBanned);
       expect(result.current.confirm.request).toBeNull();
     });

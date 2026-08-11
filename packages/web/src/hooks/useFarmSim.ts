@@ -5,8 +5,6 @@ import { useFarmState } from '@/state/FarmStateProvider';
 export interface FarmSim {
   readonly climate: ClimateValues;
   readonly zones: readonly SceneZone[];
-  /** ปั๊มกำลังจ่ายน้ำอยู่ไหม — เป็นของทั้งโรงเรือน ไม่มีรายโซน */
-  readonly watering: boolean;
 }
 
 /**
@@ -18,6 +16,6 @@ export interface FarmSim {
  * ให้เปลี่ยนที่ provider ที่เดียว
  */
 export function useFarmSim(): FarmSim {
-  const { climate, zones, watering } = useFarmState();
-  return { climate, zones, watering };
+  const { climate, zones } = useFarmState();
+  return { climate, zones };
 }

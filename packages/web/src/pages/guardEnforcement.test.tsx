@@ -5,10 +5,10 @@ import { MemoryRouter } from 'react-router-dom';
 import { I18nProvider } from '@/i18n/I18nProvider';
 import { RailStateProvider } from '@/components/layout/RailStateProvider';
 import { FarmStateProvider } from '@/state/FarmStateProvider';
+import { INITIAL_DEVICES } from '@/data/devices';
 import { TH } from '@/i18n/th';
 import { ROUTES } from '@/routePaths';
 import { GreenhousePage } from './GreenhousePage';
-import { IrrigationPage } from './IrrigationPage';
 
 /**
  * **ทุกหน้าที่สั่งอุปกรณ์ต้องผ่านห่วงโซ่กลาง `useDeviceCommand` (confirm/guard/pending) ไม่เขียน chain เอง**
@@ -20,10 +20,13 @@ import { IrrigationPage } from './IrrigationPage';
  * ข้อความยืนยัน "เช็คน้ำก่อนเปิดปั๊ม" + auto-cutoff เทสนี้จึงยืนยันว่าเปิดปั๊ม = ขึ้นกล่องยืนยันจากห่วงโซ่กลาง
  * ส่วน G2 (พัดลมใบใหญ่) ยังบังคับใช้ — คุมไว้ใน `GreenhousePage.test.tsx`
  */
+/** เริ่มด้วยอุปกรณ์ดับหมด — ตัวตามปั๊มคูลลิ่งแพดจะได้ไม่เปิดปั๊มให้ก่อนที่เทสจะกด */
+const idleDevices = INITIAL_DEVICES.map((d) => ({ ...d, on: false }));
+
 function renderAt(path: string, page: React.ReactNode) {
   return render(
     <I18nProvider>
-      <FarmStateProvider>
+      <FarmStateProvider initialDevices={idleDevices}>
         <RailStateProvider>
           <MemoryRouter initialEntries={[path]}>{page}</MemoryRouter>
         </RailStateProvider>
@@ -44,17 +47,7 @@ describe('หน้าจอสั่งอุปกรณ์ผ่านห่�
     expect(within(dialog).getByText(TH.confirmPumpBody)).toBeInTheDocument();
   });
 
-  it('หน้าชลประทาน: ปุ่มรดน้ำกดได้ (ไม่ถูกปิดตามถังอีก) แล้วขึ้นยืนยันเช็คน้ำ', async () => {
-    const user = userEvent.setup();
-    renderAt(ROUTES.irrigation, <IrrigationPage />);
-
-    const btn = screen.getByRole('button', { name: new RegExp(TH.ctStart) });
-    expect(btn).not.toBeDisabled();
-
-    await user.click(btn);
-    const dialog = await screen.findByRole('dialog', { name: TH.waterTitle });
-    expect(within(dialog).getByText(TH.confirmPumpBody)).toBeInTheDocument();
-  });
+  // เดิมมีเทสปุ่มรดน้ำหน้าชลประทาน — ถอดแล้ว ไม่มีระบบรดน้ำ · ปั๊มสั่งได้ที่หน้าโรงเรือนเท่านั้น
 
   it('พัดลมสั่งผ่านห่วงโซ่กลาง — กดแล้วขึ้นกล่องยืนยัน', async () => {
     const user = userEvent.setup();

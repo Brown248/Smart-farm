@@ -51,9 +51,7 @@ export interface DeviceCommandApi {
   readonly addLog: (text: string) => void;
 
   /** ปั๊มกำลังจ่ายน้ำอยู่ไหม = ทั้งโรงเรือนกำลังโดนน้ำ */
-  readonly watering: boolean;
   /** เริ่ม/หยุดรดน้ำทั้งโรงเรือน — ผ่าน guard ชุดเดียวกับการกดปั๊มตรงๆ */
-  readonly waterAll: () => void;
   /** ส่งเกณฑ์อุณหภูมิอัตโนมัติไปอุปกรณ์จริง (HandySense setThreshold) — โหมดจริงเท่านั้น */
   readonly sendThreshold: (id: DeviceId, cfg: FanTempThreshold) => void;
   /** ปิดโหมดอัตโนมัติ **พร้อมสั่งดับรีเลย์จริง** (setThreshold no-auto → setSwitch off · G2 เตือน/ยืนยัน) — โหมดจริงเท่านั้น */
@@ -102,18 +100,8 @@ export function useDeviceCommand({
   confirm,
   flash,
 }: UseDeviceCommandOptions): DeviceCommandApi {
-  const {
-    devices,
-    setDevices,
-    estop,
-    tank,
-    log,
-    setMode,
-    watering,
-    realControl,
-    live,
-    noteManualFanCommand,
-  } = useFarmState();
+  const { devices, setDevices, estop, tank, log, setMode, realControl, live, noteManualCommand } =
+    useFarmState();
   // หยุดฉุกเฉิน + การเขียน log เป็นของ `useEstop` — ปุ่มในแถบเมนูใช้ตัวเดียวกันนี้
   const { estopPress, addLog } = useEstop({ t, confirm, flash });
   const [justDone, setJustDone] = useState<Partial<Record<DeviceId, boolean>>>({});
@@ -281,7 +269,7 @@ export function useDeviceCommand({
   const send = useCallback(
     (id: DeviceId, target: boolean, logText?: (tt: Dict) => string) => {
       // คำสั่งมือของผู้ใช้ — ตัวคุมความชื้นต้องไม่ทับพัดลมตัวนี้จนกว่ารอบดูดจะจบ
-      noteManualFanCommand(id);
+      noteManualCommand(id);
       if (realControlRef.current) return sendReal(id, target, logText);
       // หลุดชั่วคราว (เคย live แล้วกำลังต่อใหม่): อย่าตกไป mock path ที่ fake สถานะในเครื่อง
       // แล้วเด้งกลับตอน led จริงไหลมาทีหลัง — บล็อกไว้ บอกให้รอ/ลองใหม่ (จุดพลาดที่ reviewer จับได้)
@@ -300,7 +288,7 @@ export function useDeviceCommand({
         later(() => setJustDone((prev) => ({ ...prev, [id]: false })), DONE_FLASH_MS);
       }, SEND_LATENCY_MS);
     },
-    [addLog, later, noteManualFanCommand, patch, sendReal],
+    [addLog, later, noteManualCommand, patch, sendReal],
   );
 
   const press = useCallback(
@@ -354,55 +342,6 @@ export function useDeviceCommand({
     },
     [confirm, flash, send, tank],
   );
-
-  /**
-   * รดน้ำทั้งโรงเรือน — ปั๊มมีตัวเดียวและไม่มีวาล์วแยกแปลง เปิดทีเดียวน้ำไปทุกโซน
-   * ไล่ห่วงโซ่ความปลอดภัยชุดเดียวกับ `press('pump')` เป๊ะ (ออฟไลน์ → estop → pending → guard G2)
-   * ต่างกันแค่ถ้อยคำ ที่บอกว่ากำลังรดน้ำ ไม่ใช่ "สั่งเปิดปั๊ม" · เปิด = ยืนยันเช็คน้ำก่อน
-   */
-  const waterAll = useCallback(() => {
-    const tt = tRef.current;
-    const d = devicesRef.current.find((x) => x.id === 'pump');
-    if (!d) return;
-    const name = deviceName(d, tt);
-
-    if (!d.online) return flash(tt.offlineBlocked(name));
-    if (estopRef.current) return flash(tt.estopBlocked);
-    if (realControlRef.current && bannedRef.current) return flash(tt.hsDeviceBanned);
-    if (realControlRef.current && staleRef.current) return flash(tt.hsDeviceOffline);
-    if (d.pending != null) return;
-    // โหมดจริง: ปั๊มยังไม่ต่อ relay จริง → รดน้ำจริงไม่ได้ (แจ้งแล้วหยุด)
-    if (realControlRef.current && channelOf('pump') === null) return flash(tt.hsPumpNotWired);
-
-    const target = !d.on;
-    const blocked = guard('pump', target, {
-      devices: devicesRef.current,
-      tank,
-      temp: tempRef.current,
-      t: tt,
-    });
-    // guard ทัก = โชว์กล่องคำเตือน ให้ยืนยันทำต่อหรือยกเลิก (ชุดเดียวกับ press)
-    if (blocked) {
-      confirm.ask({
-        title: tt.guardWarnTitle,
-        body: blocked,
-        tone: 'warn',
-        confirmLabel: tt.guardProceed,
-        run: () => send('pump', target),
-      });
-      return;
-    }
-
-    confirm.ask({
-      title: target ? tt.waterTitle : tt.stopTitle,
-      // เริ่มรดน้ำ = ย้ำให้เช็คระดับน้ำในถังก่อน (แทน guard G1 ที่ถอดออก)
-      body: target ? tt.confirmPumpBody : tt.stopBody,
-      run: () => {
-        send('pump', target, (cur) => (target ? cur.logWaterStart : cur.logWaterStop));
-        flash(target ? tt.waterToast : tt.stopToast);
-      },
-    });
-  }, [confirm, flash, send, tank]);
 
   /**
    * ส่งเกณฑ์อุณหภูมิอัตโนมัติไปอุปกรณ์จริง (setThreshold) — โหมดจริงเท่านั้น
@@ -476,7 +415,7 @@ export function useDeviceCommand({
 
       const proceed = () => {
         // ปิดออโต้เอง = คำสั่งมือเหมือนกัน — ตัวคุมความชื้นต้องไม่เปิดกลับให้ทันที
-        noteManualFanCommand(id);
+        noteManualCommand(id);
         const ctx = readHsContext();
         if (ctx === null) return flashRef.current(tRef.current.hsSendError);
         // 1) ปิด auto ในอุปกรณ์ก่อน (fire-and-forget · กัน device re-open รีเลย์รอบถัดไป)
@@ -506,7 +445,7 @@ export function useDeviceCommand({
       }
       proceed();
     },
-    [confirm, bondedReject, noteManualFanCommand, sendReal, tank],
+    [confirm, bondedReject, noteManualCommand, sendReal, tank],
   );
 
   /** ยิงคำสั่ง config (setSchedule) + จับผล — ผู้เรียกต้อง validate + สร้าง cmd ให้ถูกมาก่อน */
@@ -641,8 +580,6 @@ export function useDeviceCommand({
     realControl,
     estopPress,
     addLog,
-    watering,
-    waterAll,
     sendThreshold,
     disableTempAuto,
     sendScheduleSave,

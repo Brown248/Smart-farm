@@ -12,7 +12,7 @@ export const EN: Dict = {
   soon: 'Soon',
   langSwitch: 'Language: ไทย / English',
   navDashboard: 'Dashboard',
-  navIrrigation: 'Irrigation',
+  navIrrigation: 'Crop beds',
   navGreenhouse: 'Greenhouse Control',
   navFarmGame: 'Farm Scene',
   navReports: 'Reports / History',
@@ -83,6 +83,8 @@ export const EN: Dict = {
   pumpCutoffIn: (left: string) => `Auto-stop in ${left} (20-minute run limit)`,
   pumpCutoffWhy:
     'Counted from when the device reports the pump running, no matter where it was switched on (this app, the HandySense app, or a schedule)',
+  logPadPumpOn: 'Cooling-pad pump started — following the large fans',
+  logPadPumpOff: 'Cooling-pad pump stopped — large fans are off',
   logHumOn: 'Humidity exhaust fan auto-started',
   logHumOff: 'Humidity exhaust fan stopped (humidity dropped)',
   actOn: 'Turn on',
@@ -116,6 +118,8 @@ export const EN: Dict = {
   hsThresholdOff: 'Automation turned off on the device',
   hsAutoOffStopped: 'Auto mode off — fan switched off',
   hsNotLive: 'Connect to the real device (log in) before sending thresholds',
+  ghPumpFollowsFans:
+    'Follows the large fans automatically — it feeds the cooling pad (fans on = pump on, fans off = pump off). You can still switch it on manually to rinse the pad.',
   ghTempAutoTitle: 'Run fan by temperature',
   ghTabTemp: 'Temperature',
   ghTempMinLabel: 'Below → fan OFF',
@@ -366,7 +370,7 @@ export const EN: Dict = {
   heroBadge: 'Whole-farm overview',
   heroHealth: 'Overall system health',
   heroZones: 'Zone status (A–H)',
-  sZonesWatering: 'Zones watering',
+  sZonesOk: 'Zones normal',
   sNeedAttention: 'Need attention',
   sWaterUsed: 'Water used today',
   sDevicesOn: 'Devices on',
@@ -428,8 +432,8 @@ export const EN: Dict = {
     'Not enough history yet to compare periods — a summary will appear once real data builds up',
 
   quickTitle: 'Quick access',
-  irrigationTitle: 'Irrigation Control',
-  irrigationSub: 'Per-zone watering control',
+  irrigationTitle: 'Crop beds',
+  irrigationSub: 'Soil condition and per-bed status',
   zonesWatering: 'zones watering',
   open: 'Open',
   climateTitle: 'Greenhouse Control',
@@ -440,8 +444,8 @@ export const EN: Dict = {
   solarSub: 'Track power generation',
 
   dailyTitle: 'Today',
-  dailyBody: (temp: number, rh: number, water: string, ok: number, total: number) =>
-    `${temp}°C · ${rh}% humidity · ${water} · ${ok}/${total} zones normal`,
+  dailyBody: (temp: number, rh: number, ok: number, total: number) =>
+    `${temp}°C · ${rh}% humidity · ${ok}/${total} zones normal`,
   dailyWaterOn: 'Auto-watering active',
   dailyWaterOff: 'Pump idle — no watering',
   dailyTitleWeek: 'This week',
@@ -519,7 +523,7 @@ export const EN: Dict = {
     'Got it — analyzing the latest sensor data. Overall the farm looks healthy, except Zone B’s stuck sensor which needs a check.',
 
   /* ── Irrigation Control (Phase 3) ── */
-  irrTitle: 'Irrigation Control Centre',
+  irrTitle: 'Crop bed status',
   lgNormal: 'Normal',
   lgWatch: 'To watch',
   lgCrit: 'Critical',
@@ -724,19 +728,11 @@ export const EN: Dict = {
   humAppOnlyNote:
     'Works only while the app is open + connected to the real device — stops when the app is closed',
   humInvalidRange: 'Invalid — "start" must be higher than "stop"',
-  ghTabSoil: 'Soil moisture',
-  ghSoilAutoTitle: 'Water by soil moisture',
-  ghDeviceSoilNow: (min: string, max: string) =>
-    `⚠️ Still configured on the device: pump ON below ${min}% soil · OFF above ${max}% — switch it off above`,
-  ghPumpNoSoilSensor:
-    'The pump runs on soil moisture, not temperature (hot air does not mean dry soil). The soil sensor is currently removed, so thresholds cannot be set from here — a disconnected probe reads 0%, which would keep the pump running forever. If a threshold is still stored on the device, switch it off above.',
-  ghPumpSchedOnly:
-    'The schedule is stored in the device and runs even when the web app is closed, but the 20-minute auto cut-off only works while the app is open — set a window no longer than you actually need.',
   ghSchedTitle: 'Schedule',
   ghSchedAt: 'Runs at',
   dBFanSub: 'Exhausts humidity · north wall',
   dSFanSub: 'Exhausts humidity · above the beds',
-  dPumpSub: 'Feeds the drip line',
+  dPumpSub: 'Feeds the cooling pad',
   stateOn: 'Running',
   stateOff: 'Off',
   stateOffline: 'Device offline — commands disabled',

@@ -46,8 +46,9 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
     const user = userEvent.setup();
     renderAppAt(ROUTES.greenhouse);
 
-    // หน้าโรงเรือน: ปั๊มปิดอยู่ (ยังไม่ได้สั่งรดน้ำ) · พัดลมใบใหญ่ #1 เปิดอยู่ (จาก INITIAL_DEVICES)
-    expect(screen.getByRole('switch', { name: `${TH.pump} — ${TH.stateOff}` })).toBeInTheDocument();
+    // หน้าโรงเรือน: พัดลมใบใหญ่ #1 เปิดอยู่ (จาก INITIAL_DEVICES)
+    // → ปั๊มคูลลิ่งแพดต้อง **เปิดตาม** ตั้งแต่เฟรมแรก (ค่าเริ่มต้นต้องสอดคล้องกันเอง)
+    expect(screen.getByRole('switch', { name: `${TH.pump} — ${TH.stateOn}` })).toBeInTheDocument();
     expect(
       screen.getByRole('switch', { name: `พัดลมใบใหญ่ #1 — ${TH.stateOn}` }),
     ).toBeInTheDocument();
@@ -149,34 +150,9 @@ describe('สถานะเชื่อมกันข้ามหน้า', {
     expect(within(drawer).getByText(TH.logEstop)).toBeInTheDocument();
   });
 
-  /**
-   * ไม่มีวาล์วแยกแปลง — "รดน้ำ" คือเปิดปั๊มตัวเดียวของฟาร์ม ทั้ง 8 แปลงจึงโดนน้ำพร้อมกัน
-   * เทสนี้คุมว่าหน้าชลประทานกับฉากเกมอ่านสถานะเดียวกันจริง
-   */
-  it('สั่งรดน้ำที่หน้าชลประทาน แล้วฉากเกมเห็นว่าทั้งโรงเรือนกำลังรดอยู่', async () => {
-    const user = userEvent.setup();
-    renderAppAt(ROUTES.irrigation);
-
-    await user.click(screen.getByRole('button', { name: new RegExp(TH.ctStart) }));
-    await user.click(
-      within(await screen.findByRole('dialog', { name: TH.waterTitle })).getByRole('button', {
-        name: TH.confirmYes,
-      }),
-    );
-
-    // รออุปกรณ์ยืนยัน แล้วปุ่มต้องเปลี่ยนเป็น "หยุดรดน้ำ"
-    expect(
-      await screen.findByRole('button', { name: new RegExp(TH.ctStop) }, { timeout: 10000 }),
-    ).toBeInTheDocument();
-
-    // ข้ามไปฉากเกม — แปลงที่ไม่ได้ถูกสั่งโดยตรงก็ต้องขึ้นว่ากำลังรดน้ำเหมือนกัน
-    await goVia(user, TH.navFarmGame);
-    await screen.findByAltText(TH.agentName);
-    await user.click(screen.getByRole('button', { name: TH.zonePrefix + TH.zTomato }));
-
-    const panel = await screen.findByRole('dialog');
-    expect(within(panel).getByRole('button', { name: TH.stopWaterBtn })).toBeInTheDocument();
-  });
+  // เดิมมีเทส "สั่งรดน้ำที่หน้าชลประทาน แล้วฉากเกมเห็นตรงกัน" — ถอดแล้ว
+  // โรงเรือนนี้ไม่มีระบบรดน้ำ ปั๊มคือคูลลิ่งแพดที่ทำงานตามพัดลมใหญ่ (DESIGN_SOURCE ข้อ 37)
+  // การใช้สถานะร่วมกันข้ามหน้ายังถูกคุมด้วยเคสอุปกรณ์/estop/อุณหภูมิ/เกณฑ์ ที่เหลือในไฟล์นี้
 
   /** ระบบน้ำ (ถัง/แรงดัน/ปริมาณ) ถอดออกแล้วทั้งสองหน้า — เป็นค่าจำลองล้วน (เจ้าของงานสั่ง) */
   it('ไม่มีส่วนระบบน้ำทั้งหน้าโรงเรือนและหน้าชลประทาน', async () => {

@@ -3,25 +3,23 @@ import type { CropIconName, IconName } from '@/components/common/Icon';
 import type { TextKey } from '@/i18n/keys';
 
 /**
- * สถานะโซนบนแผนที่ชลประทาน — มี "กำลังรดน้ำ" เพิ่มจากสเกลของแดชบอร์ด
+ * สถานะแปลงบนแผนที่ — บอกสภาพดินอย่างเดียว
  *
- * `'watering'` เป็นสถานะ **ชั่วคราวของทั้งโรงเรือน** ที่มาจากปั๊ม ไม่ได้เก็บรายแปลง
- * (ดู `IrrZone.status` ที่เป็น `ZoneBaseStatus` — เก็บได้แค่สภาพดิน)
+ * 🔴 เคยมี `'watering'` อยู่ด้วย **ถอดออกแล้ว 2026-08-11** — โรงเรือนนี้ไม่มีระบบรดน้ำ
+ * ปั๊มที่มีคือปั๊มคูลลิ่งแพด ทำงานคู่พัดลมใหญ่ (ดู DESIGN_SOURCE ข้อ 37)
  */
-export type IrrStatus = 'watering' | 'normal' | 'warn' | 'dry';
+export type IrrStatus = 'normal' | 'warn' | 'dry';
 
-/** สภาพดินคงที่ของแปลง — ไม่มี 'watering' เพราะแยกรดทีละแปลงไม่ได้ */
-export type ZoneBaseStatus = Exclude<IrrStatus, 'watering'>;
+/** ชื่อเดิมที่โค้ดอื่นยังอ้างถึง — ตอนนี้เหมือน `IrrStatus` ทุกประการ */
+export type ZoneBaseStatus = IrrStatus;
 
 export const IRR_COLOR: Readonly<Record<IrrStatus, string>> = {
-  watering: '#2f8f8a',
   normal: '#2f9e6e',
   warn: '#b9720f',
   dry: '#d14b47',
 };
 
 export const IRR_BG: Readonly<Record<IrrStatus, string>> = {
-  watering: '#ddefee',
   normal: '#e1f1e9',
   warn: '#fbeedb',
   dry: '#f8e4e2',
@@ -286,12 +284,12 @@ export const LAYER_LABEL: Readonly<Record<MapLayer, TextKey>> = {
 };
 
 /** สีของแปลงตามเลเยอร์ที่เลือก */
-export function layerColor(z: IrrZone, watering: boolean, layer: MapLayer): string {
+export function layerColor(z: IrrZone, layer: MapLayer): string {
   if (layer === 'moisture') {
     const m = z.moisture;
     return m < 30 ? '#d14b47' : m < 40 ? '#b9720f' : m < 50 ? '#5aae7a' : '#2f8f8a';
   }
-  return IRR_COLOR[watering ? 'watering' : z.status];
+  return IRR_COLOR[z.status];
 }
 
 /** ปรับความสว่างของสี hex — ใช้ไล่เฉดดินในแปลง */
