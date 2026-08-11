@@ -221,6 +221,15 @@ export interface FarmState {
    */
   readonly pumpManual: boolean;
   /**
+   * สลับโหมดปั๊มคูลลิ่งแพดด้วยตัวเอง — `'auto'` = คืนสิทธิ์ให้ตัวตามพัดลมใหญ่ **ทันที**
+   *
+   * 🔴 `'auto'` ของปั๊มคือ "เดินตามพัดลมใหญ่" เท่านั้น **ไม่ใช่**เกณฑ์เซนเซอร์หรือตารางเวลาของตัวเอง
+   * (ปั๊มเดินตอนพัดลมไม่เดิน = น้ำไหลผ่านแผงทิ้งเปล่า ไม่ได้ลดอุณหภูมิอะไรเลย)
+   *
+   * เดิมกลับไปอัตโนมัติได้ทางเดียวคือ "รอจนสถานะพัดลมเปลี่ยนเอง" ซึ่งผู้ใช้กดเองไม่ได้
+   */
+  readonly setPumpMode: (mode: 'auto' | 'manual') => void;
+  /**
    * แจ้งว่า "ผู้ใช้สั่งพัดลมตัวนี้เอง" — `useDeviceCommand` เรียกให้ทุกครั้งที่มีคำสั่งมือ
    * ตัวคุมความชื้นจะไม่ทับพัดลมตัวนั้นจนกว่ารอบดูดปัจจุบันจะจบ
    */
@@ -1063,7 +1072,25 @@ export function FarmStateProvider({
     );
     // `pumpOn` ต้องอยู่ใน deps — ไม่งั้นตอนสถานะปั๊มจริงเปลี่ยน (led2 มาถึง / มีคนสับที่ตู้)
     // ตัวตามจะไม่ได้ประเมินใหม่ แล้วปั๊มค้างไม่ตรงกับพัดลมอยู่อย่างนั้น
-  }, [bigFanOn, pumpOn, estop, followReady]);
+    //
+    // `pumpManual` ก็ต้องอยู่ด้วย — ผู้ใช้กด "อัตโนมัติ" คือการเปลี่ยนเป้าหมาย ต้องประเมินใหม่ทันที
+    // ไม่ใช่รอจนสถานะพัดลมบังเอิญเปลี่ยน (อ่านค่าจริงผ่าน `pumpManualRef` ข้างในเหมือนเดิม)
+  }, [bigFanOn, pumpOn, estop, followReady, pumpManual]);
+
+  /**
+   * สลับโหมดปั๊มด้วยมือ — ปุ่ม "อัตโนมัติ" บนการ์ดปั๊มเรียกตัวนี้
+   *
+   * ต้องล้าง `wantPumpRef` ตอนกลับเป็นอัตโนมัติ ไม่งั้นคำสั่งค้างรอบก่อนจะไปตรงกับเป้าหมายใหม่พอดี
+   * แล้วตัวตามตัดจบที่ "สั่งไปแล้ว" ทั้งที่ยังไม่เคยสั่งจริงในรอบนี้ → ปั๊มไม่ขยับตาม
+   */
+  const setPumpMode = useCallback((mode: 'auto' | 'manual') => {
+    if (mode === 'manual') {
+      setPumpManual(true);
+      return;
+    }
+    wantPumpRef.current = null;
+    setPumpManual(false);
+  }, []);
 
   /**
    * พัดลมที่ตัวคุมความชื้นกำลังคุมอยู่จริง — ใช้ติดป้ายบนการ์ดว่า "ใครสั่งอยู่"
@@ -1164,6 +1191,7 @@ export function FarmStateProvider({
       humidityVentStage,
       ventOwned,
       pumpManual,
+      setPumpMode,
       noteManualCommand,
       activityLogs,
       addActivityLog,
@@ -1199,6 +1227,7 @@ export function FarmStateProvider({
       humidityVentStage,
       ventOwned,
       pumpManual,
+      setPumpMode,
       noteManualCommand,
       activityLogs,
       addActivityLog,

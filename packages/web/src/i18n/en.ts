@@ -120,6 +120,10 @@ export const EN: Dict = {
   hsNotLive: 'Connect to the real device (log in) before sending thresholds',
   ghPumpFollowsFans:
     'Follows the large fans automatically — it feeds the cooling pad (fans on = pump on, fans off = pump off). You can still switch it on manually to rinse the pad.',
+  ghPumpManualNote:
+    'Under manual control — the large-fan follower is paused. It resumes on its own when the large fans change state, or press "Auto" to hand control back right away.',
+  ghPumpBackToAuto: 'Pump is following the large fans again',
+  ghPumpToManual: 'Pump switched to manual — the large-fan follower is paused',
   ghTempAutoTitle: 'Run fan by temperature',
   ghTabTemp: 'Temperature',
   ghTempMinLabel: 'Below → fan OFF',

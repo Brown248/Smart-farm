@@ -136,9 +136,20 @@ const DeviceControlCard = memo(function DeviceControlCard({
       : isOn
         ? 'var(--d-ok-ink)'
         : 'var(--d-muted)';
+  /*
+   * ปั๊มคูลลิ่งแพด: "อัตโนมัติ" = **เดินตามพัดลมใหญ่** ซึ่งเป็นตรรกะของแอป (ตัวตามใน provider)
+   * ไม่ใช่เกณฑ์ที่ฝังอยู่ในกล่อง relay เหมือนพัดลม จึง
+   *   - อ่านสถานะจาก `mode` ที่หน้าส่งมา (มาจาก `pumpManual`) ไม่ใช่จาก `channelState`
+   *   - **กดได้แม้อยู่โหมดจริง** ต่างจากพัดลมที่ต้องไปตั้งเกณฑ์ที่ส่วน "เงื่อนไขอัตโนมัติ"
+   * 🔴 ห้ามตีความ "อัตโนมัติ" ของปั๊มเป็นเกณฑ์เซนเซอร์/ตารางเวลาของตัวเองเด็ดขาด
+   */
+  const appAuto = dev.id === 'pump';
   // อัตโนมัติเปิดอยู่ไหม — โหมดจริงอ่านจากอุปกรณ์จริง · โหมดจำลองใช้ค่าที่ตั้งไว้
-  const cardAutoOn =
-    realControl && channel !== null ? channelState?.mode === 'auto' : mode === 'auto';
+  const cardAutoOn = appAuto
+    ? mode === 'auto'
+    : realControl && channel !== null
+      ? channelState?.mode === 'auto'
+      : mode === 'auto';
 
   return (
     <div
@@ -217,10 +228,17 @@ const DeviceControlCard = memo(function DeviceControlCard({
           <Icon name="info" size={14} color="var(--d-muted)" strokeWidth={1.9} />
           <span>{t.ghBondedFollows(masterName)}</span>
         </div>
-      ) : dev.id === 'pump' ? (
+      ) : appAuto ? (
+        /* ปั๊มมี 2 โหมด — ข้อความต้องบอกว่าตอนนี้อยู่โหมดไหน ไม่ใช่อธิบายแค่โหมดอัตโนมัติเสมอ
+           ไม่งั้นกดเป็นคุมมือแล้วการ์ดยังยืนยันว่า "ทำงานตามพัดลมใหญ่" = โกหกผู้ใช้ */
         <div className={s.notLiveNote} role="note">
-          <Icon name="fan" size={14} color="var(--d-muted)" strokeWidth={1.9} />
-          <span>{t.ghPumpFollowsFans}</span>
+          <Icon
+            name={cardAutoOn ? 'fan' : 'info'}
+            size={14}
+            color="var(--d-muted)"
+            strokeWidth={1.9}
+          />
+          <span>{cardAutoOn ? t.ghPumpFollowsFans : t.ghPumpManualNote}</span>
         </div>
       ) : noRealRelay ? (
         <div className={s.notLiveNote} role="note">
@@ -252,7 +270,7 @@ const DeviceControlCard = memo(function DeviceControlCard({
         type="button"
         aria-pressed={cardAutoOn}
         aria-label={`${name} — ${t.ghModeAuto}`}
-        disabled={offline || emergency || realControl || master !== null}
+        disabled={offline || emergency || (realControl && !appAuto) || master !== null}
         className={[s.autoBtn, cardAutoOn ? s.autoBtnOn : null].filter(Boolean).join(' ')}
         onClick={() => onToggleMode(dev.id, mode === 'auto' ? 'manual' : 'auto')}
       >
@@ -860,7 +878,28 @@ export function GreenhousePage() {
     humidityVentStage,
     ventOwned,
     pumpManual,
+    setPumpMode,
   } = useFarmState();
+
+  /**
+   * ปุ่ม "อัตโนมัติ" บนการ์ด — ปั๊มไปคนละทางกับตัวอื่น
+   *
+   * ตัวอื่น: `setMode` = โหมดของหน้าโรงเรือน (คู่กับเกณฑ์ในกล่อง relay)
+   * ปั๊ม: `setPumpMode` = สั่งตัวตามพัดลมใหญ่ใน provider ให้คืน/หยุดคุม **มีผลจริงทันที**
+   * ถ้าปล่อยปั๊มไปทาง `setMode` ปุ่มจะขยับแต่ไม่มีอะไรเปลี่ยน = ปุ่มหลอก (กฎเหล็กข้อ 3)
+   */
+  const toggleMode = useCallback(
+    (id: DeviceId, next: GhMode) => {
+      if (id !== 'pump') {
+        setMode(id, next);
+        return;
+      }
+      const toAuto = next === 'auto';
+      setPumpMode(toAuto ? 'auto' : 'manual');
+      flash(toAuto ? t.ghPumpBackToAuto : t.ghPumpToManual);
+    },
+    [setMode, setPumpMode, flash, t],
+  );
 
   /**
    * โหมดจริง: เติมตัวแก้ (เกณฑ์อุณหภูมิ + ตารางเวลา) จาก **อุปกรณ์จริง**
@@ -1107,14 +1146,14 @@ export function GreenhousePage() {
                   realControl={realControl}
                   channel={channel}
                   channelState={channel !== null ? channelStates?.[channel] : undefined}
-                  mode={mode[dev.id]}
+                  mode={dev.id === 'pump' ? (pumpManual ? 'manual' : 'auto') : mode[dev.id]}
                   deviceStale={deviceStale}
                   ventRole={ventRoleOf(dev.id)}
                   cutoffLeft={dev.id === 'pump' ? cutoffLeft : null}
                   t={t}
                   reduced={reduced}
                   onPress={command.press}
-                  onToggleMode={setMode}
+                  onToggleMode={toggleMode}
                 />
               );
             })}

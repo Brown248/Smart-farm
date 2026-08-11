@@ -100,8 +100,19 @@ export function useDeviceCommand({
   confirm,
   flash,
 }: UseDeviceCommandOptions): DeviceCommandApi {
-  const { devices, setDevices, estop, tank, log, setMode, realControl, live, noteManualCommand } =
-    useFarmState();
+  const {
+    devices,
+    setDevices,
+    estop,
+    tank,
+    log,
+    setMode,
+    realControl,
+    live,
+    noteManualCommand,
+    pumpManual,
+    setPumpMode,
+  } = useFarmState();
   // หยุดฉุกเฉิน + การเขียน log เป็นของ `useEstop` — ปุ่มในแถบเมนูใช้ตัวเดียวกันนี้
   const { estopPress, addLog } = useEstop({ t, confirm, flash });
   const [justDone, setJustDone] = useState<Partial<Record<DeviceId, boolean>>>({});
@@ -130,6 +141,11 @@ export function useDeviceCommand({
   staleRef.current = deviceStale;
   const bannedRef = useRef(deviceBanned);
   bannedRef.current = deviceBanned;
+  // โหมดปั๊มเป็นของ provider (ตัวตามพัดลม) — อ่านผ่าน ref เพื่อไม่ให้ `toggleAuto` เปลี่ยน identity ทุกรอบ
+  const pumpManualRef = useRef(pumpManual);
+  pumpManualRef.current = pumpManual;
+  const setPumpModeRef = useRef(setPumpMode);
+  setPumpModeRef.current = setPumpMode;
 
   /**
    * ตั้งเวลาแล้ว **ลบตัวเองออกตอนยิง** — ของเดิมเป็น array ที่ push อย่างเดียว ไม่เคยลบ
@@ -560,6 +576,19 @@ export function useDeviceCommand({
       if (!d) return;
       const name = deviceName(d, tt);
       if (!d.online) return flash(tt.offlineMode(name));
+
+      /*
+       * ปั๊มคูลลิ่งแพดใช้คนละแหล่งกับตัวอื่น — "อัตโนมัติ" ของมันคือ **เดินตามพัดลมใหญ่**
+       * ซึ่งเป็นตรรกะของแอป (`pumpManual` ใน provider) ไม่ใช่เกณฑ์ที่ฝังในกล่อง relay
+       * ถ้าปล่อยให้ไปทาง `setMode` เหมือนตัวอื่น ปุ่มจะขยับแต่ตัวตามไม่รับรู้ = ปุ่มหลอก (กฎเหล็กข้อ 3)
+       */
+      if (id === 'pump') {
+        const toAuto = pumpManualRef.current;
+        setPumpModeRef.current(toAuto ? 'auto' : 'manual');
+        addLog(tt.logMode(name, toAuto ? tt.modeAutoFull : tt.modeManualFull));
+        return;
+      }
+
       const next = !d.auto;
       // ผ่าน setMode เพื่อให้โหมดของหน้าโรงเรือนขยับตามด้วย ไม่งั้นสองหน้าบอกคนละอย่าง
       setMode(id, next ? 'auto' : 'manual');

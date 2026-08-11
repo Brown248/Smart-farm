@@ -23,7 +23,7 @@ vi.mock('@/services/handysenseControl', async (importOriginal) => {
 });
 
 import { TH } from '@/i18n/th';
-import { PUMP_CUTOFF_MS } from '@/lib/deviceTiming';
+import { PUMP_CUTOFF_MS, SEND_LATENCY_MS } from '@/lib/deviceTiming';
 import { postHsCommand } from '@/services/handysenseControl';
 import { useConfirm } from '@/hooks/useConfirm';
 import { useToast } from '@/hooks/useToast';
@@ -187,6 +187,54 @@ describe('ปั๊มคูลลิ่งแพด — เดินตาม�
       await vi.advanceTimersByTimeAsync(0);
     });
     expect(lastPump(), 'ต้องสั่งเปิดปั๊มให้ตรงกับพัดลมที่เดินอยู่').toBe(true);
+  });
+
+  /**
+   * 2 โหมดที่เจ้าของงานสั่ง: กดคุมเอง กับ กดกลับเป็นอัตโนมัติ
+   *
+   * เดิมมีทางเดียว — กดสวิตช์แล้วกลายเป็นคุมมือ แล้ว**ต้องรอจนสถานะพัดลมเปลี่ยนเอง**
+   * ถึงจะกลับเป็นอัตโนมัติ ผู้ใช้กดคืนเองไม่ได้เลย
+   *
+   * เทสนี้ใช้ **โหมดจำลอง** เพราะโหมดจริงอ่านสถานะปั๊มจาก `led2` ที่ harness ตรึงค่าไว้
+   * (กดปิดปั๊มแล้ว `led2` ไม่ขยับ ตัวตามจึงยังเห็นว่าปั๊มเดินอยู่ = ไม่มีอะไรให้สั่ง)
+   */
+  it('กดคุมเอง → ตัวตามหยุดคุม · กดอัตโนมัติ → กลับไปตามพัดลมทันทีโดยไม่ต้องรอพัดลมเปลี่ยน', async () => {
+    const Mock = ({ children }: { children: ReactNode }) => (
+      <FarmStateProvider>{children}</FarmStateProvider>
+    );
+    Mock.displayName = 'MockWrapper';
+    // ค่าเริ่มต้นโหมดจำลอง: พัดลมใหญ่ #1 เดิน + ปั๊มเดินตาม = สถานะตรงกัน
+    const { result } = renderHook(() => useHarness(), { wrapper: Mock });
+    const pumpOn = () => result.current.farm.devices.find((d) => d.id === 'pump')?.on;
+    expect(pumpOn()).toBe(true);
+
+    // 1) เปลี่ยนเป็นคุมด้วยมือ
+    await act(async () => {
+      result.current.farm.setPumpMode('manual');
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.farm.pumpManual).toBe(true);
+
+    // 2) สั่งปิดปั๊มเองระหว่างพัดลมยังเดิน (เช่นถอดแผงมาล้าง) — ตัวตามต้องไม่แย่งเปิดกลับ
+    await act(async () => {
+      result.current.command.press('pump');
+    });
+    await act(async () => {
+      result.current.confirm.accept();
+    });
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(SEND_LATENCY_MS);
+    });
+    expect(pumpOn(), 'อยู่โหมดคุมมือ ตัวตามห้ามเปิดปั๊มกลับ').toBe(false);
+    expect(result.current.farm.pumpManual, 'กดสวิตช์เองแล้วต้องยังเป็นคุมมือ').toBe(true);
+
+    // 3) กด "อัตโนมัติ" — ต้องเปิดคืนทันที ทั้งที่สถานะพัดลมไม่ได้เปลี่ยนเลย
+    await act(async () => {
+      result.current.farm.setPumpMode('auto');
+      await vi.advanceTimersByTimeAsync(0);
+    });
+    expect(result.current.farm.pumpManual).toBe(false);
+    expect(pumpOn(), 'พัดลมยังเดินอยู่ → ปั๊มต้องกลับมาเดินตาม').toBe(true);
   });
 
   it('หยุดฉุกเฉิน → ตัวตามต้องไม่ปลุกปั๊มกลับ', async () => {
