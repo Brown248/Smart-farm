@@ -270,12 +270,17 @@ interface DeviceConditionCardProps {
   readonly dev: GhDevice;
   readonly name: string;
   /**
-   * อุปกรณ์นี้ใช้เกณฑ์อุณหภูมิได้ไหม — `false` = มีแต่ตารางเวลา (ปั๊มน้ำ)
+   * อุปกรณ์นี้ใช้เซนเซอร์ตัวไหนเป็นเกณฑ์อัตโนมัติ
    *
-   * ปั๊มไม่ควรผูกกับอุณหภูมิ: อากาศร้อนไม่ได้แปลว่าดินแห้ง สั่งรดน้ำตามอุณหภูมิคือรดผิดเหตุ
-   * เจ้าของงานจึงสั่งให้ปั๊มมีแค่ตารางเวลา (2026-08-10)
+   * `'temp'` (พัดลม) — ตั้งค่าได้เต็มรูปแบบ
+   * `'soil'` (ปั๊ม) — ปั๊มต้องดูความชื้นดิน **ไม่ใช่อุณหภูมิ** (อากาศร้อน ≠ ดินแห้ง)
+   *
+   * 🔴 แต่เซนเซอร์ความชื้นดินถูกทีมฮาร์ดแวร์ถอดออกไปแล้ว (2026-08-11) จึง **ตั้งเกณฑ์ใหม่ไม่ได้**
+   * ถ้าเปิดให้ตั้ง: อินพุตที่ไม่มีสายต่อมักอ่านได้ 0% ซึ่งต่ำกว่าเกณฑ์เสมอ → **ปั๊มเปิดค้างไม่มีวันหยุด**
+   * และ automation ตัวนี้อยู่ในอุปกรณ์ เดินแม้ปิดเว็บ ส่วน auto-cutoff 20 นาทีทำงานเฉพาะตอนเปิดแท็บ
+   * → ไม่มีตาข่ายรับเลย · **ปิด**ได้อย่างเดียวจนกว่าเซนเซอร์จะกลับมา
    */
-  readonly tempAuto: boolean;
+  readonly autoKind: 'temp' | 'soil';
   readonly th: FanTempThreshold;
   readonly slots: readonly DeviceScheduleSlot[];
   readonly channel: HsChannel | null;
@@ -297,7 +302,7 @@ interface DeviceConditionCardProps {
 const DeviceConditionCard = memo(function DeviceConditionCard({
   dev,
   name,
-  tempAuto,
+  autoKind,
   th,
   slots,
   channel,
@@ -315,14 +320,20 @@ const DeviceConditionCard = memo(function DeviceConditionCard({
   onScheduleDelete,
   onConfirmAsk,
 }: DeviceConditionCardProps) {
-  const [tab, setTab] = useState<'temp' | 'sched'>(tempAuto ? 'temp' : 'sched');
-  // อุปกรณ์ที่ไม่มีเกณฑ์อุณหภูมิ (ปั๊ม) ล็อกอยู่ที่ตารางเวลาเสมอ ไม่ต้องมีแท็บให้กด
-  const view = tempAuto ? tab : 'sched';
+  const [view, setView] = useState<'auto' | 'sched'>('auto');
+  const isSoil = autoKind === 'soil';
+  /**
+   * เซนเซอร์ความชื้นดินถูกถอดออก → **เปิดอัตโนมัติของปั๊มไม่ได้** (ปิดได้)
+   * ไม่ใช่ปุ่มหลอก: สวิตช์ยังทำงานจริงในทิศ "ปิด" และมีข้อความบอกเหตุผลกำกับ
+   */
+  const canEnableAuto = !isSoil;
 
-  // ── แท็บ อุณหภูมิ ──
+  // ── แท็บ อัตโนมัติ ──
   // ค่าจริงจากอุปกรณ์ (real) / ค่าที่ตั้งไว้ (sim) แล้วซ้อน "optimistic" ตอนกด — ลูกบิดขยับทันที
   // ไม่ต้องรอ ~10 วิให้อุปกรณ์รายงานเกณฑ์กลับมา (เหมือนสวิตช์เปิด/ปิดอุปกรณ์)
-  const autoOnDevice = realControl ? chState?.temp.on === true : th.enabled;
+  // ปั๊มอ่าน band `soil` ไม่ใช่ `temp` — ถ้าอ่านผิดช่อง เกณฑ์ที่ค้างอยู่ในอุปกรณ์จะมองไม่เห็นเลย
+  const band = isSoil ? chState?.soil : chState?.temp;
+  const autoOnDevice = realControl ? band?.on === true : isSoil ? false : th.enabled;
   const [autoWish, setAutoWish] = useState<boolean | null>(null);
   // อุปกรณ์ยืนยันตรงกับที่สั่งแล้ว → เลิก optimistic (กลับไปเชื่อค่าจริง)
   useEffect(() => {
@@ -336,9 +347,11 @@ const DeviceConditionCard = memo(function DeviceConditionCard({
   }, [autoWish]);
   const autoOn = autoWish ?? autoOnDevice;
   const autoPending = autoWish !== null && autoWish !== autoOnDevice;
-  const autoDisabled = offline || emergency;
+  // ล็อกทิศ "เปิด" ของปั๊มไว้ — ทิศ "ปิด" ยังกดได้เสมอ (นั่นคือเหตุผลที่สวิตช์นี้ยังต้องมีอยู่)
+  const autoDisabled = offline || emergency || (!canEnableAuto && !autoOn);
   const toggleAutoTemp = () => {
     const next = !autoOn;
+    if (next && !canEnableAuto) return;
     if (realControl) {
       setAutoWish(next);
       // เปิดออโต้ = ให้อุปกรณ์คุมเอง (setThreshold) · ปิดออโต้ = ปิด auto **พร้อมสั่งดับรีเลย์จริง**
@@ -369,52 +382,51 @@ const DeviceConditionCard = memo(function DeviceConditionCard({
         สลับ อุณหภูมิ / ตารางเวลา — โชว์ทีละอัน ตารางเวลาไม่โผล่รกจนกว่าจะกดแท็บ
         ปั๊มไม่มีเกณฑ์อุณหภูมิ จึงไม่ต้องมีแถบแท็บเลย (แท็บเดียวให้กดคือปุ่มหลอก)
       */}
-      {tempAuto ? (
-        <div className={s.segRow}>
-          <button
-            type="button"
-            aria-pressed={tab === 'temp'}
-            aria-label={`${name} · ${t.ghTabTemp}`}
-            className={[s.segTab, tab === 'temp' ? s.segTabOn : null].filter(Boolean).join(' ')}
-            onClick={() => setTab('temp')}
-          >
-            <Icon name="temp" size={14} color="var(--d-m-temp)" strokeWidth={1.9} />
-            {t.ghTabTemp}
-          </button>
-          <button
-            type="button"
-            aria-pressed={tab === 'sched'}
-            aria-label={`${name} · ${t.ghSchedTitle}`}
-            className={[s.segTab, tab === 'sched' ? s.segTabOn : null].filter(Boolean).join(' ')}
-            onClick={() => setTab('sched')}
-          >
-            <Icon name="clock" size={14} color="var(--d-warn)" strokeWidth={1.9} />
-            {t.ghSchedTitle}
-          </button>
-        </div>
-      ) : (
-        /*
-          ปั๊มมีแต่ตารางเวลา — บอกให้ชัดว่าทำไม และเตือนเรื่องตัดอัตโนมัติ 20 นาที
-          ถ้าไม่บอก ผู้ใช้ตั้ง 06:00–07:00 แล้วงงว่าทำไมปั๊มหยุดตั้งแต่ 06:20
-        */
-        <div className={s.notLiveNote} role="note">
-          <Icon name="info" size={15} color="var(--d-muted)" strokeWidth={1.9} />
-          <span>{t.ghPumpSchedOnly}</span>
-        </div>
-      )}
+      <div className={s.segRow}>
+        <button
+          type="button"
+          aria-pressed={view === 'auto'}
+          aria-label={`${name} · ${isSoil ? t.ghTabSoil : t.ghTabTemp}`}
+          className={[s.segTab, view === 'auto' ? s.segTabOn : null].filter(Boolean).join(' ')}
+          onClick={() => setView('auto')}
+        >
+          <Icon
+            name={isSoil ? 'soil' : 'temp'}
+            size={14}
+            color={isSoil ? 'var(--d-m-soil)' : 'var(--d-m-temp)'}
+            strokeWidth={1.9}
+          />
+          {isSoil ? t.ghTabSoil : t.ghTabTemp}
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === 'sched'}
+          aria-label={`${name} · ${t.ghSchedTitle}`}
+          className={[s.segTab, view === 'sched' ? s.segTabOn : null].filter(Boolean).join(' ')}
+          onClick={() => setView('sched')}
+        >
+          <Icon name="clock" size={14} color="var(--d-warn)" strokeWidth={1.9} />
+          {t.ghSchedTitle}
+        </button>
+      </div>
 
-      {view === 'temp' ? (
+      {view === 'auto' ? (
         <div className={s.ruleList}>
           <div className={s.autoSwitchRow}>
             <div className={s.schedLabel}>
-              <Icon name="temp" size={14} color="var(--d-m-temp)" strokeWidth={1.9} />
-              {t.ghTempAutoTitle}
+              <Icon
+                name={isSoil ? 'soil' : 'temp'}
+                size={14}
+                color={isSoil ? 'var(--d-m-soil)' : 'var(--d-m-temp)'}
+                strokeWidth={1.9}
+              />
+              {isSoil ? t.ghSoilAutoTitle : t.ghTempAutoTitle}
             </div>
             <button
               type="button"
               role="switch"
               aria-checked={autoOnDevice}
-              aria-label={`${name} — ${t.ghTempAutoTitle}`}
+              aria-label={`${name} — ${isSoil ? t.ghSoilAutoTitle : t.ghTempAutoTitle}`}
               disabled={autoDisabled || autoPending}
               className={[
                 s.switch,
@@ -433,7 +445,25 @@ const DeviceConditionCard = memo(function DeviceConditionCard({
             </button>
           </div>
 
-          {autoOn ? (
+          {isSoil ? (
+            /*
+              ปั๊ม: อ่านและ**ปิด**ได้ แต่ตั้งใหม่ไม่ได้จนกว่าเซนเซอร์ดินจะกลับมา
+              ต้องโชว์เกณฑ์ที่ค้างอยู่ในอุปกรณ์ให้เห็น — ไม่งั้นปั๊มเปิดเองแล้วหาสาเหตุไม่เจอ
+              และเป็นทางเดียวที่ปิดมันได้จากเว็บนี้ (เดิมต้องไปเปิดแอป HandySense)
+            */
+            <>
+              {realControl && band?.on && band.min !== null && band.max !== null ? (
+                <div className={s.notLiveNote} role="note">
+                  <Icon name="alert" size={14} color="var(--d-warn)" strokeWidth={1.9} />
+                  <span>{t.ghDeviceSoilNow(String(band.min), String(band.max))}</span>
+                </div>
+              ) : null}
+              <div className={s.notLiveNote} role="note">
+                <Icon name="info" size={14} color="var(--d-muted)" strokeWidth={1.9} />
+                <span>{t.ghPumpNoSoilSensor}</span>
+              </div>
+            </>
+          ) : autoOn ? (
             <>
               {/* ทิศทางเป็นป้ายกำกับช่องตรงๆ — กัน min/max สลับ (จุดพลาดอันดับ 1) */}
               <div className={s.ruleRow}>
@@ -487,6 +517,16 @@ const DeviceConditionCard = memo(function DeviceConditionCard({
         </div>
       ) : (
         <div className={s.schedBlock}>
+          {/*
+            ปั๊ม: เตือนเรื่องตัดอัตโนมัติ 20 นาทีตรงที่ผู้ใช้กำลังตั้งเวลาอยู่พอดี
+            ถ้าไม่บอก ผู้ใช้ตั้ง 06:00–07:00 แล้วงงว่าทำไมปั๊มหยุดตั้งแต่ 06:20
+          */}
+          {isSoil ? (
+            <div className={s.notLiveNote} role="note">
+              <Icon name="info" size={14} color="var(--d-muted)" strokeWidth={1.9} />
+              <span>{t.ghPumpSchedOnly}</span>
+            </div>
+          ) : null}
           {slots.map((slot, i) => {
             const setSlot = (patch: Partial<DeviceScheduleSlot>) =>
               onSetSchedule(
@@ -1189,7 +1229,8 @@ export function GreenhousePage() {
             {/*
               อุปกรณ์ที่ตั้งเงื่อนไขได้ = ทุกตัวที่มี relay ของตัวเอง
               พัดลมเล็กไม่อยู่ในนี้เพราะพ่วงสายกับใหญ่ #2 (ตั้งที่ใหญ่ #2 แล้วมันตามเอง)
-              ปั๊มอยู่ด้วยแต่มีแค่ตารางเวลา — ไม่ผูกกับอุณหภูมิ (`tempAuto={false}`)
+              ปั๊มใช้เกณฑ์ **ความชื้นดิน** ไม่ใช่อุณหภูมิ (`autoKind='soil'`) — อ่านและปิดได้
+              แต่ตั้งใหม่ไม่ได้จนกว่าเซนเซอร์ดินจะกลับมา (ดูคอมเมนต์ที่ `autoKind`)
             */}
             {GH_DEVICES.filter((dev) => bondedTo(dev.id) === null).map((dev) => {
               const channel = channelOf(dev.id);
@@ -1198,7 +1239,7 @@ export function GreenhousePage() {
                   key={dev.id}
                   dev={dev}
                   name={deviceLabel(dev.id, dev.nameKey, t)}
-                  tempAuto={dev.id !== 'pump'}
+                  autoKind={dev.id === 'pump' ? 'soil' : 'temp'}
                   th={deviceThresholds[dev.id]}
                   slots={deviceSchedules[dev.id] ?? []}
                   channel={channel}

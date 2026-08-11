@@ -49,31 +49,73 @@ const SML1 = 'พัดลมตัวเล็ก #1';
  * และแท็บเดียวที่กดแล้วไม่ไปไหนก็คือปุ่มหลอก จึงไม่แสดงแถบแท็บให้ปั๊มเลย
  */
 describe('GreenhousePage — ปั๊มน้ำในเงื่อนไขอัตโนมัติ', () => {
-  it('ปั๊มมีการ์ดเงื่อนไข พร้อมบอกว่าตั้งได้แค่ตารางเวลา', () => {
+  const autoSection = () => screen.getByRole('region', { name: TH.ghAutoTitle });
+
+  it('ปั๊มมีการ์ดเงื่อนไข โครงเหมือนพัดลมใหญ่ (2 แท็บ)', () => {
     renderPage();
-    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
+    const auto = autoSection();
     expect(within(auto).getByText(TH.pump)).toBeInTheDocument();
-    expect(within(auto).getByText(TH.ghPumpSchedOnly)).toBeInTheDocument();
+    expect(
+      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghTabSoil}` }),
+    ).toBeInTheDocument();
+    expect(
+      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }),
+    ).toBeInTheDocument();
   });
 
-  it('ปั๊มไม่มีแท็บอุณหภูมิ — มีเฉพาะพัดลมใหญ่ 2 ตัว', () => {
+  /** ปั๊มดูความชื้นดิน ไม่ใช่อุณหภูมิ — อากาศร้อนไม่ได้แปลว่าดินแห้ง */
+  it('ปั๊มไม่มีแท็บอุณหภูมิ — แท็บอุณหภูมิมีเฉพาะพัดลมใหญ่ 2 ตัว', () => {
     renderPage();
-    const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
-    const tempTabs = within(auto).getAllByRole('button', { name: new RegExp(TH.ghTabTemp) });
+    const tempTabs = within(autoSection()).getAllByRole('button', {
+      name: new RegExp(TH.ghTabTemp),
+    });
     expect(tempTabs).toHaveLength(2);
     for (const tab of tempTabs) {
       expect(tab.getAttribute('aria-label')).not.toContain(TH.pump);
     }
   });
 
-  it('ปั๊มโชว์ตารางเวลาเลยโดยไม่ต้องกดแท็บ', () => {
+  /**
+   * 🔴 เซนเซอร์ความชื้นดินถูกถอดออก (2026-08-11) → **เปิดอัตโนมัติของปั๊มไม่ได้**
+   * ถ้าเปิดได้: อินพุตที่ไม่มีสายอ่านได้ 0% ซึ่งต่ำกว่าเกณฑ์เสมอ → ปั๊มเปิดค้างไม่มีวันหยุด
+   * และ automation อยู่ในอุปกรณ์ เดินแม้ปิดเว็บ ส่วน cutoff 20 นาทีทำงานเฉพาะตอนเปิดแท็บ
+   */
+  it('สวิตช์อัตโนมัติของปั๊มถูกล็อกไว้ พร้อมบอกเหตุผลบนจอ', () => {
     renderPage();
+    const auto = autoSection();
+    const sw = within(auto).getByRole('switch', { name: `${TH.pump} — ${TH.ghSoilAutoTitle}` });
+    expect(sw).toBeDisabled();
+    expect(within(auto).getByText(TH.ghPumpNoSoilSensor)).toBeInTheDocument();
+  });
+
+  it('กดแท็บตารางเวลาแล้วตั้งช่วงเวลาได้ พร้อมเตือนเรื่องตัด 20 นาที', async () => {
+    const user = userEvent.setup();
+    renderPage();
+    const auto = autoSection();
+    await user.click(within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }));
+
+    expect(within(auto).getByText(TH.ghPumpSchedOnly)).toBeInTheDocument();
+    expect(
+      within(auto).getByRole('button', { name: `${TH.pump} · ${TH.ghSchedAddSlot}` }),
+    ).toBeInTheDocument();
+  });
+});
+
+/**
+ * เกณฑ์ความชื้นดินที่ตั้งค้างไว้ในอุปกรณ์ (จากตอนที่เซนเซอร์ยังอยู่ หรือจากแอป HandySense)
+ * ต้องเห็นบนจอ **และปิดได้จากที่นี่** — ไม่งั้นปั๊มเปิดเองแล้วผู้ใช้หาสาเหตุไม่เจอ
+ * และต้องเดินไปเปิดแอปอื่นเพื่อปิด ซึ่งขัดกับเป้าหมายใช้เว็บนี้เป็นตัวหลัก
+ */
+describe('GreenhousePage — เกณฑ์ดินที่ค้างในอุปกรณ์', () => {
+  it('อุปกรณ์มีเกณฑ์ดินอยู่ → โชว์ค่าจริง และสวิตช์ปิดกดได้', () => {
+    renderLive({ led2: 'false', min_soil2: '45', max_soil2: '70' });
     const auto = screen.getByRole('region', { name: TH.ghAutoTitle });
-    // ปุ่มเพิ่มช่วงเวลาของปั๊มต้องเห็นตั้งแต่แรก (ไม่ถูกซ่อนอยู่หลังแท็บ)
-    const add = within(auto).getAllByRole('button', {
-      name: new RegExp(`${TH.pump}.*${TH.ghSchedAddSlot}`),
-    });
-    expect(add).toHaveLength(1);
+
+    expect(within(auto).getByText(TH.ghDeviceSoilNow('45', '70'))).toBeInTheDocument();
+    // สวิตช์สะท้อนว่าอุปกรณ์เปิดอัตโนมัติอยู่ และต้อง "ปิดได้" (ตรงข้ามกับตอนไม่มีเกณฑ์)
+    const sw = within(auto).getByRole('switch', { name: `${TH.pump} — ${TH.ghSoilAutoTitle}` });
+    expect(sw).toHaveAttribute('aria-checked', 'true');
+    expect(sw).toBeEnabled();
   });
 });
 
@@ -129,7 +171,9 @@ describe('GreenhousePage — เติมเกณฑ์จากอุปกร
    * ปั๊มเป็นช่องที่จงใจไม่ผูกกับอุณหภูมิ ถ้าอุปกรณ์ไม่ส่ง `min_temp2`/`max_temp2` มา
    * ตารางจริงจะไม่มีวันขึ้นบนฟอร์ม → ผู้ใช้เห็นว่าง แล้วกด "เพิ่มช่วงเวลา" ทับของจริง
    */
-  it('ตารางเวลาของปั๊มต้องเติมได้ แม้ไม่มี attribute เกณฑ์อุณหภูมิของช่องนั้นเลย', () => {
+  // ตารางเวลาย้ายไปอยู่หลังแท็บแล้ว (ปั๊มมี 2 แท็บเหมือนพัดลมใหญ่) จึงต้องกดเข้าไปก่อน
+  it('ตารางเวลาของปั๊มต้องเติมได้ แม้ไม่มี attribute เกณฑ์อุณหภูมิของช่องนั้นเลย', async () => {
+    const user = userEvent.setup();
     const timer = JSON.stringify({
       enable: true,
       days: { mon: true, tue: true, wed: true, thu: true, fri: true, sat: true, sun: true },
@@ -137,6 +181,7 @@ describe('GreenhousePage — เติมเกณฑ์จากอุปกร
       endTime: '06:15:00',
     });
     render(live({ led2: 'false', timer20: timer }));
+    await user.click(screen.getByRole('button', { name: `${TH.pump} · ${TH.ghSchedTitle}` }));
 
     const start = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedAt}`);
     const end = screen.getByLabelText(`${TH.pump} · ${TH.ghSchedSlot(1)} · ${TH.ghSchedEnd}`);

@@ -724,8 +724,14 @@ export const EN: Dict = {
   humAppOnlyNote:
     'Works only while the app is open + connected to the real device — stops when the app is closed',
   humInvalidRange: 'Invalid — "start" must be higher than "stop"',
+  ghTabSoil: 'Soil moisture',
+  ghSoilAutoTitle: 'Water by soil moisture',
+  ghDeviceSoilNow: (min: string, max: string) =>
+    `⚠️ Still configured on the device: pump ON below ${min}% soil · OFF above ${max}% — switch it off above`,
+  ghPumpNoSoilSensor:
+    'The pump runs on soil moisture, not temperature (hot air does not mean dry soil). The soil sensor is currently removed, so thresholds cannot be set from here — a disconnected probe reads 0%, which would keep the pump running forever. If a threshold is still stored on the device, switch it off above.',
   ghPumpSchedOnly:
-    'The pump only takes a schedule — it is not tied to temperature (hot air does not mean dry soil). The schedule is stored in the device and runs even when the web app is closed, but the 20-minute auto cut-off only works while the app is open — set a window no longer than you actually need.',
+    'The schedule is stored in the device and runs even when the web app is closed, but the 20-minute auto cut-off only works while the app is open — set a window no longer than you actually need.',
   ghSchedTitle: 'Schedule',
   ghSchedAt: 'Runs at',
   dBFanSub: 'Exhausts humidity · north wall',
