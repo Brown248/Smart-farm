@@ -176,6 +176,27 @@ describe('เครื่องยนต์ดูดอากาศตามค�
     expect(vi.mocked(postHsCommand)).not.toHaveBeenCalled();
   });
 
+  /**
+   * 🔴 เซนเซอร์ RH ตายคาที่ค่าสูง — เครื่องยนต์ต้องหยุดสั่ง ไม่ใช่ดูดอากาศตลอดกาล
+   *
+   * `live.fields` บอกแค่ว่า "ค่านี้มาจากเซนเซอร์จริง" ไม่ได้บอกว่ายังอัปเดตอยู่ไหม
+   * เกิดกับเซนเซอร์ดินมาแล้ว (ทีมฮาร์ดแวร์ถอดออก ค่าค้างนิ่ง) — RH ก็ตายแบบเดียวกันได้
+   */
+  it('ค่า RH ค้าง (เซนเซอร์หยุดส่ง) → ห้ามสั่ง relay จากตัวเลขที่ไม่มีใครวัดแล้ว', async () => {
+    const T0 = 1_700_000_000_000;
+    // อุณหภูมิเดินต่อปกติ · ความชื้นค้างอยู่ที่ 30 นาทีก่อน (เกิน SENSOR_STALE_MS)
+    mocks.live.value = {
+      temperature: { value: '28', timestamp: T0 },
+      humidity: { value: '92', timestamp: T0 - 30 * 60 * 1000 },
+    };
+    const h = harness();
+
+    await h.enable();
+    await h.wait(HUM_TICK_MS * 3);
+    expect(vi.mocked(postHsCommand), 'RH ค้าง = ไม่มีค่าจริง → ห้ามสั่ง').not.toHaveBeenCalled();
+    expect(h.stage()).toBe(0);
+  });
+
   it('เกณฑ์กลับหัว (เปิดต่ำกว่าปิด) → engine ต้องไม่สั่งอะไรเลย ไม่ใช่เปิด-ปิดรัวๆ', async () => {
     setLive(92);
     const h = harness();

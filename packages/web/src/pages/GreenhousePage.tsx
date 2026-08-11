@@ -1163,7 +1163,8 @@ export function GreenhousePage() {
             humidityAuto={humidityAuto}
             setHumidityAuto={setHumidityAuto}
             ventStage={humidityVentStage}
-            rhReal={live.fields.has('rh')}
+            // ค่าค้าง = ไม่ใช่ค่าจริง — แบนเนอร์ต้องพูดตรงกับที่เครื่องยนต์ใช้ตัดสิน
+            rhReal={live.fields.has('rh') && !live.stale.has('rh')}
             rh={climate.rh}
             temp={climate.temp}
             bigFanStillRunningAfter={bigFanStillRunningAfter}

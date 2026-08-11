@@ -817,7 +817,15 @@ export function FarmStateProvider({
     cfg: HumidityAuto;
   }>({ rh: null, temp: 0, live: false, estop: false, cfg: DEFAULT_HUMIDITY_AUTO });
   humInputsRef.current = {
-    rh: liveFields.has('rh') ? (resolved.values.rh ?? null) : null,
+    /*
+     * 🔴 เซนเซอร์ที่ **ค่าค้าง** ต้องนับเป็น "ไม่มีค่า" ไม่ใช่ค่าจริง
+     *
+     * `liveFields` บอกแค่ว่า "ค่านี้มาจากเซนเซอร์จริง" — ไม่ได้บอกว่ายังอัปเดตอยู่ไหม
+     * ถ้าเซนเซอร์ RH ตายคาที่ 90% (แบบเดียวกับที่เซนเซอร์ดินโดนถอดออกไป)
+     * เครื่องยนต์จะสั่งพัดลมดูดอากาศเดินตลอดกาลจากตัวเลขที่ไม่มีใครวัดแล้ว
+     * ไม่มีค่าจริง = ไม่สั่ง (ปลอดภัยกว่าสั่งจากค่าที่เชื่อไม่ได้)
+     */
+    rh: liveFields.has('rh') && !staleFields.has('rh') ? (resolved.values.rh ?? null) : null,
     // temp สำหรับ guard G2 เท่านั้น (ไม่ใช่เกณฑ์ RH) — ใช้ค่าเดียวกับที่ทั้งแอปใช้ตัดสิน G2
     temp: climate.temp,
     live: realControl,
