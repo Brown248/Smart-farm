@@ -40,7 +40,6 @@ export function ConnectionPill({ ago }: ConnectionPillProps) {
     status,
     liveCount,
     totalCount,
-    staleCount,
     errorMessage,
     deviceStale,
     deviceLastSeenMs,
@@ -70,28 +69,25 @@ export function ConnectionPill({ ago }: ConnectionPillProps) {
   /*
    * ต่อติดไม่ได้แปลว่าได้ค่าครบ — device อาจยิงมาแค่บางค่า หรือยังไม่ยิงอะไรมาเลย
    * ป้ายที่เขียน "ข้อมูลสด" เฉยๆ จะทำให้เข้าใจว่าทุกเลขบนจอเป็นของจริง ซึ่งไม่จริง
-   * จึงแยก 4 กรณี: ครบ · บางส่วน (บอกสัดส่วน) · ยังไม่มีค่าเลย (รอ) · **ค่าค้างหมดทุกตัว**
+   * จึงแยก 3 กรณี: ครบ · บางส่วน (บอกสัดส่วน) · ต่อติดแต่ยังไม่มีค่าเลย (นับเป็นสถานะรอ)
    *
-   * 🔴 สองอันหลังห้ามรวมกัน — "รอค่า" คือยังไม่เคยได้อะไรมาเลย
-   * ส่วน "ค่าค้าง" คือได้มาแล้วแต่เซนเซอร์หยุดส่ง (ต้องไปดูหน้างาน ไม่ใช่นั่งรอ)
-   * ถ้ารวมกันแล้วขึ้น "ต่อติดแล้ว รอค่า…" ทั้งที่มีเลขเต็มจอ ผู้ใช้จะรอเก้อตลอดกาล
+   * หมายเหตุ: เคยมีกรณี "ค่าค้างหมดทุกตัว" ด้วย — **เป็นไปไม่ได้แล้ว** เพราะตัวจับค่าค้าง
+   * เทียบ timestamp กันเองในสตรีม ค่าที่ใหม่ที่สุดจึงไม่มีวันถูกหาว่าค้าง (ดู `staleFields`)
+   * ถ้าอุปกรณ์เงียบพร้อมกันหมด `deviceStale` (shadow_ts) เป็นคนบอกแทน
    */
-  const allStale = status === 'live' && liveCount === 0 && staleCount > 0;
-  const noData = status === 'live' && liveCount === 0 && staleCount === 0;
+  const noData = status === 'live' && liveCount === 0;
   const partial = status === 'live' && liveCount > 0 && liveCount < totalCount;
   const label = banned
     ? t.connDeviceBanned
     : stale
       ? t.connDeviceStale
-      : allStale
-        ? t.connAllStale
-        : noData
-          ? t.connNoData
-          : partial
-            ? t.connPartial
-            : (t[look.labelKey] as string);
-  const cls = banned || stale || allStale ? 'offline' : noData ? 'busy' : look.cls;
-  const pulse = banned || stale || allStale ? false : look.pulse;
+      : noData
+        ? t.connNoData
+        : partial
+          ? t.connPartial
+          : (t[look.labelKey] as string);
+  const cls = banned || stale ? 'offline' : noData ? 'busy' : look.cls;
+  const pulse = banned || stale ? false : look.pulse;
   const coverage =
     status === 'live' && totalCount > 0 ? t.connCoverage(liveCount, totalCount) : null;
   const detail = banned

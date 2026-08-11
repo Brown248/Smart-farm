@@ -322,7 +322,6 @@ export const EN: Dict = {
   wxRainy: 'Rain',
   wxStorm: 'Thunderstorm',
   connNoData: 'Connected, waiting…',
-  connAllStale: 'All readings are stale — sensors stopped reporting',
   connPartial: 'Partly live data',
   connCoverage: (live: number, total: number) => `live ${live}/${total}`,
   connStaleAgo: (mins: string) => `no update ${mins} min`,
