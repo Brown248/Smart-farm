@@ -1152,10 +1152,17 @@ export function GreenhousePage() {
                 {t.ghAutoSub}
               </p>
             </div>
-            <div className={s.notLiveNote} role="note">
-              <Icon name="info" size={15} color="var(--d-muted)" strokeWidth={1.9} />
-              <span>{t.rulesNotLiveNote}</span>
-            </div>
+            {/*
+              🔴 ขึ้นเฉพาะโหมดจำลอง — โหมดจริงเกณฑ์ถูกเขียนลงอุปกรณ์และ **อุปกรณ์สั่งเองจริง**
+              ของเดิมขึ้นตลอดเวลา ทำให้ผู้ใช้ที่ล็อกอินแล้วเข้าใจว่าเงื่อนไขที่ตั้งไว้ไม่ทำงาน
+              (เจ้าของงานถามเองว่า "ควรเปิดสวิตช์ไหนบ้าง" เพราะข้อความนี้)
+            */}
+            {realControl ? null : (
+              <div className={s.notLiveNote} role="note">
+                <Icon name="info" size={15} color="var(--d-muted)" strokeWidth={1.9} />
+                <span>{t.rulesNotLiveNote}</span>
+              </div>
+            )}
           </div>
 
           {/* ── ควบคุมความชื้นด้วยพัดลมดูด (farm-wide) ── */}
