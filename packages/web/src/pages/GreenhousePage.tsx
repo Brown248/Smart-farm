@@ -18,6 +18,8 @@ import {
   ghClimateCards,
 } from '@/data/greenhouse';
 import type { DeviceScheduleSlot, FanTempThreshold, GhDevice, GhMode } from '@/data/greenhouse';
+import type { SensorSource } from '@/components/dashboard/SensorCard';
+import type { LiveField } from '@/config/telemetryKeys';
 import type { HsChannelState } from '@/config/deviceAttributes';
 import { bondedTo, channelOf } from '@/config/deviceChannels';
 import { useConfirm } from '@/hooks/useConfirm';
@@ -34,6 +36,18 @@ import { LED_CONFIRM_TIMEOUT_MS } from '@/lib/deviceTiming';
 import g from '@/styles/dashboard.module.css';
 import d from '@/components/dashboard/dashboard.module.css';
 import s from './GreenhousePage.module.css';
+
+/**
+ * ป้ายที่มาของตัวเลขบนการ์ดสภาพอากาศ — ใช้ภาษาเดียวกับการ์ดเซนเซอร์บนแดชบอร์ดเป๊ะ
+ * `stale` = เคยเป็นของจริงแต่เซนเซอร์หยุดส่งแล้ว ต้องแยกจาก `sim` (ยังไม่ได้ต่อ) ให้ชัด
+ */
+// CSS Modules คืน `string | undefined` (คลาสหายไปเงียบๆ ได้ — `cssPairing.test.ts` เป็นตัวจับ)
+const srcClass = (src: SensorSource): string | undefined =>
+  src === 'live' ? d.senSrcLive : src === 'stale' ? d.senSrcStale : d.senSrcSim;
+const srcLabel = (src: SensorSource, t: Dict): string =>
+  src === 'live' ? t.liveTag : src === 'stale' ? t.staleTag : t.simTag;
+const srcHint = (src: SensorSource, t: Dict): string =>
+  src === 'live' ? t.liveTag : src === 'stale' ? t.staleTagHint : t.simTagHint;
 
 /** ชื่ออุปกรณ์ที่ผู้ใช้เห็น — ใช้คีย์เดียวกับฉากเกม */
 const deviceLabel = (id: DeviceId, nameKey: TextKey, t: Dict): string => {
@@ -1007,6 +1021,8 @@ export function GreenhousePage() {
    * ยังไม่ต่ออะไรเลยก็ไม่ต้องแปะ "จำลอง" ทุกใบ เพราะป้ายบน header บอกไว้แล้ว
    */
   const showSource = live.fields.size > 0;
+  const sourceOf = (key: LiveField): SensorSource =>
+    !live.fields.has(key) ? 'sim' : live.stale.has(key) ? 'stale' : 'live';
 
   return (
     <>
@@ -1049,13 +1065,10 @@ export function GreenhousePage() {
                       <span className={s.climateLabel}>{t[c.labelKey]}</span>
                       {showSource ? (
                         <span
-                          className={[
-                            d.senSrc,
-                            live.fields.has(c.key) ? d.senSrcLive : d.senSrcSim,
-                          ].join(' ')}
-                          title={live.fields.has(c.key) ? t.liveTag : t.simTagHint}
+                          className={[d.senSrc, srcClass(sourceOf(c.key))].join(' ')}
+                          title={srcHint(sourceOf(c.key), t)}
                         >
-                          {live.fields.has(c.key) ? t.liveTag : t.simTag}
+                          {srcLabel(sourceOf(c.key), t)}
                         </span>
                       ) : null}
                       <span

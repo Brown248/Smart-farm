@@ -9,6 +9,16 @@ import { clamp } from '@/lib/format';
 import g from '@/styles/dashboard.module.css';
 import s from './dashboard.module.css';
 
+/**
+ * ที่มาของเลขบนใบนี้ — 'stale' = เคยเป็นของจริงแต่เซนเซอร์หยุดส่งแล้ว (ดู SENSOR_STALE_MS)
+ * ต้องแยกจาก 'sim' ให้ชัด: 'sim' คือยังไม่ได้ต่อ (ปกติ) · 'stale' คือของเสีย ต้องไปดูหน้างาน
+ */
+export type SensorSource = 'live' | 'sim' | 'stale';
+
+// CSS Modules คืน `string | undefined` (คลาสหายไปเงียบๆ ได้ — `cssPairing.test.ts` เป็นตัวจับ)
+const srcClass = (src: SensorSource): string | undefined =>
+  src === 'live' ? s.senSrcLive : src === 'stale' ? s.senSrcStale : s.senSrcSim;
+
 const LEVEL_CHIP: Readonly<Record<DashLevel, TextKey>> = {
   normal: 'stNormal',
   warn: 'stWatch',
@@ -39,7 +49,7 @@ export interface SensorCardProps {
    * เลขบนใบนี้มาจากไหน — `undefined` = ไม่ต้องติดป้าย (ทั้งหน้าเป็นข้อมูลจำลองอยู่แล้ว)
    * ติดเฉพาะตอนบางใบจริงบางใบจำลอง ซึ่งเป็นตอนที่คนดูแยกไม่ออก
    */
-  readonly source?: 'live' | 'sim' | undefined;
+  readonly source?: SensorSource | undefined;
   /** จุดของเส้นแนวโน้มย่อ — ค่าจริงถ้ามี ไม่งั้นเป็นชุดของต้นแบบใน `def.spark` */
   readonly spark: readonly number[];
   readonly animate: boolean;
@@ -111,10 +121,10 @@ export function SensorCard({
 
       {source ? (
         <span
-          className={[s.senSrc, source === 'live' ? s.senSrcLive : s.senSrcSim].join(' ')}
-          title={source === 'live' ? t.liveTag : t.simTagHint}
+          className={[s.senSrc, srcClass(source)].join(' ')}
+          title={source === 'live' ? t.liveTag : source === 'stale' ? t.staleTagHint : t.simTagHint}
         >
-          {source === 'live' ? t.liveTag : t.simTag}
+          {source === 'live' ? t.liveTag : source === 'stale' ? t.staleTag : t.simTag}
         </span>
       ) : null}
       {stale ? (

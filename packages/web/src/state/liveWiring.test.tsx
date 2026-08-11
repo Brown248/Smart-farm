@@ -45,6 +45,7 @@ function Probe() {
       <li data-testid="soil-first">{zones[0]?.soil}</li>
       <li data-testid="soil-last">{zones[zones.length - 1]?.soil}</li>
       <li data-testid="fields">{[...live.fields].sort().join(',')}</li>
+      <li data-testid="stale">{[...live.stale].sort().join(',')}</li>
       <li data-testid="status">{live.status}</li>
       <li data-testid="unmatched">{live.unmatched.join(',')}</li>
     </ul>
@@ -118,6 +119,46 @@ describe('ค่าจริงจาก telemetry → FarmStateProvider', () =>
 
     expect(getLiveSnapshot().liveCount).toBe(3);
     expect(getLiveSnapshot().totalCount).toBe(4);
+  });
+
+  /**
+   * 🔴 เซนเซอร์ตัวเดียวตาย ขณะที่บอร์ดยังมีชีวิต — `deviceStale` (shadow_ts) จับไม่ได้เลย
+   *
+   * เกิดจริง 2026-08-11: ทีมฮาร์ดแวร์ถอดเซนเซอร์ความชื้นดินออก ค่าค้างนิ่งอยู่ที่เลขเดิม
+   * แต่หน้าจอยังติดป้าย "ค่าจริง" และ 8 แปลงทั้งฉากเกม/หน้าชลประทานยังคำนวณจากมัน
+   * รวมถึงรายการ "ต้องดูแลด่วน" ที่แนะนำให้ไปรดน้ำ — จากตัวเลขที่ไม่มีใครวัดแล้ว
+   */
+  describe('ค่าค้างรายเซนเซอร์', () => {
+    const T0 = 1_700_000_000_000;
+    const at = (value: string, ts: number): TelemetryValue => ({ value, timestamp: ts });
+
+    it('ค่าที่หยุดอัปเดตต้องหลุดจากตัวนับ "ค่าจริง" แต่ค่ายังโชว์อยู่', () => {
+      mocks.status.value = 'live';
+      // temp/rh เดินต่อ · soil ค้างอยู่ที่ 10 นาทีก่อน (เกิน SENSOR_STALE_MS)
+      mocks.live.value = {
+        temperature: at('26.7', T0),
+        humidity: at('68', T0),
+        soil: at('43.5', T0 - 10 * 60 * 1000),
+      };
+      renderProbe();
+
+      expect(text('stale')).toBe('soil');
+      // ยังอยู่ใน fields — ค่ามาจากเซนเซอร์จริง จึงต้องทับค่าจำลองต่อ (สลับเป็นเลขจำลองที่ขยับได้ = หลอกกว่า)
+      expect(text('fields')).toBe('rh,soil,temp');
+      expect(text('soil-first')).toBe('43.5');
+      // แต่ห้ามนับเป็น "ค่าจริง" บนป้าย header
+      expect(getLiveSnapshot().liveCount).toBe(2);
+    });
+
+    it('นาฬิกาอุปกรณ์เหลื่อมจากแท็บเล็ต ต้องไม่ทำให้ทุกค่ากลายเป็นค่าค้าง', () => {
+      mocks.status.value = 'live';
+      // timestamp เก่ากว่านาฬิกาเบราว์เซอร์หลายปี แต่ทุกค่ามาพร้อมกัน = เซนเซอร์ปกติดีทั้งหมด
+      mocks.live.value = { temperature: at('26.7', T0), humidity: at('68', T0) };
+      renderProbe();
+
+      expect(text('stale')).toBe('');
+      expect(getLiveSnapshot().liveCount).toBe(2);
+    });
   });
 
   it('key ที่ไม่รู้จักต้องโผล่ใน unmatched ไม่ใช่ถูกทิ้งเงียบๆ', () => {

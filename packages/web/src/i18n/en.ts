@@ -328,6 +328,8 @@ export const EN: Dict = {
   liveTag: 'Live',
   simTag: 'Simulated',
   simTagHint: 'No sensor for this value yet — the number is simulated',
+  staleTagHint:
+    'This sensor stopped reporting a while ago. The number shown is its last reading, not the current value',
   details: 'View details',
   save: 'Save',
   retry: 'Retry',

@@ -8,6 +8,7 @@ import { useI18n } from '@/i18n/useI18n';
 import g from '@/styles/dashboard.module.css';
 import s from './dashboard.module.css';
 import { SensorCard } from './SensorCard';
+import type { SensorSource } from './SensorCard';
 
 /**
  * สี/การเตือนของการ์ด — temp/ความชื้น/แสง ต้องเตือน **ทั้งสูงเกินและต่ำเกิน** (ร้อนจัด/ชื้นจัด = อันตราย)
@@ -111,7 +112,16 @@ export function SensorCards({
                * ติดป้ายที่มาเฉพาะตอน "มีของจริงบางส่วน" — ยังไม่ต่ออะไรเลยก็ไม่ต้องแปะ
                * "จำลอง" ทั้ง 4 ใบ เพราะป้ายบน header บอกไว้แล้วว่าทั้งหน้าเป็นข้อมูลจำลอง
                */
-              const source = live.liveFields.size === 0 ? undefined : isLive ? 'live' : 'sim';
+              // เซนเซอร์ที่เคยจริงแต่หยุดส่งแล้ว ต้องไม่ถูกเรียกว่า "ค่าจริง" (ดู SENSOR_STALE_MS)
+              const isStale = live.staleFields.has(CARD_FIELD[def.key]);
+              const source: SensorSource | undefined =
+                live.liveFields.size === 0
+                  ? undefined
+                  : !isLive
+                    ? 'sim'
+                    : isStale
+                      ? 'stale'
+                      : 'live';
               /*
                * เส้นแนวโน้มของค่าจริงต้องมาจากค่าจริง — ขอ 3 จุดขึ้นไปก่อนค่อยใช้
                * (2 จุดวาดได้แต่เป็นเส้นตรงเสมอ ดูเหมือนเซนเซอร์นิ่ง ซึ่งเข้าใจผิด)

@@ -35,6 +35,7 @@ import {
   LED_CONFIRM_TIMEOUT_MS,
   LOG_LIMIT,
   PUMP_CUTOFF_MS,
+  SENSOR_STALE_MS,
   SEND_LATENCY_MS,
 } from '@/lib/deviceTiming';
 import { newReqId, postHsCommand, readHsContext } from '@/services/handysenseControl';
@@ -89,6 +90,14 @@ export interface LiveInfo {
   readonly status: ConnectionStatus;
   /** ค่าที่มาจากเซนเซอร์จริงในรอบนี้ — ที่ไม่อยู่ในนี้คือค่าจำลอง */
   readonly fields: ReadonlySet<LiveField>;
+  /**
+   * ส่วนย่อยของ `fields` ที่ **หยุดอัปเดตไปแล้ว** (ดู `SENSOR_STALE_MS`) — ค่ายังโชว์อยู่แต่เป็นค่าค้าง
+   *
+   * แยกจาก `fields` โดยตั้งใจ: ค่านี้ยัง "มาจากเซนเซอร์จริง" อยู่ จึงยังต้องทับค่าจำลอง
+   * (สลับกลับไปเป็นเลขจำลองที่ขยับได้ = หลอกกว่าเดิม) แต่ต้องเลิกเรียกว่า "ค่าจริง"
+   * และเลิกนับในป้าย "ค่าจริง x/5"
+   */
+  readonly stale: ReadonlySet<LiveField>;
   /**
    * ค่าหน้าจอ → **ชื่อ key จริงที่ device ใช้** เช่น `{ temp: 'temperature' }`
    * เอาไปแสดงในแผง dev ได้ว่าจับคู่กับตัวไหน — จำเป็นตอนตั้งค่าครั้งแรก
@@ -506,6 +515,38 @@ export function FarmStateProvider({
   }, [resolved, telemetry.live]);
 
   /**
+   * ── ค่าค้าง**รายเซนเซอร์** ──
+   *
+   * 🔴 `deviceStale` (shadow_ts) จับได้แค่ "ทั้งบอร์ดเงียบ" · บอร์ดที่ยังส่ง shadow_ts ปกติ
+   * แต่มีเซนเซอร์ตัวหนึ่งถูกถอดสายออก จะไม่มีอะไรฟ้องเลย — `live.fields` ยังนับว่าเป็นค่าจริง
+   * (เกิดจริง 2026-08-11 กับเซนเซอร์ความชื้นดิน · ดู `SENSOR_STALE_MS`)
+   *
+   * `timestamp` รายค่ามากับ payload อยู่แล้วตั้งแต่แรก แต่ทั้งระบบไม่เคยมีใครใช้เลย
+   *
+   * 🔴 **เทียบกับค่าที่ใหม่ที่สุดในสตรีม ไม่ใช่นาฬิกาเบราว์เซอร์** — สำคัญมาก
+   * ถ้าเทียบกับ `Date.now()` นาฬิกาอุปกรณ์เหลื่อมจากแท็บเล็ตเกิน 5 นาทีเมื่อไหร่
+   * ทุกค่าจะถูกหาว่า "ค่าค้าง" พร้อมกันทั้งที่เซนเซอร์ปกติดี (เจอตอนเทส `liveWiring` แดง)
+   * เทียบกันเองในสตรีมคือภูมิคุ้มกัน clock skew: ทั้งสองฝั่งมาจากนาฬิกาเรือนเดียวกัน
+   *
+   * เคสที่ตัวนี้จับไม่ได้คือ "เงียบพร้อมกันหมด" (อุปกรณ์ดับ) ซึ่ง `deviceStale` (shadow_ts)
+   * กับ `StaleBanner` คุมอยู่แล้ว — สองตัวนี้จึงเสริมกัน ไม่ทับกัน
+   */
+  const staleFields = useMemo<ReadonlySet<LiveField>>(() => {
+    const stamps = new Map<LiveField, number>();
+    for (const [field, key] of Object.entries(matched) as [LiveField, string][]) {
+      const ts = telemetry.live[key]?.timestamp;
+      // ไม่มี timestamp = ตัดสินไม่ได้ → ไม่กล่าวหา (เงียบดีกว่าเตือนผิด)
+      if (typeof ts === 'number') stamps.set(field, ts);
+    }
+    const newest = Math.max(...stamps.values(), telemetry.lastUpdateAt ?? 0);
+    const out = new Set<LiveField>();
+    for (const [field, ts] of stamps) {
+      if (newest - ts > SENSOR_STALE_MS) out.add(field);
+    }
+    return out;
+  }, [matched, telemetry.live, telemetry.lastUpdateAt]);
+
+  /**
    * เก็บค่าจริงย้อนหลังไว้ 8 จุดต่อค่า — เท่ากับจำนวนจุดของเส้นแนวโน้มในต้นแบบ
    *
    * ต่อจุดใหม่ตอน `lastUpdateAt` ขยับเท่านั้น ไม่ใช่ทุก render (ไม่งั้นเส้นจะยาวขึ้นเรื่อยๆ
@@ -538,8 +579,9 @@ export function FarmStateProvider({
 
   /** บอกป้ายบน header ว่าได้ของจริงกี่ค่าจากที่ต้องใช้ทั้งหมด */
   useEffect(() => {
-    reportLiveCoverage(liveFields.size, LIVE_FIELDS.length);
-  }, [liveFields]);
+    // เซนเซอร์ที่ค่าค้างไม่นับเป็น "ค่าจริง" — ป้าย "ค่าจริง x/5" ต้องสะท้อนของที่ยังวัดอยู่จริง
+    reportLiveCoverage(liveFields.size - staleFields.size, LIVE_FIELDS.length);
+  }, [liveFields, staleFields]);
 
   /**
    * ── ตรวจว่าอุปกรณ์ยัง "สด" ไหม จาก shadow_ts (เวลาที่อุปกรณ์เขียนค่าจริงล่าสุด) ──
@@ -927,6 +969,7 @@ export function FarmStateProvider({
     () => ({
       status: telemetry.connectionStatus,
       fields: liveFields,
+      stale: staleFields,
       matched,
       updatedAt: telemetry.lastUpdateAt,
       error: telemetry.errorMessage,
@@ -940,6 +983,7 @@ export function FarmStateProvider({
       telemetry.lastUpdateAt,
       telemetry.errorMessage,
       liveFields,
+      staleFields,
       matched,
       unmatched,
       trail,

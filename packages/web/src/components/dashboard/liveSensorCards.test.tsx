@@ -19,6 +19,7 @@ const base: LiveSensors = {
   light: 41,
   soil: null,
   liveFields: new Set<LiveField>(),
+  staleFields: new Set<LiveField>(),
   trail: {},
   updatedAt: null,
 };

@@ -10,6 +10,8 @@ export interface LiveSensors {
   readonly soil: number | null;
   /** ค่าไหนมาจากเซนเซอร์จริง — เอาไปติดป้ายบนการ์ด ไม่ให้เลขจำลองปนกับของจริงเงียบๆ */
   readonly liveFields: ReadonlySet<LiveField>;
+  /** ส่วนย่อยของ `liveFields` ที่เซนเซอร์หยุดส่งแล้ว — ค่ายังโชว์ แต่ห้ามเรียกว่า "ค่าจริง" */
+  readonly staleFields: ReadonlySet<LiveField>;
   /** ค่าจริงย้อนหลังไม่เกิน 8 จุด — เส้นแนวโน้มในการ์ดที่ติดป้าย "ค่าจริง" ต้องเป็นของจริงด้วย */
   readonly trail: Readonly<Partial<Record<LiveField, readonly number[]>>>;
   /** เวลาที่ได้ค่าจริงล่าสุด (ms epoch) — `null` เมื่อยังไม่มีของจริง · ใช้กับป้าย "อัปเดต … ที่แล้ว" */
@@ -32,6 +34,7 @@ export function useLiveSensors(): LiveSensors {
     // ทุกแปลงใช้ค่าเดียวกันเมื่อเป็นค่าจริง จึงอ่านจากแปลงแรกได้
     soil: live.fields.has('soil') ? (zones[0]?.soil ?? null) : null,
     liveFields: live.fields,
+    staleFields: live.stale,
     trail: live.trail,
     updatedAt: live.updatedAt,
   };
