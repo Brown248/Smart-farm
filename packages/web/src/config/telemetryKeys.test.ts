@@ -3,6 +3,8 @@ import type { TelemetryValue } from '@shared/telemetrySocket';
 import {
   CLIMATE_KEY_RULES,
   LIVE_FIELDS,
+  SOIL_ALIASES,
+  TELEMETRY_KEYS,
   pickKey,
   resolveClimate,
   resolveSoil,
@@ -92,5 +94,72 @@ describe('unmatchedKeys', () => {
 describe('LIVE_FIELDS', () => {
   it('คือค่าทั้งหมดที่หน้าจอต้องใช้ — ตัวหารของสัดส่วนบนป้ายสถานะ', () => {
     expect([...LIVE_FIELDS]).toEqual(['temp', 'rh', 'lux', 'soil']);
+  });
+});
+
+/**
+ * 🔴 รายชื่อ key ที่ส่งไปกับ `subscribe_telemetry`
+ *
+ * เอกสาร `WEBSOCKET_API.md` เขียนว่า "ไม่ส่ง `keys` = รับทุก key ที่ device ยิงมา"
+ * **ทดสอบกับ backend จริง 2026-08-17 แล้วไม่จริง** — ไม่ส่ง `keys` ฟัง 90 วินาที
+ * ได้ `telemetry_data` 0 ครั้ง (ขณะที่ `attribute_data` มาทุก 10 วินาทีปกติ)
+ * อาการที่ผู้ใช้เห็นคือ header ค้างที่ "ต่อติดแล้ว รอค่า…" ตลอดไป
+ */
+describe('TELEMETRY_KEYS — รายชื่อที่ต้องส่งไปขอ', () => {
+  it('มีชื่อจริงของค่าที่หน้าจอแสดงครบทั้ง 4 ค่า', () => {
+    // ชื่อจริงจากหน้า Latest telemetry ของ ThingsBoard (device `handysense-farm`)
+    for (const k of ['temperature', 'humidity', 'light', 'soil_moisture']) {
+      expect(TELEMETRY_KEYS, `ขาด ${k} = ค่านั้นจะไม่มีวันขึ้นบนจอ`).toContain(k);
+    }
+  });
+
+  it('มี cmd_result — ขาดแล้วสั่งอุปกรณ์จริงแล้วไม่มีวันรู้ผล', () => {
+    expect(TELEMETRY_KEYS).toContain('cmd_result');
+  });
+
+  it('มี netpie_banned — ขาดแล้วอุปกรณ์ถูกระงับก็ยังกดปุ่มได้ทั้งที่คำสั่งไม่ถึง', () => {
+    expect(TELEMETRY_KEYS).toContain('netpie_banned');
+  });
+
+  /**
+   * 🔴 backend ตอบกลับ **ทุก key ที่ขอ** — ตัวที่อุปกรณ์ไม่มีได้ `value: null` พร้อม timestamp สด
+   * ถ้ายัด alias ทั้งชุดลงไป `brightness` (null) จะถูกเจอก่อน `light` (มีค่า) แล้วค่าหาย
+   */
+  it('ห้ามมี alias ที่อุปกรณ์ไม่มีจริงปนอยู่ — จะไปบังชื่อจริงจนค่าหาย', () => {
+    const decoys = ['brightness', 'lux', 'soil', 'moisture', 'temp', 'rh', 'hum'];
+    expect(TELEMETRY_KEYS.filter((k) => decoys.includes(k))).toEqual([]);
+  });
+
+  it('ทุกชื่อที่ขอต้องอยู่ในตาราง alias หรือเป็น key ที่ใช้งานจริง', () => {
+    const known = new Set<string>([
+      ...Object.values(CLIMATE_KEY_RULES).flatMap((r) => r.aliases),
+      ...SOIL_ALIASES,
+      'cmd_result',
+      'netpie_banned',
+      'netpie_enabled',
+      'netpie_status',
+    ]);
+    expect(TELEMETRY_KEYS.filter((k) => !known.has(k))).toEqual([]);
+  });
+});
+
+describe('key ที่ backend ตอบมาแต่ไม่มีค่า (value: null)', () => {
+  const withNulls = {
+    // ชุดที่เกิดขึ้นจริงถ้าขอ alias ครบทุกตัว — เรียงให้ตัวหลอกมาก่อนตัวจริง
+    brightness: { value: null, timestamp: 2_000_000_000_000 },
+    light: { value: '6.63', timestamp: 1_700_000_000_000 },
+    soil: { value: null, timestamp: 2_000_000_000_000 },
+    soil_moisture: { value: '99', timestamp: 1_700_000_000_000 },
+  } as unknown as Record<string, TelemetryValue>;
+
+  it('ต้องข้ามตัวที่ไม่มีค่า แล้วไปเอา alias ตัวถัดไปที่มีค่าจริง', () => {
+    expect(resolveClimate(withNulls).values.lux, 'brightness เป็น null ต้องไม่บัง light').toBe(
+      6.63,
+    );
+    expect(resolveSoil(withNulls), 'soil เป็น null ต้องไม่บัง soil_moisture').toBe(99);
+  });
+
+  it('จับคู่ได้ชื่อจริง ไม่ใช่ชื่อที่ว่างเปล่า', () => {
+    expect(resolveClimate(withNulls).matched.lux).toBe('light');
   });
 });

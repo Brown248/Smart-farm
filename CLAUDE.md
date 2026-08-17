@@ -5,8 +5,10 @@
 **Syntech Smart Farm** — ระบบมอนิเตอร์และควบคุมโรงเรือนปลูกผัก โรงเรือน A1
 คนใช้คือเกษตรกร/ผู้ดูแลโรงเรือน ใช้บนแท็บเล็ตแนวนอนเป็นหลัก ภาษาไทยเป็นหลัก
 
-> 🤖 **ทีม agent:** repo นี้มีทีม subagent ใน `.claude/agents/` (architect · explorer · coder · reviewer · tester)
-> งานที่ไม่เล็กให้กระจายให้ทีมแทนทำเดี่ยว · ทุกตัวอ่านไฟล์นี้ก่อนเสมอ
+> 🤖 **ทีม agent:** repo นี้มีทีม subagent ใน `.claude/agents/` · ทุกตัวอ่านไฟล์นี้ก่อนเสมอ
+> **หลัก:** architect · explorer · coder · reviewer · tester
+> **เฉพาะทาง:** design-guardian (เทียบต้นแบบ) · safety-auditor (เส้นทางสั่งอุปกรณ์) · docs-scribe (คุมเอกสาร) · telemetry-integration (ชั้นต่อข้อมูลจริง/HandySense)
+> งานที่ไม่เล็กให้กระจายให้ทีมแทนทำเดี่ยว
 
 ---
 
@@ -158,10 +160,20 @@ shared/telemetrySocket    type ทุก payload ตามเอกสาร
 components/auth/          หน้าล็อกอิน + บัญชีท้ายแถบเมนู
 ```
 
-**ห้ามเดาชื่อ telemetry key** — เอกสารเตือนว่าขอ key ที่สะกดไม่ตรงจะ**ไม่ error แต่ไม่มี event
-ส่งมาเลย** ซึ่งหน้าตาเหมือน device ตาย แยกไม่ออก แต่เอกสารก็บอกว่า
-**"ไม่ส่ง `keys` = รับทุก key ที่ device ยิงมา"** → provider จึง subscribe แบบไม่ส่ง `keys`
-แล้วให้ `config/telemetryKeys.ts` จับคู่จากชื่อที่ไหลมาจริง
+🔴 **ต้องส่ง `keys` ไปกับ `subscribe_telemetry` เสมอ** — รายชื่ออยู่ที่ `TELEMETRY_KEYS`
+เอกสารเขียนว่า *"ไม่ส่ง `keys` = รับทุก key ที่ device ยิงมา"* **ทดสอบกับ backend จริงแล้วไม่จริง**
+(2026-08-17: ไม่ส่ง `keys` ฟัง 90 วินาที ได้ `telemetry_data` **0 ครั้ง** ขณะที่ `attribute_data`
+มาทุก 10 วินาทีปกติ · ส่ง `keys` ได้ค่าทันทีใน 1 วินาที) อาการตอนขาด = header ค้างที่
+"ต่อติดแล้ว รอค่า…" ตลอดไป โดยไม่มี error อะไรเลย
+
+⚠️ **ใส่ได้เฉพาะชื่อจริง ห้ามยัด alias ทั้งชุด** — backend ตอบกลับ**ทุก key ที่ขอ**
+ตัวที่อุปกรณ์ไม่มีจะได้ `value: null` พร้อม timestamp สดๆ แล้วไปบังชื่อจริงจนค่าหาย
+(ทดสอบแล้วพัง 2 ใน 4 ค่า) · `TELEMETRY_KEYS` ต้องมี `cmd_result` + `netpie_*` ด้วย
+ขาด `cmd_result` = สั่งอุปกรณ์จริงแล้วไม่มีวันรู้ผล
+
+**ห้ามเดาชื่อ telemetry key** — ขอ key ที่สะกดไม่ตรงจะ**ไม่ error แต่ไม่มี event ส่งมาเลย**
+ซึ่งหน้าตาเหมือน device ตาย แยกไม่ออก · ชื่อจริงดูได้ที่ ThingsBoard → device → Latest telemetry
+ตาราง alias ใน `config/telemetryKeys.ts` ยังใช้จับคู่ชื่อที่ไหลกลับมา
 จับคู่ไม่ได้ = `console.warn` บอกชื่อจริง (เห็นแล้วไปเติม `CLIMATE_KEY_RULES`/`SOIL_ALIASES`)
 หน่วยไม่ตรงก็เตือน **ไม่แปลงให้เอง** — แปลงเงียบๆ คือเดาแทนผู้ใช้ ให้ตั้ง `scale` ในกฎ
 

@@ -68,6 +68,7 @@ import {
 } from '@/data/mockClimate';
 import {
   LIVE_FIELDS,
+  TELEMETRY_KEYS,
   resolveClimate,
   resolveSoil,
   soilKey,
@@ -369,7 +370,13 @@ export function FarmStateProvider({
    */
   // ต้องระบุ attributeKeys (led/เกณฑ์/timer) ไม่งั้น backend ไม่ส่ง attribute มาเลย →
   // สถานะจริงของอุปกรณ์ (led→on · mode · เกณฑ์) จะว่าง แล้วจอค้างที่ค่า mock
+  /*
+   * 🔴 `keys` ขาดไม่ได้ — ไม่ส่งไป backend จะไม่ยิง `telemetry_data` มาเลยแม้แต่ครั้งเดียว
+   * (เอกสารเขียนว่าไม่ส่ง = ได้ทุก key · ของจริงไม่ใช่ · ทดสอบ 2026-08-17 ดู `TELEMETRY_KEYS`)
+   * อาการตอนขาด: socket ต่อติด · attribute มาปกติทุก 10 วิ · แต่ header ค้างที่ "ต่อติดแล้ว รอค่า…"
+   */
   const telemetry = useTelemetry({
+    keys: TELEMETRY_KEYS,
     subscribeAlarms: true,
     attributeKeys: HS_ATTRIBUTE_KEYS,
     attributeScope: 'SHARED_SCOPE',
